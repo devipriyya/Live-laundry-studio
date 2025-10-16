@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global customizations */
+@layer base {
+  /* Root settings */
+  :root {
+    --font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  }
+
+  html {
+    font-family: var(--font-family);
+    line-height: 1.5;
+    font-weight: 400;
+    color-scheme: light dark;
+  }
+
+  body {
+    @apply m-0 min-h-screen;
+    background-color: #ffffff; /* light mode default */
+    color: #213547;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  a {
+    @apply font-medium text-indigo-400 no-underline;
+  }
+
+  a:hover {
+    @apply text-indigo-500;
+  }
+
+  h1 {
+    @apply text-5xl leading-snug;
+  }
+
+  button {
+    @apply rounded-lg border border-transparent px-6 py-2 font-medium cursor-pointer transition-colors;
+    background-color: #1a1a1a;
+  }
+
+  button:hover {
+    border-color: #646cff;
+  }
+
+  button:focus,
+  button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+  }
+}
+
+/* Light mode override */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+  }
+  body {
+    background-color: #ffffff;
+    color: #213547;
+  }
+  a:hover {
+    @apply text-indigo-400;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
