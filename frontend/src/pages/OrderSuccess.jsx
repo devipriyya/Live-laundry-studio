@@ -31,7 +31,7 @@ const OrderSuccess = () => {
   const totalPrice = location.state?.totalPrice || 0;
   
   const [showConfetti, setShowConfetti] = useState(true);
-  const [orderNumber] = useState(`ORD-${Date.now()}`);
+  const orderNumber = orderData.orderNumber || `ORD-${Date.now()}`;
   const [estimatedDelivery] = useState(() => {
     const delivery = new Date();
     delivery.setDate(delivery.getDate() + 3);
@@ -52,12 +52,12 @@ const OrderSuccess = () => {
   const handleTrackOrder = () => {
     navigate('/track-order', { 
       state: { 
-        orderNumber,
+        orderNumber: orderData.orderNumber || orderNumber,
         orderData: {
           ...orderData,
           cartItems,
           totalPrice,
-          status: 'Confirmed',
+          status: orderData.status || 'order-placed',
           estimatedDelivery
         }
       }

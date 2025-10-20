@@ -1,6 +1,8 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
+import '../styles/ProfileAnimations.css';
 import {
   UserCircleIcon,
   EnvelopeIcon,
@@ -25,19 +27,29 @@ import {
   GlobeAltIcon,
   SparklesIcon,
   PlusIcon,
-  TrashIcon
+  TrashIcon,
+  CameraIcon,
+  PhotoIcon,
+  FireIcon,
+  BoltIcon,
+  ChartBarIcon,
+  TrophyIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 
 const Profile = () => {
   const authContext = useContext(AuthContext);
   const { user, setUser } = authContext || { user: null, setUser: () => {} };
   const navigate = useNavigate();
+  const { isDarkMode, accentColor, setAccentColor } = useTheme();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   
   // Profile data state with safe defaults
   const [profileData, setProfileData] = useState({
@@ -46,7 +58,8 @@ const Profile = () => {
     phone: '+1 (555) 123-4567',
     dateOfBirth: '1990-01-01',
     gender: 'prefer-not-to-say',
-    bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.'
+    bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
+    profileImageUrl: null
   });
 
   // Laundry-specific data
@@ -106,7 +119,8 @@ const Profile = () => {
         phone: '+1 (555) 123-4567',
         dateOfBirth: '1990-01-01',
         gender: 'prefer-not-to-say',
-        bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.'
+        bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
+        profileImageUrl: null
       };
 
       if (savedProfile) {
@@ -118,7 +132,8 @@ const Profile = () => {
             phone: parsed.phone || '+1 (555) 123-4567',
             dateOfBirth: parsed.dateOfBirth || '1990-01-01',
             gender: parsed.gender || 'prefer-not-to-say',
-            bio: parsed.bio || 'Loyal FabricSpa customer who loves eco-friendly cleaning services.'
+            bio: parsed.bio || 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
+            profileImageUrl: parsed.profileImageUrl || null
           };
         } catch (parseError) {
           console.warn('Error parsing saved profile:', parseError);
@@ -130,7 +145,8 @@ const Profile = () => {
           phone: '+1 (555) 123-4567',
           dateOfBirth: '1990-01-01',
           gender: 'prefer-not-to-say',
-          bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.'
+          bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
+          profileImageUrl: null
         };
       }
 
@@ -224,13 +240,13 @@ const Profile = () => {
   });
 
   const stats = {
-    totalOrders: 47,
-    totalSpent: 2850.75,
-    memberSince: '2023-01-15',
-    loyaltyPoints: 1250,
-    co2Saved: 12.5,
-    favoriteService: 'Dry Cleaning',
-    currentTier: 'Gold Member'
+    totalOrders: 0,
+    totalSpent: 0.00,
+    memberSince: new Date().toISOString().split('T')[0],
+    loyaltyPoints: 0,
+    co2Saved: 0.0,
+    favoriteService: 'Not Available',
+    currentTier: 'New Member'
   };
 
   const handleSaveProfile = async () => {
@@ -350,6 +366,69 @@ const Profile = () => {
     }
   };
 
+  // Image upload handlers
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB.');
+        return;
+      }
+
+      setProfileImage(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setProfileImage(null);
+    setImagePreview(null);
+    setProfileData(prev => ({
+      ...prev,
+      profileImageUrl: null
+    }));
+  };
+
+  const handleSaveImage = async () => {
+    if (profileImage) {
+      setLoading(true);
+      try {
+        // In a real app, you would upload to a server here
+        // For now, we'll store the base64 data URL in localStorage
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target.result;
+          setProfileData(prev => ({
+            ...prev,
+            profileImageUrl: imageUrl
+          }));
+          setImagePreview(null);
+          setProfileImage(null);
+          alert('Profile image updated successfully!');
+          setLoading(false);
+        };
+        reader.readAsDataURL(profileImage);
+      } catch (error) {
+        console.error('Error saving image:', error);
+        alert('Failed to save image. Please try again.');
+        setLoading(false);
+      }
+    }
+  };
+
   const tabs = [
     { id: 'profile', name: 'Personal Info', icon: UserCircleIcon },
     { id: 'orders', name: 'Order History', icon: ShoppingBagIcon },
@@ -364,12 +443,63 @@ const Profile = () => {
     name: 'Demo User',
     email: 'demo@fabrico.com'
   };
+
+  // Color themes based on accent color
+  const colorThemes = {
+    blue: {
+      gradient: 'from-blue-600 via-indigo-600 to-purple-600',
+      lightGradient: 'from-blue-50 to-indigo-50',
+      accent: 'blue-600',
+      accentLight: 'blue-50',
+      accentDark: 'blue-700',
+      ring: 'ring-blue-500',
+      text: 'text-blue-600'
+    },
+    purple: {
+      gradient: 'from-purple-600 via-pink-600 to-red-600',
+      lightGradient: 'from-purple-50 to-pink-50',
+      accent: 'purple-600',
+      accentLight: 'purple-50',
+      accentDark: 'purple-700',
+      ring: 'ring-purple-500',
+      text: 'text-purple-600'
+    },
+    green: {
+      gradient: 'from-green-600 via-emerald-600 to-teal-600',
+      lightGradient: 'from-green-50 to-emerald-50',
+      accent: 'green-600',
+      accentLight: 'green-50',
+      accentDark: 'green-700',
+      ring: 'ring-green-500',
+      text: 'text-green-600'
+    },
+    orange: {
+      gradient: 'from-orange-600 via-red-600 to-pink-600',
+      lightGradient: 'from-orange-50 to-red-50',
+      accent: 'orange-600',
+      accentLight: 'orange-50',
+      accentDark: 'orange-700',
+      ring: 'ring-orange-500',
+      text: 'text-orange-600'
+    },
+    red: {
+      gradient: 'from-red-600 via-pink-600 to-rose-600',
+      lightGradient: 'from-red-50 to-pink-50',
+      accent: 'red-600',
+      accentLight: 'red-50',
+      accentDark: 'red-700',
+      ring: 'ring-red-500',
+      text: 'text-red-600'
+    }
+  };
+
+  const currentTheme = colorThemes[accentColor] || colorThemes.blue;
   
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Simple Header */}
+      {/* Simple Clean Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center space-x-4">
               <button
@@ -379,43 +509,125 @@ const Profile = () => {
                 <ArrowLeftIcon className="h-5 w-5" />
               </button>
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
-                <p className="text-sm text-gray-500">Manage your account information</p>
+                <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+                <p className="text-sm text-gray-600">Manage your account information</p>
+              </div>
+            </div>
+            
+            {/* Theme Selector */}
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600 mr-2">Theme:</span>
+              <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                {Object.keys(colorThemes).map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setAccentColor(color)}
+                    className={`w-8 h-8 rounded-md transition-all duration-200 ${
+                      accentColor === color ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : 'hover:scale-105'
+                    }`}
+                    style={{
+                      background: color === 'blue' ? '#3b82f6' :
+                                  color === 'purple' ? '#a855f7' :
+                                  color === 'green' ? '#10b981' :
+                                  color === 'orange' ? '#f97316' :
+                                  '#ef4444'
+                    }}
+                    title={`${color.charAt(0).toUpperCase() + color.slice(1)} theme`}
+                  />
+                ))}
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Simple Profile Header */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Simple Profile Header Card */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
           <div className="p-6">
             <div className="flex items-center space-x-6">
-              {/* Simple Avatar */}
-              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-2xl font-semibold">
-                  {(profileData.name || 'User').charAt(0).toUpperCase()}
-                </span>
+              {/* Profile Image */}
+              <div className="relative group">
+                <div className={`w-24 h-24 rounded-full overflow-hidden bg-${currentTheme.accent} flex items-center justify-center shadow-md ring-4 ring-${currentTheme.accentLight}`}>
+                  {imagePreview || profileData.profileImageUrl ? (
+                    <img 
+                      src={imagePreview || profileData.profileImageUrl} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-white text-3xl font-bold">
+                      {(profileData.name || 'User').charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Upload Button - Always visible on hover */}
+                <div className="absolute bottom-0 right-0 opacity-100">
+                  <label className={`cursor-pointer bg-${currentTheme.accent} hover:bg-${currentTheme.accentDark} text-white p-2.5 rounded-full shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center border-2 border-white`}>
+                    <CameraIcon className="h-4 w-4" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                
+                {/* Image Preview Actions - Save/Cancel */}
+                {imagePreview && (
+                  <div className="absolute -top-2 -right-2 flex space-x-1">
+                    <button
+                      onClick={handleSaveImage}
+                      disabled={loading}
+                      className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110 disabled:opacity-50 border-2 border-white"
+                      title="Save image"
+                    >
+                      <CheckIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setImagePreview(null);
+                        setProfileImage(null);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110 border-2 border-white"
+                      title="Cancel"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                
+                {/* Remove Image Button */}
+                {profileData.profileImageUrl && !imagePreview && (
+                  <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={handleRemoveImage}
+                      className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110 border-2 border-white"
+                      title="Remove image"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
               
               {/* User Info */}
               <div className="flex-1">
-                <h2 className="text-2xl font-semibold text-gray-900">{profileData.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{profileData.name}</h2>
                 <p className="text-gray-600 flex items-center mt-1">
                   <EnvelopeIcon className="h-4 w-4 mr-2" />
                   {profileData.email}
                 </p>
-                <div className="flex items-center space-x-4 mt-3">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                <div className="flex items-center space-x-3 mt-3">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-${currentTheme.accentLight} text-${currentTheme.accent}`}>
                     <StarIcon className="h-3 w-3 mr-1" />
                     {stats.currentTier}
                   </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    Member since {new Date(stats.memberSince).getFullYear() || '2023'}
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {stats.totalOrders} orders
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                    <CalendarDaysIcon className="h-3 w-3 mr-1" />
+                    Since {new Date(stats.memberSince).getFullYear()}
                   </span>
                 </div>
               </div>
@@ -423,77 +635,98 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Enhanced Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center">
+        {/* Simple Welcome Message for New Users */}
+        {stats.totalOrders === 0 && (
+          <div className={`bg-${currentTheme.accent} rounded-lg p-6 mb-6 text-white shadow-sm`}>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-xl font-bold mb-2 text-white">Welcome to FabricSpa! 🎉</h3>
+                <p className="text-white opacity-90 mb-4">
+                  Ready to experience premium laundry services? Start your journey with us today.
+                </p>
+                <button 
+                  onClick={() => navigate('/schedule-pickup')}
+                  className="bg-white ${currentTheme.text} px-6 py-2 rounded-lg font-semibold hover:bg-gray-50 transition-colors inline-flex items-center space-x-2">
+                  <span>Schedule Your First Pickup</span>
+                  <BoltIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Simple Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Orders</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
+              </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <ShoppingBagIcon className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.totalOrders}</p>
-              </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Total Spent</p>
+                <p className="text-3xl font-bold text-gray-900">{formatCurrency(stats.totalSpent)}</p>
+              </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-green-600 font-semibold text-lg">$</span>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Spent</p>
-                <p className="text-2xl font-semibold text-gray-900">{formatCurrency(stats.totalSpent)}</p>
+                <span className="text-green-600 font-bold text-xl">$</span>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">Loyalty Points</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.loyaltyPoints}</p>
+              </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <StarIcon className="h-6 w-6 text-yellow-600" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Loyalty Points</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.loyaltyPoints}</p>
-              </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                <GlobeAltIcon className="h-6 w-6 text-emerald-600" />
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600 mb-1">CO₂ Saved</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.co2Saved}<span className="text-lg">kg</span></p>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">CO₂ Saved</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.co2Saved}kg</p>
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <GlobeAltIcon className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Simple Sidebar Navigation */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Settings</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Settings</h3>
               <nav className="space-y-2">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                        activeTab === tab.id
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                        isActive
+                          ? `bg-${currentTheme.accentLight} text-${currentTheme.accent} font-semibold border-l-4 border-${currentTheme.accent}`
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
                       <Icon className="h-5 w-5" />
-                      <span className="font-medium">{tab.name}</span>
+                      <span>{tab.name}</span>
                     </button>
                   );
                 })}
@@ -508,14 +741,26 @@ const Profile = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">Personal Information</h2>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">Personal Information</h2>
+                      <p className="text-sm text-gray-600 mt-1">Update your profile details and preferences</p>
+                    </div>
                     <button
                       onClick={() => setIsEditing(!isEditing)}
                       disabled={loading}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                      className={`flex items-center space-x-2 px-5 py-2.5 bg-${currentTheme.accent} hover:bg-${currentTheme.accentDark} text-white rounded-lg transition-colors disabled:opacity-50`}
                     >
-                      <PencilIcon className="h-4 w-4" />
-                      <span>{isEditing ? 'Cancel' : 'Edit Profile'}</span>
+                      {isEditing ? (
+                        <>
+                          <XMarkIcon className="h-4 w-4" />
+                          <span className="font-semibold">Cancel</span>
+                        </>
+                      ) : (
+                        <>
+                          <PencilIcon className="h-4 w-4" />
+                          <span className="font-semibold">Edit Profile</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -531,13 +776,12 @@ const Profile = () => {
                           type="text"
                           value={profileData.name}
                           onChange={(e) => handleInputChange('name', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
                           placeholder="Enter your full name"
                         />
                       ) : (
-                        <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 flex items-center space-x-2">
-                          <UserCircleIcon className="h-5 w-5 text-gray-500" />
-                          <span>{profileData.name}</span>
+                        <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
+                          <span className="font-medium text-gray-900">{profileData.name}</span>
                         </div>
                       )}
                     </div>
@@ -551,13 +795,12 @@ const Profile = () => {
                           type="email"
                           value={profileData.email}
                           onChange={(e) => handleInputChange('email', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
                           placeholder="Enter your email"
                         />
                       ) : (
-                        <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 flex items-center space-x-2">
-                          <EnvelopeIcon className="h-5 w-5 text-gray-500" />
-                          <span>{profileData.email}</span>
+                        <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
+                          <span className="font-medium text-gray-900">{profileData.email}</span>
                         </div>
                       )}
                     </div>
@@ -571,13 +814,12 @@ const Profile = () => {
                           type="tel"
                           value={profileData.phone}
                           onChange={(e) => handleInputChange('phone', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
                           placeholder="Enter your phone number"
                         />
                       ) : (
-                        <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 flex items-center space-x-2">
-                          <PhoneIcon className="h-5 w-5 text-gray-500" />
-                          <span>{profileData.phone}</span>
+                        <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
+                          <span className="font-medium text-gray-900">{profileData.phone}</span>
                         </div>
                       )}
                     </div>
@@ -591,12 +833,11 @@ const Profile = () => {
                           type="date"
                           value={profileData.dateOfBirth}
                           onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
                         />
                       ) : (
-                        <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 flex items-center space-x-2">
-                          <CalendarDaysIcon className="h-5 w-5 text-gray-500" />
-                          <span>{formatDate(profileData.dateOfBirth)}</span>
+                        <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
+                          <span className="font-medium text-gray-900">{formatDate(profileData.dateOfBirth)}</span>
                         </div>
                       )}
                     </div>
@@ -609,7 +850,7 @@ const Profile = () => {
                         <select
                           value={profileData.gender}
                           onChange={(e) => handleInputChange('gender', e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
                         >
                           <option value="male">Male</option>
                           <option value="female">Female</option>
@@ -617,11 +858,19 @@ const Profile = () => {
                           <option value="prefer-not-to-say">Prefer not to say</option>
                         </select>
                       ) : (
-                        <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 flex items-center space-x-2">
-                          <UserCircleIcon className="h-5 w-5 text-gray-500" />
-                          <span className="capitalize">{profileData.gender.replace('-', ' ')}</span>
+                        <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
+                          <span className="font-medium capitalize text-gray-900">{profileData.gender.replace('-', ' ')}</span>
                         </div>
                       )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Member Since
+                      </label>
+                      <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
+                        <span className="font-medium text-gray-900">{formatDate(stats.memberSince)}</span>
+                      </div>
                     </div>
 
                     <div className="md:col-span-2">
@@ -632,46 +881,41 @@ const Profile = () => {
                         <textarea
                           value={profileData.bio}
                           onChange={(e) => handleInputChange('bio', e.target.value)}
-                          rows={3}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          rows={4}
+                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium resize-none text-gray-900 bg-white"
                           placeholder="Tell us about yourself..."
                         />
                       ) : (
-                        <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
-                          <span>{profileData.bio}</span>
+                        <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
+                          <span className="text-gray-900">{profileData.bio}</span>
                         </div>
                       )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Member Since
-                      </label>
-                      <div className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900 flex items-center space-x-2">
-                        <CalendarDaysIcon className="h-5 w-5 text-gray-500" />
-                        <span>{formatDate(stats.memberSince)}</span>
-                      </div>
                     </div>
                   </div>
                   
                   {isEditing && (
-                    <div className="flex space-x-4 mt-8">
+                    <div className="flex space-x-4 mt-6">
                       <button
                         onClick={handleSaveProfile}
                         disabled={loading}
-                        className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                        className={`flex items-center space-x-2 px-6 py-2.5 bg-${currentTheme.accent} hover:bg-${currentTheme.accentDark} text-white rounded-lg transition-colors disabled:opacity-50`}
                       >
                         {loading ? (
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Saving...</span>
+                          </>
                         ) : (
-                          <CheckIcon className="h-4 w-4" />
+                          <>
+                            <CheckIcon className="h-4 w-4" />
+                            <span>Save Changes</span>
+                          </>
                         )}
-                        <span>{loading ? 'Saving...' : 'Save Changes'}</span>
                       </button>
                       <button
                         onClick={() => setIsEditing(false)}
                         disabled={loading}
-                        className="flex items-center space-x-2 px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors disabled:opacity-50"
+                        className="flex items-center space-x-2 px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
                       >
                         <XMarkIcon className="h-4 w-4" />
                         <span>Cancel</span>
@@ -987,35 +1231,35 @@ const Profile = () => {
                 
                 <div className="p-6 space-y-8">
                   {/* Current Status */}
-                  <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-6">
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-yellow-200 rounded-full flex items-center justify-center">
-                          <StarIcon className="h-6 w-6 text-yellow-600" />
+                        <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center">
+                          <StarIcon className="h-6 w-6 text-purple-600" />
                         </div>
                         <div>
                           <h3 className="text-xl font-semibold text-gray-900">{stats.currentTier}</h3>
-                          <p className="text-sm text-gray-600">Current membership tier</p>
+                          <p className="text-sm text-gray-600">Welcome to FabricSpa!</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-yellow-600">{stats.loyaltyPoints}</p>
+                        <p className="text-2xl font-bold text-purple-600">{stats.loyaltyPoints}</p>
                         <p className="text-sm text-gray-600">Points available</p>
                       </div>
                     </div>
                     
                     <div className="mb-4">
                       <div className="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>Progress to Platinum</span>
-                        <span>1,250 / 2,000 points</span>
+                        <span>Progress to Silver</span>
+                        <span>0 / 100 points</span>
                       </div>
-                      <div className="w-full bg-yellow-200 rounded-full h-2">
-                        <div className="bg-yellow-500 h-2 rounded-full" style={{width: '62.5%'}}></div>
+                      <div className="w-full bg-purple-200 rounded-full h-2">
+                        <div className="bg-purple-500 h-2 rounded-full" style={{width: '0%'}}></div>
                       </div>
                     </div>
                     
                     <p className="text-sm text-gray-600">
-                      You need <span className="font-semibold">750 more points</span> to reach Platinum tier and unlock exclusive benefits!
+                      Place your first order to start earning points and unlock <span className="font-semibold">Silver tier benefits</span>!
                     </p>
                   </div>
                   

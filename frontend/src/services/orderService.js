@@ -1,4 +1,6 @@
 // Order Service - Manages orders across the application
+import { isActiveStatus, isCompletedStatus } from '../utils/orderStatusUtils.js';
+
 class OrderService {
   constructor() {
     this.storageKey = 'fabrico_orders';
@@ -13,7 +15,7 @@ class OrderService {
         {
           id: 'ORD-001',
           service: 'Wash & Fold',
-          status: 'Pending',
+          status: 'wash-in-progress',
           orderDate: '2024-01-20',
           pickupDate: '2024-01-21',
           deliveryDate: '2024-01-23',
@@ -31,6 +33,13 @@ class OrderService {
             { name: 'T-Shirts', quantity: 5, price: 10.00 },
             { name: 'Jeans', quantity: 2, price: 8.00 },
             { name: 'Shirts', quantity: 3, price: 6.99 },
+          ],
+          statusHistory: [
+            { status: 'order-placed', timestamp: '2024-01-20T10:00:00Z', note: 'Order placed by customer' },
+            { status: 'order-accepted', timestamp: '2024-01-20T11:00:00Z', note: 'Order accepted by admin' },
+            { status: 'out-for-pickup', timestamp: '2024-01-21T08:00:00Z', note: 'Driver dispatched for pickup' },
+            { status: 'pickup-completed', timestamp: '2024-01-21T10:30:00Z', note: 'Items collected successfully' },
+            { status: 'wash-in-progress', timestamp: '2024-01-21T11:00:00Z', note: 'Washing process started' }
           ],
           createdAt: new Date('2024-01-20').toISOString()
         }
@@ -136,8 +145,7 @@ class OrderService {
   // Get active orders (not delivered or cancelled)
   getActiveOrders() {
     const orders = this.getAllOrders();
-    const activeStatuses = ['Pending', 'Approved', 'Pick Up In Progress', 'Pick Up Completed', 'Wash Done', 'Out For Delivery'];
-    return orders.filter(order => activeStatuses.includes(order.status));
+    return orders.filter(order => isActiveStatus(order.status));
   }
 
   // Delete order
@@ -168,7 +176,7 @@ class OrderService {
   getOrderStats() {
     const orders = this.getAllOrders();
     const activeOrders = this.getActiveOrders();
-    const completedOrders = orders.filter(order => order.status === 'Delivered');
+    const completedOrders = orders.filter(order => isCompletedStatus(order.status));
     const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
 
     return {

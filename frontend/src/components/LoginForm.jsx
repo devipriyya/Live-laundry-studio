@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -6,7 +6,6 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -31,7 +30,6 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
   const [resetEmail, setResetEmail] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
-  const { adminDemoLogin } = useContext(AuthContext);
 
   const validateForm = () => {
     const newErrors = { ...initialErrors };
@@ -74,24 +72,6 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
     setErrors((prev) => ({ ...prev, general: "", success: "" }));
 
     try {
-      // Check for admin demo login
-      if (form.email === "admin@gmail.com" && form.password === "admin123") {
-        console.log("Admin login detected, logging in...");
-        
-        // Use the adminDemoLogin from AuthContext
-        adminDemoLogin();
-        
-        // Close the modal if onClose is provided
-        if (onClose) {
-          onClose();
-        }
-        
-        // Navigate to admin test page first to verify auth is working
-        console.log("Navigating to admin test page...");
-        navigate("/admin-test");
-        return;
-      }
-
       const userCredential = await signInWithEmailAndPassword(
         auth,
         form.email,

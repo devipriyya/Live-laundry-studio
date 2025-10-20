@@ -18,6 +18,7 @@ const DashboardProducts = React.lazy(() => import('./pages/dashboard/DashboardPr
 const DashboardStore = React.lazy(() => import('./pages/dashboard/DashboardStore'));
 const DashboardLegal = React.lazy(() => import('./pages/dashboard/DashboardLegal'));
 const DashboardAbout = React.lazy(() => import('./pages/dashboard/DashboardAbout'));
+const DashboardShoeCleaning = React.lazy(() => import('./pages/dashboard/DashboardShoeCleaning'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const AdminDashboardTest = React.lazy(() => import('./pages/AdminDashboardTest'));
 const AdminDashboardFixed = React.lazy(() => import('./pages/AdminDashboardFixed'));
@@ -68,6 +69,7 @@ function App() {
               <Route path="home" element={<DashboardHome />} />
               <Route path="profile" element={<DashboardProfile />} />
               <Route path="laundry" element={<DashboardLaundry />} />
+              <Route path="shoe-cleaning" element={<DashboardShoeCleaning />} />
               <Route path="schedule" element={<DashboardSchedule />} />
               <Route path="orders" element={<DashboardOrders />} />
               <Route path="payment" element={<DashboardPayment />} />

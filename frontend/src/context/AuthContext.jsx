@@ -44,15 +44,21 @@ export const AuthProvider = ({ children }) => {
     auth.signOut();
     setUser(null);
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
   };
 
-  const demoLogin = () => {
+  const demoLogin = async () => {
     const demoUser = {
       uid: 'demo-user',
       email: 'demo@fabrico.com',
       name: 'Demo User',
       role: 'customer',
     };
+    
+    // Generate a demo JWT token for backend compatibility
+    const demoToken = 'demo-jwt-token-' + Date.now();
+    localStorage.setItem('token', demoToken);
+    
     setUser(demoUser);
     localStorage.setItem('user', JSON.stringify(demoUser));
   };

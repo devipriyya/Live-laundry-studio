@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import OrderManagement from '../components/OrderManagement';
+import AdminOrderManagement from '../components/AdminOrderManagement';
 import CustomerManagement from '../components/CustomerManagement';
 import StaffManagement from '../components/StaffManagement';
 import InventoryManagement from '../components/InventoryManagement';
@@ -752,7 +753,7 @@ const AdminDashboard = () => {
             </div>
           )}
           
-          {activeSection === 'orders' && <OrderManagement />}
+          {activeSection === 'orders' && <AdminOrderManagement />}
           {activeSection === 'customers' && <CustomerManagement />}
           {activeSection === 'staff' && <StaffManagement />}
           {activeSection === 'inventory' && <InventoryManagement />}

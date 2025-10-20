@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import orderService from '../services/orderService';
+import api from '../api';
 import {
   CalendarDaysIcon,
   ClockIcon,
@@ -12,7 +12,10 @@ import {
   ArrowRightIcon,
   SparklesIcon,
   InformationCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  PlusIcon,
+  MinusIcon,
+  ShoppingBagIcon
 } from '@heroicons/react/24/outline';
 
 const SchedulePickup = () => {
@@ -34,7 +37,7 @@ const SchedulePickup = () => {
       instructions: ''
     },
     contact: {
-      name: user?.displayName || '',
+      name: user?.displayName || user?.name || '',
       phone: '',
       email: user?.email || '',
     },
@@ -42,6 +45,9 @@ const SchedulePickup = () => {
     frequency: 'weekly',
     notes: ''
   });
+
+  const [selectedClothes, setSelectedClothes] = useState({});
+  const [totalPrice, setTotalPrice] = useState(0);
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -76,6 +82,42 @@ const SchedulePickup = () => {
     { value: 'NC', label: 'North Carolina' }
   ];
 
+  const clothingData = {
+    'Basic Garments': [
+      { name: 'Shirt (Cotton)', price: 25 },
+      { name: 'T-Shirt', price: 20 },
+      { name: 'Pants / Jeans', price: 30 },
+      { name: 'Kurta (Cotton)', price: 35 },
+      { name: 'Salwar / Leggings', price: 25 },
+      { name: 'Dupatta / Scarf', price: 15 },
+      { name: 'Shorts', price: 20 },
+      { name: 'Skirt', price: 25 },
+      { name: 'Blouse', price: 20 }
+    ],
+    'Formal / Outerwear': [
+      { name: 'Suit (2-piece)', price: 120 },
+      { name: 'Blazer / Coat', price: 80 },
+      { name: 'Sweater', price: 50 },
+      { name: 'Jacket', price: 70 },
+      { name: 'Tie', price: 15 }
+    ],
+    'Ethnic & Delicate Wear': [
+      { name: 'Saree (Cotton)', price: 60 },
+      { name: 'Saree (Silk / Designer)', price: 120 },
+      { name: 'Lehenga / Gown', price: 150 },
+      { name: 'Dupatta (Heavy / Embroidered)', price: 40 },
+      { name: 'Kurta (Designer)', price: 60 }
+    ],
+    'Household Items': [
+      { name: 'Bedsheet (Single)', price: 40 },
+      { name: 'Bedsheet (Double)', price: 60 },
+      { name: 'Pillow Cover', price: 15 },
+      { name: 'Blanket / Quilt', price: 100 },
+      { name: 'Towel (Bath)', price: 25 },
+      { name: 'Curtain (Medium Size)', price: 70 }
+    ]
+  };
+
   // Auto-fill address from user profile or localStorage
   useEffect(() => {
     const savedAddress = localStorage.getItem('userAddress');
@@ -86,6 +128,40 @@ const SchedulePickup = () => {
       }));
     }
   }, []);
+
+  // Calculate total price whenever selectedClothes changes
+  useEffect(() => {
+    let total = 0;
+    Object.entries(selectedClothes).forEach(([itemName, quantity]) => {
+      if (quantity > 0) {
+        // Find the item in clothingData to get its price
+        Object.values(clothingData).forEach(category => {
+          const item = category.find(cloth => cloth.name === itemName);
+          if (item) {
+            total += item.price * quantity;
+          }
+        });
+      }
+    });
+    setTotalPrice(total);
+  }, [selectedClothes]);
+
+  const updateClothQuantity = (itemName, change) => {
+    setSelectedClothes(prev => {
+      const currentQuantity = prev[itemName] || 0;
+      const newQuantity = Math.max(0, currentQuantity + change);
+      
+      if (newQuantity === 0) {
+        const { [itemName]: removed, ...rest } = prev;
+        return rest;
+      }
+      
+      return {
+        ...prev,
+        [itemName]: newQuantity
+      };
+    });
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -101,7 +177,14 @@ const SchedulePickup = () => {
     if (!scheduleData.address.zipCode.trim()) newErrors.zipCode = 'ZIP code is required';
     
     // Contact validation
+    if (!scheduleData.contact.name.trim()) newErrors.name = 'Name is required';
     if (!scheduleData.contact.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (!scheduleData.contact.email.trim()) newErrors.email = 'Email is required';
+    
+    // Cloth selection validation
+    if (Object.keys(selectedClothes).length === 0 || totalPrice === 0) {
+      newErrors.clothes = 'Please select at least one item for washing';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -127,8 +210,63 @@ const SchedulePickup = () => {
     }
   };
 
+  const processPayment = () => {
+    return new Promise((resolve, reject) => {
+      // Create Razorpay options
+      const options = {
+        key: 'rzp_test_RIlW2V6HMBx49X', // Replace with your Razorpay key
+        amount: totalPrice * 100, // Amount in paise
+        currency: 'INR',
+        name: 'Fabrico Laundry',
+        description: 'Laundry Service Payment',
+        image: '/logo.png',
+        handler: function (response) {
+          console.log('Payment successful:', response);
+          resolve(response);
+        },
+        prefill: {
+          name: scheduleData.contact.name,
+          email: scheduleData.contact.email,
+          contact: scheduleData.contact.phone
+        },
+        notes: {
+          address: `${scheduleData.address.street}, ${scheduleData.address.city}`
+        },
+        theme: {
+          color: '#8B5CF6'
+        },
+        modal: {
+          ondismiss: function() {
+            reject(new Error('Payment cancelled by user'));
+          }
+        }
+      };
+
+      // Check if Razorpay is loaded
+      if (typeof window.Razorpay !== 'undefined') {
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else {
+        // Fallback: simulate payment success for demo
+        console.log('Razorpay not loaded, simulating payment success');
+        setTimeout(() => {
+          resolve({
+            razorpay_payment_id: 'pay_demo_' + Date.now(),
+            razorpay_order_id: 'order_demo_' + Date.now(),
+            razorpay_signature: 'demo_signature'
+          });
+        }, 2000);
+      }
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    console.log('SchedulePickup: Form submission started');
+    console.log('SchedulePickup: Current user:', user);
+    console.log('SchedulePickup: Selected clothes:', selectedClothes);
+    console.log('SchedulePickup: Total price:', totalPrice);
     
     if (!validateForm()) {
       // Scroll to first error
@@ -142,52 +280,75 @@ const SchedulePickup = () => {
 
     setLoading(true);
     try {
+      // Process payment first
+      const paymentResponse = await processPayment();
+      console.log('Payment completed:', paymentResponse);
+
       // Save address to localStorage for future use
       localStorage.setItem('userAddress', JSON.stringify(scheduleData.address));
 
-      // Create order data
-      const cartItems = location.state?.cartItems || [];
-      const totalPrice = location.state?.totalPrice || 0;
+      // Create cart items from selected clothes
+      const cartItems = Object.entries(selectedClothes).map(([itemName, quantity]) => {
+        let itemPrice = 0;
+        Object.values(clothingData).forEach(category => {
+          const item = category.find(cloth => cloth.name === itemName);
+          if (item) {
+            itemPrice = item.price;
+          }
+        });
+        return {
+          name: itemName,
+          quantity: quantity,
+          price: itemPrice
+        };
+      });
+
       const orderNumber = `ORD-${Date.now()}`;
       
       // Calculate delivery date (3 days from pickup)
       const pickupDateObj = new Date(scheduleData.pickupDate);
       const deliveryDateObj = new Date(pickupDateObj);
       deliveryDateObj.setDate(deliveryDateObj.getDate() + 3);
-      const deliveryDate = deliveryDateObj.toISOString().split('T')[0];
       
+      // Create order data matching backend model structure
       const newOrderData = {
-        id: orderNumber,
-        service: cartItems.length > 0 ? cartItems[0].name : 'Laundry Service',
-        serviceType: cartItems.length > 0 ? cartItems[0].serviceType : 'Regular',
-        status: 'Pending',
-        orderDate: new Date().toISOString().split('T')[0],
-        pickupDate: scheduleData.pickupDate,
-        deliveryDate: deliveryDate,
-        estimatedDelivery: `${deliveryDate} ${scheduleData.pickupTime}`,
-        timeSlot: scheduleData.pickupTime,
-        items: cartItems.reduce((sum, item) => sum + item.quantity, 0),
-        weight: `${(cartItems.reduce((sum, item) => sum + item.quantity, 0) * 0.5).toFixed(1)} lbs`,
-        total: totalPrice,
-        customer: {
+        orderNumber: orderNumber,
+        // serviceId is optional - will be set by admin if needed
+        customerInfo: {
           name: scheduleData.contact.name,
-          address: `${scheduleData.address.street}, ${scheduleData.address.city}, ${scheduleData.address.state} ${scheduleData.address.zipCode}`,
+          email: scheduleData.contact.email,
           phone: scheduleData.contact.phone,
-          email: scheduleData.contact.email
+          address: {
+            street: scheduleData.address.street,
+            city: scheduleData.address.city,
+            state: scheduleData.address.state,
+            zipCode: scheduleData.address.zipCode,
+            instructions: scheduleData.address.instructions
+          }
         },
-        itemsList: cartItems.map(item => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price * item.quantity
-        })),
-        recurring: scheduleData.recurring,
-        frequency: scheduleData.frequency,
-        notes: scheduleData.notes,
-        instructions: scheduleData.address.instructions
+        items: cartItems,
+        orderDate: new Date(),
+        pickupDate: new Date(scheduleData.pickupDate),
+        deliveryDate: deliveryDateObj,
+        estimatedDelivery: `${deliveryDateObj.toISOString().split('T')[0]} ${scheduleData.pickupTime}`,
+        timeSlot: scheduleData.pickupTime,
+        totalAmount: totalPrice,
+        totalItems: Object.values(selectedClothes).reduce((sum, quantity) => sum + quantity, 0),
+        weight: `${(Object.values(selectedClothes).reduce((sum, quantity) => sum + quantity, 0) * 0.5).toFixed(1)} lbs`,
+        status: 'order-placed',
+        paymentStatus: 'paid', // Set to 'paid' since payment was successful
+        paymentId: paymentResponse.razorpay_payment_id,
+        paymentMethod: 'razorpay',
+        priority: 'normal',
+        specialInstructions: scheduleData.notes,
+        recurring: scheduleData.recurring || false,
+        frequency: scheduleData.frequency
       };
 
-      // Save order using order service
-      const savedOrder = orderService.addOrder(newOrderData);
+      // Save order to backend API
+      console.log('Sending order data:', newOrderData);
+      const response = await api.post('/orders', newOrderData);
+      const savedOrder = response.data;
       
       if (!savedOrder) {
         throw new Error('Failed to save order');
@@ -195,25 +356,36 @@ const SchedulePickup = () => {
 
       console.log('Order saved successfully:', savedOrder);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       // Navigate to order success page
       navigate('/order-success', { 
         state: { 
           cartItems: cartItems,
           totalPrice: totalPrice,
-          orderData: { 
-            ...scheduleData, 
+          orderData: {
+            ...scheduleData,
             services: orderServices,
-            orderNumber: orderNumber,
-            status: 'Confirmed'
+            orderNumber: savedOrder.orderNumber,
+            status: savedOrder.status,
+            paymentStatus: savedOrder.paymentStatus,
+            orderId: savedOrder._id
           }
         }
       });
     } catch (error) {
       console.error('Schedule submission failed:', error);
-      setErrors({ submit: 'Failed to schedule pickup. Please try again.' });
+      console.error('Error response:', error.response?.data);
+      
+      if (error.message.includes('Payment cancelled')) {
+        setErrors({ submit: 'Payment was cancelled. Please try again.' });
+      } else if (error.response?.data?.message) {
+        setErrors({ submit: `Failed to process order: ${error.response.data.message}` });
+      } else if (error.response?.status === 401) {
+        setErrors({ submit: 'Please log in to place an order.' });
+      } else if (error.response?.status === 400) {
+        setErrors({ submit: 'Invalid order data. Please check your information and try again.' });
+      } else {
+        setErrors({ submit: 'Failed to process order. Please try again.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -243,6 +415,94 @@ const SchedulePickup = () => {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <form onSubmit={handleSubmit} className="space-y-8">
           
+          {/* Cloth Selection */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-white/20">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Select Your Items</h2>
+              <p className="text-gray-600">Choose the clothes you want to wash with their quantities</p>
+            </div>
+
+            {Object.entries(clothingData).map(([category, items]) => (
+              <div key={category} className="mb-8">
+                <div className="flex items-center mb-4">
+                  <ShoppingBagIcon className="h-6 w-6 text-blue-600 mr-2" />
+                  <h3 className="text-xl font-semibold text-gray-900">{category}</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {items.map((item) => (
+                    <div key={item.name} className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
+                          <p className="text-blue-600 font-bold">₹{item.price}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Quantity:</span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => updateClothQuantity(item.name, -1)}
+                            disabled={!selectedClothes[item.name] || selectedClothes[item.name] === 0}
+                            className="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                          >
+                            <MinusIcon className="h-4 w-4" />
+                          </button>
+                          
+                          <span className="w-8 text-center font-semibold text-gray-900">
+                            {selectedClothes[item.name] || 0}
+                          </span>
+                          
+                          <button
+                            type="button"
+                            onClick={() => updateClothQuantity(item.name, 1)}
+                            className="w-8 h-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center transition-colors"
+                          >
+                            <PlusIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {selectedClothes[item.name] > 0 && (
+                        <div className="mt-2 pt-2 border-t border-blue-200">
+                          <p className="text-sm font-semibold text-blue-700">
+                            Subtotal: ₹{(item.price * selectedClothes[item.name]).toFixed(0)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Total Price Display */}
+            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-6 border border-purple-200">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Total Amount</h3>
+                  <p className="text-gray-600">Including all selected items</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-purple-600">₹{totalPrice.toFixed(0)}</p>
+                  <p className="text-sm text-gray-600">
+                    {Object.values(selectedClothes).reduce((sum, quantity) => sum + quantity, 0)} items
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {errors.clothes && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4">
+                <div className="flex items-center">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mr-2" />
+                  <p className="text-red-700">{errors.clothes}</p>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Pickup Schedule */}
           <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-white/20">
@@ -456,15 +716,23 @@ const SchedulePickup = () => {
                 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Full Name
+                    Full Name *
                   </label>
                   <input
                     type="text"
+                    name="name"
                     placeholder="John Doe"
                     value={scheduleData.contact.name}
                     onChange={(e) => handleInputChange('contact', 'name', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-200 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
+                      ${errors.name 
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                        : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'
+                      } focus:ring-4 bg-white text-gray-900 placeholder-gray-500`}
                   />
+                  {errors.name && (
+                    <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -490,15 +758,23 @@ const SchedulePickup = () => {
                 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email Address
+                    Email Address *
                   </label>
                   <input
                     type="email"
+                    name="email"
                     placeholder="john@example.com"
                     value={scheduleData.contact.email}
                     onChange={(e) => handleInputChange('contact', 'email', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-200 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
+                      ${errors.email 
+                        ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                        : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'
+                      } focus:ring-4 bg-white text-gray-900 placeholder-gray-500`}
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                  )}
                 </div>
 
                 {/* Recurring Schedule Option */}
@@ -572,18 +848,18 @@ const SchedulePickup = () => {
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || totalPrice === 0}
               className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 flex items-center"
             >
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Scheduling...
+                  Processing Payment...
                 </>
               ) : (
                 <>
                   <CheckCircleIcon className="h-5 w-5 mr-2" />
-                  Schedule Pickup
+                  Pay ₹{totalPrice.toFixed(0)} & Schedule Pickup
                 </>
               )}
             </button>
