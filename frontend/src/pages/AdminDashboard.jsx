@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import OrderManagement from '../components/OrderManagement';
 import AdminOrderManagement from '../components/AdminOrderManagement';
 import CustomerManagement from '../components/CustomerManagement';
+import CustomerManagementFixed from '../components/CustomerManagementFixed';
+import CustomerManagementTest from '../components/CustomerManagementTest';
 import StaffManagement from '../components/StaffManagement';
 import InventoryManagement from '../components/InventoryManagement';
 import PaymentManagement from '../components/PaymentManagement';
@@ -122,9 +124,18 @@ const AdminDashboard = () => {
     },
     { 
       id: 'customers', 
-      name: 'Customer Management', 
+      name: 'Customer Management (FIXED)', 
       icon: UsersIcon, 
-      description: 'Customer Profiles & Data',
+      description: 'Customer Profiles & Data - Now Working!',
+      badge: null,
+      activeClasses: 'bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-r-4 border-purple-500 shadow-sm',
+      iconActiveClass: 'text-purple-600'
+    },
+    { 
+      id: 'customer-test', 
+      name: 'Customer Test', 
+      icon: UserIcon, 
+      description: 'Test Customer Data',
       badge: null,
       activeClasses: 'bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-r-4 border-purple-500 shadow-sm',
       iconActiveClass: 'text-purple-600'
@@ -754,7 +765,8 @@ const AdminDashboard = () => {
           )}
           
           {activeSection === 'orders' && <AdminOrderManagement />}
-          {activeSection === 'customers' && <CustomerManagement />}
+          {activeSection === 'customers' && <CustomerManagementFixed />}
+          {activeSection === 'customer-test' && <CustomerManagementTest />}
           {activeSection === 'staff' && <StaffManagement />}
           {activeSection === 'inventory' && <InventoryManagement />}
           {activeSection === 'payments' && <PaymentManagement />}

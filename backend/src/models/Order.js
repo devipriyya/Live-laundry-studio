@@ -50,8 +50,11 @@ const OrderSchema = new mongoose.Schema({
       'pickup-completed',
       'wash-in-progress',
       'wash-completed',
+      'drying',
+      'quality-check',
       'out-for-delivery',
-      'delivery-completed'
+      'delivery-completed',
+      'cancelled'
     ],
     default: 'order-placed'
   },
@@ -59,11 +62,20 @@ const OrderSchema = new mongoose.Schema({
   // Payment Information
   paymentStatus: { 
     type: String, 
-    enum: ['pending', 'paid', 'failed', 'refunded'], 
+    enum: ['pending', 'paid', 'failed', 'refunded', 'refund-pending'], 
     default: 'pending' 
   },
   paymentId: String,
   paymentMethod: String,
+  
+  // Refund Information
+  refundInfo: {
+    amount: Number,
+    method: String,
+    refundId: String,
+    processedAt: Date,
+    processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
   
   // Additional Information
   priority: {

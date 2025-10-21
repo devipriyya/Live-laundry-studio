@@ -16,13 +16,10 @@ import {
   EyeIcon,
   EyeSlashIcon,
   CalendarDaysIcon,
-  ShoppingBagIcon,
   MapPinIcon,
   CogIcon,
   StarIcon,
   GiftIcon,
-  TruckIcon,
-  ClockIcon,
   HeartIcon,
   GlobeAltIcon,
   SparklesIcon,
@@ -33,7 +30,8 @@ import {
   FireIcon,
   BoltIcon,
   ChartBarIcon,
-  TrophyIcon
+  TrophyIcon,
+  ShoppingBagIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 
@@ -157,45 +155,6 @@ const Profile = () => {
     }
   }, [user]);
 
-  const recentOrders = [
-    {
-      id: 'ORD001',
-      service: 'Dry Cleaning',
-      items: ['2x Suits', '1x Dress', '2x Shirts'],
-      itemCount: 5,
-      amount: '45.99',
-      status: 'Completed',
-      date: '2024-01-15',
-      pickupDate: '2024-01-16',
-      deliveryAddress: 'Home Address',
-      specialInstructions: 'Handle with care'
-    },
-    {
-      id: 'ORD002', 
-      service: 'Wash & Fold',
-      items: ['4x T-shirts', '2x Jeans', '2x Towels'],
-      itemCount: 8,
-      amount: '32.50',
-      status: 'In Progress',
-      date: '2024-01-10',
-      pickupDate: '2024-01-12',
-      deliveryAddress: 'Home Address',
-      specialInstructions: 'Eco-friendly detergent'
-    },
-    {
-      id: 'ORD003',
-      service: 'Steam Press',
-      items: ['2x Shirts', '1x Pants'],
-      itemCount: 3,
-      amount: '28.75',
-      status: 'Ready for Pickup',
-      date: '2024-01-08',
-      pickupDate: '2024-01-09',
-      deliveryAddress: 'Office Address',
-      specialInstructions: 'Light starch'
-    }
-  ];
-
   const loyaltyRewards = [
     {
       id: 1,
@@ -225,6 +184,15 @@ const Profile = () => {
       ...prev,
       [field]: value
     }));
+
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   const [passwordData, setPasswordData] = useState({
@@ -239,6 +207,11 @@ const Profile = () => {
     confirm: false
   });
 
+  // Add validation error state
+  const [errors, setErrors] = useState({});
+  const [addressErrors, setAddressErrors] = useState({});
+  const [passwordErrors, setPasswordErrors] = useState({});
+
   const stats = {
     totalOrders: 0,
     totalSpent: 0.00,
@@ -249,8 +222,173 @@ const Profile = () => {
     currentTier: 'New Member'
   };
 
+  // Validation functions
+  const validateProfileData = (data) => {
+    const errors = {};
+
+    // Name validation
+    if (!data.name || data.name.trim().length === 0) {
+      errors.name = 'Name is required';
+    } else if (data.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters long';
+    } else if (data.name.trim().length > 50) {
+      errors.name = 'Name must be less than 50 characters';
+    }
+
+    // Email validation
+    if (!data.email || data.email.trim().length === 0) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      errors.email = 'Please enter a valid email address';
+    } else if (data.email.length > 100) {
+      errors.email = 'Email must be less than 100 characters';
+    }
+
+    // Phone validation
+    if (!data.phone || data.phone.trim().length === 0) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[+]?[0-9\s\-\(\)]{10,20}$/.test(data.phone)) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    // Date of birth validation
+    if (data.dateOfBirth) {
+      const dob = new Date(data.dateOfBirth);
+      const today = new Date();
+      const age = today.getFullYear() - dob.getFullYear();
+      
+      if (dob > today) {
+        errors.dateOfBirth = 'Date of birth cannot be in the future';
+      } else if (age > 120) {
+        errors.dateOfBirth = 'Please enter a valid date of birth';
+      }
+    }
+
+    // Bio validation
+    if (data.bio && data.bio.length > 500) {
+      errors.bio = 'Bio must be less than 500 characters';
+    }
+
+    return errors;
+  };
+
+  const validateAddress = (address) => {
+    const errors = {};
+
+    // Address name validation
+    if (!address.name || address.name.trim().length === 0) {
+      errors.name = 'Address name is required';
+    } else if (address.name.trim().length > 50) {
+      errors.name = 'Address name must be less than 50 characters';
+    }
+
+    // Street validation
+    if (!address.street || address.street.trim().length === 0) {
+      errors.street = 'Street address is required';
+    } else if (address.street.trim().length > 100) {
+      errors.street = 'Street address must be less than 100 characters';
+    }
+
+    // City validation
+    if (!address.city || address.city.trim().length === 0) {
+      errors.city = 'City is required';
+    } else if (address.city.trim().length > 50) {
+      errors.city = 'City must be less than 50 characters';
+    }
+
+    // State validation
+    if (!address.state || address.state.trim().length === 0) {
+      errors.state = 'State is required';
+    } else if (address.state.trim().length > 50) {
+      errors.state = 'State must be less than 50 characters';
+    }
+
+    // ZIP code validation
+    if (!address.zipCode || address.zipCode.trim().length === 0) {
+      errors.zipCode = 'ZIP code is required';
+    } else if (!/^[A-Za-z0-9\s\-]{3,10}$/.test(address.zipCode)) {
+      errors.zipCode = 'Please enter a valid ZIP code';
+    }
+
+    return errors;
+  };
+
+  const validatePassword = (passwordData) => {
+    const errors = {};
+
+    // Current password validation
+    if (!passwordData.currentPassword || passwordData.currentPassword.length === 0) {
+      errors.currentPassword = 'Current password is required';
+    } else if (passwordData.currentPassword.length < 6) {
+      errors.currentPassword = 'Current password must be at least 6 characters';
+    }
+
+    // New password validation
+    if (!passwordData.newPassword || passwordData.newPassword.length === 0) {
+      errors.newPassword = 'New password is required';
+    } else if (passwordData.newPassword.length < 8) {
+      errors.newPassword = 'New password must be at least 8 characters';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordData.newPassword)) {
+      errors.newPassword = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+    }
+
+    // Confirm password validation
+    if (!passwordData.confirmPassword || passwordData.confirmPassword.length === 0) {
+      errors.confirmPassword = 'Please confirm your new password';
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    return errors;
+  };
+
+  // Update address input handlers to clear errors
+  const handleAddressInputChange = (field, value) => {
+    setNewAddress(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Clear error for this field when user starts typing
+    if (addressErrors[field]) {
+      setAddressErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Update password input handlers to clear errors
+  const handlePasswordChange = (field, value) => {
+    setPasswordData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Clear error for this field when user starts typing
+    if (passwordErrors[field]) {
+      setPasswordErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+
   const handleSaveProfile = async () => {
+    // Validate profile data
+    const validationErrors = validateProfileData(profileData);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setErrors({});
     setLoading(true);
+    
     try {
       localStorage.setItem('fabricspa_profile', JSON.stringify(profileData));
       
@@ -272,11 +410,17 @@ const Profile = () => {
   };
 
   const handleChangePassword = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('New passwords do not match');
+    // Validate password data
+    const validationErrors = validatePassword(passwordData);
+    if (Object.keys(validationErrors).length > 0) {
+      setPasswordErrors(validationErrors);
       return;
     }
+
+    // Clear errors if validation passes
+    setPasswordErrors({});
     setLoading(true);
+    
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -284,12 +428,22 @@ const Profile = () => {
       alert('Password changed successfully');
     } catch (error) {
       console.error('Error changing password:', error);
+      alert('Failed to change password. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddAddress = () => {
+    // Validate address data
+    const validationErrors = validateAddress(newAddress);
+    if (Object.keys(validationErrors).length > 0) {
+      setAddressErrors(validationErrors);
+      return;
+    }
+
+    // Clear errors if validation passes
+    setAddressErrors({});
     const newId = Math.max(...addresses.map(a => a.id)) + 1;
     const addressToAdd = { ...newAddress, id: newId };
     setAddresses([...addresses, addressToAdd]);
@@ -345,7 +499,7 @@ const Profile = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   };
 
@@ -431,7 +585,6 @@ const Profile = () => {
 
   const tabs = [
     { id: 'profile', name: 'Personal Info', icon: UserCircleIcon },
-    { id: 'orders', name: 'Order History', icon: ShoppingBagIcon },
     { id: 'addresses', name: 'Addresses', icon: MapPinIcon },
     { id: 'preferences', name: 'Preferences', icon: CogIcon },
     { id: 'loyalty', name: 'Loyalty & Rewards', icon: GiftIcon },
@@ -496,15 +649,15 @@ const Profile = () => {
   const currentTheme = colorThemes[accentColor] || colorThemes.blue;
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50">
       {/* Simple Clean Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/')}
-                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={() => navigate('/dashboard/home')}
+                className="p-2 text-gray-600 hover:text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
               >
                 <ArrowLeftIcon className="h-5 w-5" />
               </button>
@@ -543,7 +696,7 @@ const Profile = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Simple Profile Header Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-yellow-200 mb-6">
           <div className="p-6">
             <div className="flex items-center space-x-6">
               {/* Profile Image */}
@@ -637,7 +790,7 @@ const Profile = () => {
 
         {/* Simple Welcome Message for New Users */}
         {stats.totalOrders === 0 && (
-          <div className={`bg-${currentTheme.accent} rounded-lg p-6 mb-6 text-white shadow-sm`}>
+          <div className="bg-gradient-to-r from-yellow-500 to-amber-500 rounded-lg p-6 mb-6 text-white shadow-sm">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="text-xl font-bold mb-2 text-white">Welcome to FabricSpa! 🎉</h3>
@@ -646,7 +799,7 @@ const Profile = () => {
                 </p>
                 <button 
                   onClick={() => navigate('/schedule-pickup')}
-                  className="bg-white ${currentTheme.text} px-6 py-2 rounded-lg font-semibold hover:bg-gray-50 transition-colors inline-flex items-center space-x-2">
+                  className={`bg-white ${currentTheme.text} px-6 py-2 rounded-lg font-semibold hover:bg-gray-50 transition-colors inline-flex items-center space-x-2`}>
                   <span>Schedule Your First Pickup</span>
                   <BoltIcon className="h-4 w-4" />
                 </button>
@@ -657,31 +810,31 @@ const Profile = () => {
 
         {/* Simple Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-lg border border-yellow-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">Total Orders</p>
                 <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <ShoppingBagIcon className="h-6 w-6 text-blue-600" />
+              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <ShoppingBagIcon className="h-6 w-6 text-yellow-600" />
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-lg border border-yellow-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">Total Spent</p>
                 <p className="text-3xl font-bold text-gray-900">{formatCurrency(stats.totalSpent)}</p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-green-600 font-bold text-xl">$</span>
+              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                <span className="text-amber-600 font-bold text-xl">$</span>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-lg border border-yellow-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">Loyalty Points</p>
@@ -693,7 +846,7 @@ const Profile = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-lg border border-yellow-200 p-6 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 mb-1">CO₂ Saved</p>
@@ -709,7 +862,7 @@ const Profile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Simple Sidebar Navigation */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-yellow-200 p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Settings</h3>
               <nav className="space-y-2">
                 {tabs.map((tab) => {
@@ -738,7 +891,7 @@ const Profile = () => {
           <div className="lg:col-span-3">
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-white rounded-lg shadow-sm border border-yellow-200">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div>
@@ -772,13 +925,20 @@ const Profile = () => {
                         Full Name
                       </label>
                       {isEditing ? (
-                        <input
-                          type="text"
-                          value={profileData.name}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
-                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
-                          placeholder="Enter your full name"
-                        />
+                        <>
+                          <input
+                            type="text"
+                            value={profileData.name}
+                            onChange={(e) => handleInputChange('name', e.target.value)}
+                            className={`w-full px-5 py-3.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white ${
+                              errors.name ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="Enter your full name"
+                          />
+                          {errors.name && (
+                            <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                          )}
+                        </>
                       ) : (
                         <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
                           <span className="font-medium text-gray-900">{profileData.name}</span>
@@ -791,13 +951,20 @@ const Profile = () => {
                         Email Address
                       </label>
                       {isEditing ? (
-                        <input
-                          type="email"
-                          value={profileData.email}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
-                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
-                          placeholder="Enter your email"
-                        />
+                        <>
+                          <input
+                            type="email"
+                            value={profileData.email}
+                            onChange={(e) => handleInputChange('email', e.target.value)}
+                            className={`w-full px-5 py-3.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white ${
+                              errors.email ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="Enter your email"
+                          />
+                          {errors.email && (
+                            <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                          )}
+                        </>
                       ) : (
                         <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
                           <span className="font-medium text-gray-900">{profileData.email}</span>
@@ -810,13 +977,20 @@ const Profile = () => {
                         Phone Number
                       </label>
                       {isEditing ? (
-                        <input
-                          type="tel"
-                          value={profileData.phone}
-                          onChange={(e) => handleInputChange('phone', e.target.value)}
-                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
-                          placeholder="Enter your phone number"
-                        />
+                        <>
+                          <input
+                            type="tel"
+                            value={profileData.phone}
+                            onChange={(e) => handleInputChange('phone', e.target.value)}
+                            className={`w-full px-5 py-3.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white ${
+                              errors.phone ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="Enter your phone number"
+                          />
+                          {errors.phone && (
+                            <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                          )}
+                        </>
                       ) : (
                         <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
                           <span className="font-medium text-gray-900">{profileData.phone}</span>
@@ -829,12 +1003,19 @@ const Profile = () => {
                         Date of Birth
                       </label>
                       {isEditing ? (
-                        <input
-                          type="date"
-                          value={profileData.dateOfBirth}
-                          onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white"
-                        />
+                        <>
+                          <input
+                            type="date"
+                            value={profileData.dateOfBirth}
+                            onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                            className={`w-full px-5 py-3.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium text-gray-900 bg-white ${
+                              errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                          />
+                          {errors.dateOfBirth && (
+                            <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth}</p>
+                          )}
+                        </>
                       ) : (
                         <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
                           <span className="font-medium text-gray-900">{formatDate(profileData.dateOfBirth)}</span>
@@ -878,13 +1059,20 @@ const Profile = () => {
                         Bio
                       </label>
                       {isEditing ? (
-                        <textarea
-                          value={profileData.bio}
-                          onChange={(e) => handleInputChange('bio', e.target.value)}
-                          rows={4}
-                          className="w-full px-5 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium resize-none text-gray-900 bg-white"
-                          placeholder="Tell us about yourself..."
-                        />
+                        <>
+                          <textarea
+                            value={profileData.bio}
+                            onChange={(e) => handleInputChange('bio', e.target.value)}
+                            rows={4}
+                            className={`w-full px-5 py-3.5 border-2 rounded-xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 transition-all duration-300 font-medium resize-none text-gray-900 bg-white ${
+                              errors.bio ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="Tell us about yourself..."
+                          />
+                          {errors.bio && (
+                            <p className="mt-1 text-sm text-red-600">{errors.bio}</p>
+                          )}
+                        </>
                       ) : (
                         <div className="px-4 py-3 bg-gray-100 rounded-lg text-gray-900">
                           <span className="text-gray-900">{profileData.bio}</span>
@@ -913,7 +1101,11 @@ const Profile = () => {
                         )}
                       </button>
                       <button
-                        onClick={() => setIsEditing(false)}
+                        onClick={() => {
+                          setIsEditing(false);
+                          // Clear errors when canceling
+                          setErrors({});
+                        }}
                         disabled={loading}
                         className="flex items-center space-x-2 px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
                       >
@@ -926,93 +1118,15 @@ const Profile = () => {
               </div>
             )}
 
-            {/* Orders Tab */}
-            {activeTab === 'orders' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Order History</h2>
-                </div>
-                
-                <div className="p-6">
-                  <div className="space-y-6">
-                    {recentOrders.map((order) => (
-                      <div key={order.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center space-x-3">
-                            <h4 className="text-lg font-semibold text-gray-900">#{order.id}</h4>
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              order.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                              order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                              'bg-purple-100 text-purple-800'
-                            }`}>
-                              {order.status}
-                            </span>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-gray-900">${order.amount}</p>
-                            <p className="text-sm text-gray-500">{order.date}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm text-gray-600 mb-2">
-                              <span className="font-medium">Service:</span> {order.service}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-2">
-                              <span className="font-medium">Items ({order.itemCount}):</span>
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {order.items.map((item, index) => (
-                                <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                                  {item}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600 mb-2">
-                              <span className="font-medium">Pickup Date:</span> {order.pickupDate}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-2">
-                              <span className="font-medium">Delivery Address:</span> {order.deliveryAddress}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Special Instructions:</span> {order.specialInstructions}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex space-x-3">
-                          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-                            <span>View Details</span>
-                          </button>
-                          <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2">
-                            <span>Reorder</span>
-                          </button>
-                          {order.status === 'Ready for Pickup' && (
-                            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2">
-                              <TruckIcon className="h-4 w-4" />
-                              <span>Schedule Pickup</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Addresses Tab */}
             {activeTab === 'addresses' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-white rounded-lg shadow-sm border border-yellow-200">
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold text-gray-900">Delivery Addresses</h2>
                     <button
                       onClick={() => setShowAddressModal(true)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="flex items-center space-x-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
                     >
                       <PlusIcon className="h-4 w-4" />
                       <span>Add Address</span>
@@ -1023,7 +1137,7 @@ const Profile = () => {
                 <div className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {addresses.map((address) => (
-                      <div key={address.id} className="border border-gray-200 rounded-lg p-6">
+                      <div key={address.id} className="border border-yellow-200 rounded-lg p-6">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -1056,7 +1170,7 @@ const Profile = () => {
                           {!address.isDefault && (
                             <button
                               onClick={() => handleSetDefaultAddress(address.id)}
-                              className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-lg hover:bg-blue-200 transition-colors"
+                              className="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-lg hover:bg-yellow-200 transition-colors"
                             >
                               Set Default
                             </button>
@@ -1077,7 +1191,7 @@ const Profile = () => {
 
             {/* Preferences Tab */}
             {activeTab === 'preferences' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-white rounded-lg shadow-sm border border-yellow-200">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-900">Laundry Preferences</h2>
                 </div>
@@ -1224,7 +1338,7 @@ const Profile = () => {
 
             {/* Loyalty & Rewards Tab */}
             {activeTab === 'loyalty' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-white rounded-lg shadow-sm border border-yellow-200">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-900">Loyalty & Rewards</h2>
                 </div>
@@ -1319,17 +1433,17 @@ const Profile = () => {
 
             {/* Security Tab */}
             {activeTab === 'security' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="bg-white rounded-lg shadow-sm border border-yellow-200">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-900">Security Settings</h2>
                 </div>
                 
                 <div className="p-6 space-y-6">
-                  <div className="border border-gray-200 rounded-lg p-6">
+                  <div className="border border-yellow-200 rounded-lg p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                          <KeyIcon className="h-6 w-6 text-orange-600" />
+                        <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                          <KeyIcon className="h-6 w-6 text-yellow-600" />
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900">Password</h3>
@@ -1338,14 +1452,14 @@ const Profile = () => {
                       </div>
                       <button
                         onClick={() => setShowPasswordModal(true)}
-                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                        className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
                       >
                         Change Password
                       </button>
                     </div>
                   </div>
 
-                  <div className="border border-gray-200 rounded-lg p-6">
+                  <div className="border border-yellow-200 rounded-lg p-6">
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                         <ShieldCheckIcon className="h-6 w-6 text-green-600" />
@@ -1379,7 +1493,7 @@ const Profile = () => {
                   </label>
                   <select
                     value={newAddress.type}
-                    onChange={(e) => setNewAddress({ ...newAddress, type: e.target.value })}
+                    onChange={(e) => handleAddressInputChange('type', e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="Home">Home</option>
@@ -1395,10 +1509,15 @@ const Profile = () => {
                   <input
                     type="text"
                     value={newAddress.name}
-                    onChange={(e) => setNewAddress({ ...newAddress, name: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onChange={(e) => handleAddressInputChange('name', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      addressErrors.name ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="e.g., Home Address"
                   />
+                  {addressErrors.name && (
+                    <p className="mt-1 text-sm text-red-600">{addressErrors.name}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -1408,10 +1527,15 @@ const Profile = () => {
                   <input
                     type="text"
                     value={newAddress.street}
-                    onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onChange={(e) => handleAddressInputChange('street', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      addressErrors.street ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="123 Main Street"
                   />
+                  {addressErrors.street && (
+                    <p className="mt-1 text-sm text-red-600">{addressErrors.street}</p>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -1422,10 +1546,15 @@ const Profile = () => {
                     <input
                       type="text"
                       value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      onChange={(e) => handleAddressInputChange('city', e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        addressErrors.city ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="New York"
                     />
+                    {addressErrors.city && (
+                      <p className="mt-1 text-sm text-red-600">{addressErrors.city}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1434,10 +1563,15 @@ const Profile = () => {
                     <input
                       type="text"
                       value={newAddress.state}
-                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      onChange={(e) => handleAddressInputChange('state', e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        addressErrors.state ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="NY"
                     />
+                    {addressErrors.state && (
+                      <p className="mt-1 text-sm text-red-600">{addressErrors.state}</p>
+                    )}
                   </div>
                 </div>
                 
@@ -1448,10 +1582,15 @@ const Profile = () => {
                   <input
                     type="text"
                     value={newAddress.zipCode}
-                    onChange={(e) => setNewAddress({ ...newAddress, zipCode: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onChange={(e) => handleAddressInputChange('zipCode', e.target.value)}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      addressErrors.zipCode ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     placeholder="10001"
                   />
+                  {addressErrors.zipCode && (
+                    <p className="mt-1 text-sm text-red-600">{addressErrors.zipCode}</p>
+                  )}
                 </div>
                 
                 <div className="flex items-center">
@@ -1459,7 +1598,7 @@ const Profile = () => {
                     type="checkbox"
                     id="isDefault"
                     checked={newAddress.isDefault}
-                    onChange={(e) => setNewAddress({ ...newAddress, isDefault: e.target.checked })}
+                    onChange={(e) => handleAddressInputChange('isDefault', e.target.checked)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label htmlFor="isDefault" className="ml-2 block text-sm text-gray-900">
@@ -1476,7 +1615,12 @@ const Profile = () => {
                   Add Address
                 </button>
                 <button
-                  onClick={() => setShowAddressModal(false)}
+                  onClick={() => {
+                    setShowAddressModal(false);
+                    // Clear errors and form when canceling
+                    setAddressErrors({});
+                    setNewAddress({ type: 'Home', name: '', street: '', city: '', state: '', zipCode: '', isDefault: false });
+                  }}
                   className="px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
                 >
                   Cancel
@@ -1500,8 +1644,10 @@ const Profile = () => {
                     <input
                       type={showPasswords.current ? 'text' : 'password'}
                       value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
+                      onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12 ${
+                        passwordErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter current password"
                     />
                     <button
@@ -1512,6 +1658,9 @@ const Profile = () => {
                       {showPasswords.current ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                     </button>
                   </div>
+                  {passwordErrors.currentPassword && (
+                    <p className="mt-1 text-sm text-red-600">{passwordErrors.currentPassword}</p>
+                  )}
                 </div>
 
                 <div>
@@ -1522,8 +1671,10 @@ const Profile = () => {
                     <input
                       type={showPasswords.new ? 'text' : 'password'}
                       value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
+                      onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12 ${
+                        passwordErrors.newPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter new password"
                     />
                     <button
@@ -1534,6 +1685,9 @@ const Profile = () => {
                       {showPasswords.new ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                     </button>
                   </div>
+                  {passwordErrors.newPassword && (
+                    <p className="mt-1 text-sm text-red-600">{passwordErrors.newPassword}</p>
+                  )}
                 </div>
 
                 <div>
@@ -1544,8 +1698,10 @@ const Profile = () => {
                     <input
                       type={showPasswords.confirm ? 'text' : 'password'}
                       value={passwordData.confirmPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12"
+                      onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-12 ${
+                        passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Confirm new password"
                     />
                     <button
@@ -1556,6 +1712,9 @@ const Profile = () => {
                       {showPasswords.confirm ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                     </button>
                   </div>
+                  {passwordErrors.confirmPassword && (
+                    <p className="mt-1 text-sm text-red-600">{passwordErrors.confirmPassword}</p>
+                  )}
                 </div>
               </div>
 
@@ -1568,7 +1727,12 @@ const Profile = () => {
                   {loading ? 'Changing...' : 'Change Password'}
                 </button>
                 <button
-                  onClick={() => setShowPasswordModal(false)}
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    // Clear errors and form when canceling
+                    setPasswordErrors({});
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                  }}
                   disabled={loading}
                   className="px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors disabled:opacity-50"
                 >

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   ChartBarIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CalendarIcon,
   CurrencyDollarIcon,
   UsersIcon,
@@ -99,7 +99,7 @@ const AdvancedAnalytics = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   };
 

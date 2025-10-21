@@ -140,7 +140,6 @@ const Dashboard = () => {
   const menuItems = [
     { id: 'home', name: 'Home', icon: HomeIcon, active: true },
     { id: 'profile', name: 'My Profile', icon: UserCircleIcon },
-    { id: 'laundry', name: 'Laundry Segment', icon: CubeIcon, hasSubmenu: true },
     { id: 'schedule', name: 'Schedule Wash', icon: CalendarDaysIcon },
     { id: 'orders', name: 'My Orders', icon: ShoppingBagIcon },
     { id: 'payment', name: 'Online Payment', icon: CreditCardIcon },
@@ -178,8 +177,6 @@ const Dashboard = () => {
       navigate('/track-order');
     } else if (itemId === 'schedule') {
       navigate('/schedule-pickup');
-    } else if (itemId === 'laundry') {
-      navigate('/laundry-segment');
     }
   };
 
@@ -464,7 +461,7 @@ const Dashboard = () => {
             {/* Quick Actions */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button 
                   onClick={() => handleMenuClick('schedule')}
                   className="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
@@ -475,19 +472,6 @@ const Dashboard = () => {
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2">Schedule Pickup</h3>
                     <p className="text-sm text-gray-600">Book a new laundry pickup</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => handleMenuClick('laundry')}
-                  className="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gradient-to-br hover:from-green-50 hover:to-emerald-50"
-                >
-                  <div className="text-center">
-                    <div className="bg-green-100 group-hover:bg-green-200 p-4 rounded-full w-16 h-16 mx-auto mb-4 transition-colors">
-                      <CubeIcon className="h-8 w-8 text-green-600 mx-auto" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Laundry Services</h3>
-                    <p className="text-sm text-gray-600">Browse our service catalog</p>
                   </div>
                 </button>
 

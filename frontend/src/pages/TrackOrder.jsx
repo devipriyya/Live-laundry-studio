@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+import api from '../api';
 import {
   TruckIcon,
   ClockIcon,
@@ -21,11 +23,13 @@ import {
 
 const TrackOrder = () => {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
   const [trackingId, setTrackingId] = useState('');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [recentOrders, setRecentOrders] = useState([]);
 
   // Mock order data for demonstration
   const mockOrders = {
@@ -130,7 +134,23 @@ const TrackOrder = () => {
     }
   };
 
-  const handleTrackOrder = () => {
+  // Load recent orders on mount
+  useEffect(() => {
+    const loadRecentOrders = async () => {
+      try {
+        const email = user?.email || JSON.parse(localStorage.getItem('user') || '{}').email;
+        if (email) {
+          const response = await api.get(`/orders/my?email=${encodeURIComponent(email)}`);
+          setRecentOrders(response.data.slice(0, 3)); // Get last 3 orders
+        }
+      } catch (error) {
+        console.error('Error loading recent orders:', error);
+      }
+    };
+    loadRecentOrders();
+  }, [user]);
+
+  const handleTrackOrder = async () => {
     if (!trackingId.trim()) {
       setError('Please enter a tracking ID');
       return;
@@ -139,18 +159,107 @@ const TrackOrder = () => {
     setLoading(true);
     setError('');
 
-    // Simulate API call
-    setTimeout(() => {
-      const foundOrder = mockOrders[trackingId.toUpperCase()];
+    try {
+      // Try to find order by orderNumber
+      const email = user?.email || JSON.parse(localStorage.getItem('user') || '{}').email;
+      if (!email) {
+        setError('Please log in to track orders');
+        setLoading(false);
+        return;
+      }
+
+      const response = await api.get(`/orders/my?email=${encodeURIComponent(email)}`);
+      const foundOrder = response.data.find(o => o.orderNumber === trackingId.toUpperCase());
+      
       if (foundOrder) {
-        setOrder(foundOrder);
+        // Convert backend order to display format
+        const formattedOrder = {
+          id: foundOrder.orderNumber,
+          service: 'Laundry Service',
+          status: foundOrder.status,
+          currentStep: getOrderStep(foundOrder.status),
+          pickupDate: foundOrder.pickupDate ? new Date(foundOrder.pickupDate).toLocaleDateString() : 'TBD',
+          deliveryDate: foundOrder.deliveryDate ? new Date(foundOrder.deliveryDate).toLocaleDateString() : 'TBD',
+          estimatedDelivery: foundOrder.estimatedDelivery || 'TBD',
+          items: foundOrder.totalItems || 0,
+          weight: foundOrder.weight || 'N/A',
+          total: foundOrder.totalAmount || 0,
+          customer: {
+            name: foundOrder.customerInfo?.name || 'Customer',
+            address: `${foundOrder.customerInfo?.address?.street || ''}, ${foundOrder.customerInfo?.address?.city || ''}, ${foundOrder.customerInfo?.address?.state || ''} ${foundOrder.customerInfo?.address?.zipCode || ''}`,
+            phone: foundOrder.customerInfo?.phone || '',
+            email: foundOrder.customerInfo?.email || ''
+          },
+          timeline: generateTimeline(foundOrder),
+          trackingUpdates: foundOrder.statusHistory?.map(h => ({
+            time: new Date(h.timestamp).toLocaleString(),
+            message: h.note || `Status updated to ${h.status}`,
+            location: 'Processing Center'
+          })) || []
+        };
+        setOrder(formattedOrder);
         setError('');
       } else {
-        setError('Order not found. Please check your tracking ID and try again.');
-        setOrder(null);
+        // Check if it's from mock data for demo
+        const foundMockOrder = mockOrders[trackingId.toUpperCase()];
+        if (foundMockOrder) {
+          setOrder(foundMockOrder);
+          setError('');
+        } else {
+          setError('Order not found. Please check your tracking ID and try again.');
+          setOrder(null);
+        }
       }
+    } catch (error) {
+      console.error('Error tracking order:', error);
+      setError('Failed to track order. Please try again.');
+      setOrder(null);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  const getOrderStep = (status) => {
+    const stepMap = {
+      'order-placed': 1,
+      'order-accepted': 2,
+      'out-for-pickup': 3,
+      'pickup-completed': 4,
+      'wash-in-progress': 5,
+      'wash-completed': 6,
+      'out-for-delivery': 7,
+      'delivery-completed': 8
+    };
+    return stepMap[status] || 1;
+  };
+
+  const generateTimeline = (order) => {
+    const timeline = [
+      { step: 'Order Placed', completed: false, time: '', description: 'Order confirmed and scheduled for pickup' },
+      { step: 'Picked Up', completed: false, time: '', description: 'Items collected from your location' },
+      { step: 'Processing', completed: false, time: '', description: 'Items being washed and processed' },
+      { step: 'In Transit', completed: false, time: '', description: 'Out for delivery' },
+      { step: 'Delivered', completed: false, time: '', description: 'Items delivered to your location' }
+    ];
+
+    const currentStepIndex = getOrderStep(order.status) - 1;
+    
+    timeline.forEach((step, index) => {
+      if (index < currentStepIndex) {
+        step.completed = true;
+        if (order.statusHistory && order.statusHistory[index]) {
+          step.time = new Date(order.statusHistory[index].timestamp).toLocaleString();
+        }
+      } else if (index === currentStepIndex) {
+        step.completed = true;
+        step.current = true;
+        step.time = order.statusHistory && order.statusHistory[currentStepIndex] 
+          ? new Date(order.statusHistory[currentStepIndex].timestamp).toLocaleString() 
+          : new Date().toLocaleString();
+      }
+    });
+
+    return timeline;
   };
 
   const getStatusColor = (status) => {
@@ -256,6 +365,24 @@ const TrackOrder = () => {
                 </button>
               </div>
 
+              {/* Recent Orders */}
+              {recentOrders.length > 0 && (
+                <div className="mt-4">
+                  <span className="text-sm text-gray-600 block mb-2">Your recent orders:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {recentOrders.map((ord) => (
+                      <button
+                        key={ord._id}
+                        onClick={() => setTrackingId(ord.orderNumber)}
+                        className="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-sm rounded-lg hover:from-purple-200 hover:to-pink-200 transition-colors"
+                      >
+                        {ord.orderNumber}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
               {/* Sample IDs for demo */}
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="text-sm text-gray-600">Try these sample IDs:</span>
@@ -263,7 +390,7 @@ const TrackOrder = () => {
                   <button
                     key={id}
                     onClick={() => setTrackingId(id)}
-                    className="px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-sm rounded-lg hover:from-purple-200 hover:to-pink-200 transition-colors"
+                    className="px-3 py-1 bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-700 text-sm rounded-lg hover:from-blue-200 hover:to-cyan-200 transition-colors"
                   >
                     {id}
                   </button>

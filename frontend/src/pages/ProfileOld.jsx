@@ -162,7 +162,7 @@ const Profile = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(amount);
   };
 
@@ -1014,9 +1014,9 @@ const Profile = () => {
                           onChange={(e) => handlePreferenceChange('', 'currency', e.target.value)}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         >
+                          <option value="INR">INR (₹)</option>
                           <option value="USD">USD ($)</option>
                           <option value="EUR">EUR (€)</option>
-                          <option value="GBP">GBP (£)</option>
                         </select>
                       </div>
                     </div>
@@ -1316,9 +1316,9 @@ const Profile = () => {
                           onChange={(e) => handlePreferenceChange('', 'currency', e.target.value)}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
                         >
+                          <option value="INR">INR (₹)</option>
                           <option value="USD">USD ($)</option>
                           <option value="EUR">EUR (€)</option>
-                          <option value="GBP">GBP (£)</option>
                         </select>
                       </div>
                     </div>
@@ -1354,7 +1354,7 @@ const Profile = () => {
                     <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-6 border border-green-200">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                          <span className="text-white font-bold">$</span>
+                          <span className="text-white font-bold">₹</span>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-600">Total Spent</p>

@@ -69,9 +69,9 @@ const ReportsAnalytics = () => {
           <p className="text-2xl font-bold text-gray-900">{value}</p>
           <div className="flex items-center mt-2">
             {growth >= 0 ? (
-              <TrendingUpIcon className="w-4 h-4 text-green-500 mr-1" />
+              <ArrowTrendingUpIcon className="w-4 h-4 text-green-500 mr-1" />
             ) : (
-              <TrendingDownIcon className="w-4 h-4 text-red-500 mr-1" />
+              <ArrowTrendingDownIcon className="w-4 h-4 text-red-500 mr-1" />
             )}
             <span className={`text-sm font-medium ${growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {Math.abs(growth)}%

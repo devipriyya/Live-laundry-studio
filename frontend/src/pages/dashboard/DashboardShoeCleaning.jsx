@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
 import { 
   SparklesIcon, 
@@ -8,11 +9,23 @@ import {
   CheckCircleIcon,
   XMarkIcon,
   MinusIcon,
-  PlusIcon
+  PlusIcon,
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 
 const DashboardShoeCleaning = () => {
   const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
+  
+  // Log Razorpay configuration on mount (for debugging)
+  React.useEffect(() => {
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    if (!razorpayKey || razorpayKey === 'rzp_test_YOUR_KEY_ID') {
+      console.warn('⚠️ Razorpay API key not configured. Please add VITE_RAZORPAY_KEY_ID to your frontend/.env file');
+    } else {
+      console.log('✅ Razorpay configured');
+    }
+  }, []);
   
   // Form state
   const [shoeType, setShoeType] = useState('');
@@ -60,6 +73,20 @@ const DashboardShoeCleaning = () => {
   const handlePayment = async () => {
     const amount = calculateTotal();
     
+    // Check if Razorpay key is configured
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    if (!razorpayKey || razorpayKey === 'rzp_test_YOUR_KEY_ID') {
+      alert('Payment configuration error: Razorpay key not configured. Please add your Razorpay API key to the .env file.');
+      console.error('Razorpay key not found. Please add VITE_RAZORPAY_KEY_ID to your .env file');
+      return;
+    }
+    
+    // Check if Razorpay script is already loaded
+    if (window.Razorpay) {
+      openRazorpayCheckout(amount, razorpayKey);
+      return;
+    }
+    
     // Load Razorpay script
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -67,8 +94,20 @@ const DashboardShoeCleaning = () => {
     document.body.appendChild(script);
 
     script.onload = () => {
+      openRazorpayCheckout(amount, razorpayKey);
+    };
+    
+    script.onerror = () => {
+      alert('Oops! Something went wrong. Payment failed. Unable to load Razorpay. Please check your internet connection and try again.');
+      console.error('Failed to load Razorpay script');
+    };
+  };
+  
+  // Open Razorpay checkout
+  const openRazorpayCheckout = (amount, razorpayKey) => {
+    try {
       const options = {
-        key: 'rzp_test_YOUR_KEY_ID', // Replace with your Razorpay Key ID
+        key: razorpayKey,
         amount: amount * 100, // Amount in paise
         currency: 'INR',
         name: 'Fabricspa',
@@ -91,10 +130,15 @@ const DashboardShoeCleaning = () => {
           // Reset form
           resetForm();
         },
+        modal: {
+          ondismiss: function() {
+            console.log('Payment cancelled by user');
+          }
+        },
         prefill: {
-          name: user?.name || '',
+          name: user?.name || user?.displayName || '',
           email: user?.email || '',
-          contact: user?.phone || ''
+          contact: user?.phone || user?.phoneNumber || ''
         },
         theme: {
           color: '#06B6D4'
@@ -102,8 +146,17 @@ const DashboardShoeCleaning = () => {
       };
 
       const razorpay = new window.Razorpay(options);
+      
+      razorpay.on('payment.failed', function (response) {
+        alert(`Payment Failed! ${response.error.description}`);
+        console.error('Payment failed:', response.error);
+      });
+      
       razorpay.open();
-    };
+    } catch (error) {
+      alert('Oops! Something went wrong. Payment failed. Please try again.');
+      console.error('Error opening Razorpay:', error);
+    }
   };
 
   const resetForm = () => {
@@ -118,6 +171,17 @@ const DashboardShoeCleaning = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center text-gray-700 hover:text-gray-900 transition-colors duration-200 bg-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            <span className="font-semibold">Back</span>
+          </button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">

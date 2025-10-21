@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
+import ReviewForm from '../components/ReviewForm';
 import {
   TruckIcon,
   ClockIcon,
@@ -29,6 +30,10 @@ const MyOrders = () => {
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancellingOrder, setCancellingOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -195,9 +200,9 @@ const MyOrders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-sky-50 to-emerald-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-yellow-600 mx-auto mb-4"></div>
           <p className="text-gray-600 text-lg">Loading your orders...</p>
         </div>
       </div>
@@ -205,79 +210,65 @@ const MyOrders = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-sky-50 to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-xl shadow-lg border-b border-white/20 sticky top-0 z-40">
-        <div className="w-full px-6 sm:px-8 lg:px-12">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
+      <div className="bg-white border-b sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="flex items-center gap-2 text-gray-700 hover:text-yellow-600 transition-colors"
               >
-                <ArrowLeftIcon className="h-4 w-4" />
-                <span>Back to Dashboard</span>
+                <ArrowLeftIcon className="h-5 w-5" />
+                <span className="font-medium">Back</span>
               </button>
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <ShoppingBagIcon className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                  🛍️ My Orders
-                </h1>
-                <p className="text-gray-600">View and manage all your laundry orders</p>
-              </div>
+              <div className="h-8 w-px bg-gray-300"></div>
+              <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
             </div>
-            <div className="flex items-center space-x-2">
-              <SparklesIcon className="h-6 w-6 text-purple-500" />
-              <span className="text-purple-600 font-medium">{filteredOrders.length} Orders</span>
+            <div className="text-sm text-gray-600">
+              {filteredOrders.length} {filteredOrders.length === 1 ? 'Order' : 'Orders'}
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="w-full px-6 sm:px-8 lg:px-12 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Search and Filter Section */}
-        <div className="mb-8">
-          <div className="relative group max-w-4xl mx-auto">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-            <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
-              <div className="flex flex-col lg:flex-row gap-4">
-                {/* Search */}
-                <div className="flex-1">
-                  <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search by Order ID, Service, or Status..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200"
-                    />
-                  </div>
+        <div className="mb-6">
+          <div className="bg-white rounded-lg shadow-sm border p-4">
+            <div className="flex flex-col md:flex-row gap-3">
+              {/* Search */}
+              <div className="flex-1">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search orders..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors"
+                  />
                 </div>
-                
-                {/* Status Filter */}
-                <div className="lg:w-64">
-                  <div className="relative">
-                    <FunnelIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all duration-200 appearance-none bg-white"
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="order-placed">Order Placed</option>
-                      <option value="order-accepted">Order Accepted</option>
-                      <option value="out-for-pickup">Out for Pickup</option>
-                      <option value="pickup-completed">Pickup Completed</option>
-                      <option value="wash-in-progress">Wash in Progress</option>
-                      <option value="wash-completed">Wash Completed</option>
-                      <option value="out-for-delivery">Out for Delivery</option>
-                      <option value="delivery-completed">Delivery Completed</option>
-                    </select>
-                  </div>
-                </div>
+              </div>
+              
+              {/* Status Filter */}
+              <div className="md:w-56">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors bg-white"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="order-placed">Order Placed</option>
+                  <option value="order-accepted">Order Accepted</option>
+                  <option value="out-for-pickup">Out for Pickup</option>
+                  <option value="pickup-completed">Pickup Completed</option>
+                  <option value="wash-in-progress">Wash in Progress</option>
+                  <option value="wash-completed">Wash Completed</option>
+                  <option value="out-for-delivery">Out for Delivery</option>
+                  <option value="delivery-completed">Delivery Completed</option>
+                </select>
               </div>
             </div>
           </div>
@@ -293,7 +284,7 @@ const MyOrders = () => {
             </p>
             <button
               onClick={() => navigate('/login')}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 px-6 rounded-xl font-medium transition-all duration-200"
+              className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-6 rounded-lg font-medium transition-colors"
             >
               Go to Login
             </button>
@@ -310,88 +301,86 @@ const MyOrders = () => {
             {!searchTerm && statusFilter === 'all' && (
               <button
                 onClick={() => navigate('/schedule-pickup')}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 px-6 rounded-xl font-medium transition-all duration-200"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-6 rounded-lg font-medium transition-colors"
               >
                 Place Your First Order
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="space-y-4">
             {filteredOrders.map((order) => {
-              const StatusIcon = getStatusIcon(order.status);
               const progress = getOrderProgress(order.status);
               
               return (
-                <div key={order._id} className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
-                  <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6 hover:shadow-2xl transition-all duration-300">
+                <div key={order._id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
+                  <div className="p-5">
                     {/* Order Header */}
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                          <StatusIcon className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-gray-900">{order.orderNumber}</h3>
-                          <p className="text-sm text-gray-600">Laundry Service</p>
-                        </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-lg">{order.orderNumber}</h3>
+                        <p className="text-sm text-gray-500">{new Date(order.orderDate || order.createdAt).toLocaleDateString()}</p>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(order.status)}`}>
-                        {order.status}
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                        {order.status.replace(/-/g, ' ')}
                       </div>
                     </div>
 
                     {/* Progress Bar */}
                     <div className="mb-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">Progress</span>
-                        <span className="text-sm text-gray-600">{progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
                         <div 
-                          className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+                          className="bg-yellow-500 h-1.5 rounded-full transition-all duration-500"
                           style={{ width: `${progress}%` }}
                         ></div>
                       </div>
                     </div>
 
                     {/* Order Details */}
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-3 border border-blue-200">
-                        <p className="text-xs text-blue-700 font-medium">Items</p>
-                        <p className="text-sm font-bold text-blue-900">{order.totalItems} items</p>
+                    <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Items</p>
+                        <p className="font-semibold text-gray-900">{order.totalItems}</p>
                       </div>
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200">
-                        <p className="text-xs text-green-700 font-medium">Total</p>
-                        <p className="text-sm font-bold text-green-900">₹{order.totalAmount}</p>
+                      <div>
+                        <p className="text-gray-600">Total</p>
+                        <p className="font-semibold text-gray-900">₹{order.totalAmount}</p>
                       </div>
-                    </div>
-
-                    {/* Dates */}
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Order Date:</span>
-                        <span className="font-medium text-gray-900">{new Date(order.orderDate || order.createdAt).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Delivery:</span>
-                        <span className="font-medium text-gray-900">{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'TBD'}</span>
+                      <div>
+                        <p className="text-gray-600">Delivery</p>
+                        <p className="font-semibold text-gray-900">{order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD'}</p>
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex space-x-2">
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleViewDetails(order)}
-                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center space-x-2 text-sm"
+                        className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg font-medium transition-colors text-sm"
                       >
-                        <EyeIcon className="h-4 w-4" />
-                        <span>View Details</span>
+                        View Details
                       </button>
-                      <button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white py-2 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center text-sm">
-                        <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                      </button>
+                      
+                      {order.paymentStatus === 'paid' && (
+                        <button
+                          onClick={() => navigate(`/invoice/${order._id}`)}
+                          className="px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-medium transition-colors text-sm"
+                        >
+                          Invoice
+                        </button>
+                      )}
+                      
+                      {(['order-placed', 'order-accepted'].includes(order.status)) && (
+                        <button
+                          onClick={() => {
+                            setCancellingOrder(order);
+                            setShowCancelModal(true);
+                          }}
+                          className="px-4 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-medium transition-colors text-sm"
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -402,124 +391,234 @@ const MyOrders = () => {
 
         {/* Order Details Modal */}
         {showOrderDetails && selectedOrder && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900">Order Details - {selectedOrder.orderNumber}</h3>
+                <h3 className="text-xl font-bold text-gray-900">{selectedOrder.orderNumber}</h3>
                 <button
                   onClick={() => setShowOrderDetails(false)}
-                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <XMarkIcon className="h-6 w-6 text-gray-500" />
+                  <XMarkIcon className="h-5 w-5 text-gray-500" />
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Order Information */}
-                <div className="space-y-6">
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-                    <h4 className="font-bold text-purple-900 mb-4">Order Information</h4>
-                    <div className="space-y-3">
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4 border">
+                    <h4 className="font-semibold text-gray-900 mb-3">Order Information</h4>
+                    <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-purple-700">Order ID:</span>
-                        <span className="font-semibold text-purple-900">{selectedOrder.orderNumber}</span>
+                        <span className="text-gray-600">Order ID:</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.orderNumber}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-purple-700">Service:</span>
-                        <span className="font-semibold text-purple-900">Laundry Service</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-purple-700">Status:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedOrder.status)}`}>
-                          {selectedOrder.status}
+                        <span className="text-gray-600">Status:</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status)}`}>
+                          {selectedOrder.status.replace(/-/g, ' ')}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-purple-700">Order Date:</span>
-                        <span className="font-semibold text-purple-900">{new Date(selectedOrder.orderDate || selectedOrder.createdAt).toLocaleDateString()}</span>
+                        <span className="text-gray-600">Order Date:</span>
+                        <span className="font-medium text-gray-900">{new Date(selectedOrder.orderDate || selectedOrder.createdAt).toLocaleDateString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-purple-700">Pickup Date:</span>
-                        <span className="font-semibold text-purple-900">{selectedOrder.pickupDate ? new Date(selectedOrder.pickupDate).toLocaleDateString() : 'TBD'}</span>
+                        <span className="text-gray-600">Pickup Date:</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.pickupDate ? new Date(selectedOrder.pickupDate).toLocaleDateString() : 'TBD'}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-purple-700">Delivery Date:</span>
-                        <span className="font-semibold text-purple-900">{selectedOrder.deliveryDate ? new Date(selectedOrder.deliveryDate).toLocaleDateString() : 'TBD'}</span>
+                        <span className="text-gray-600">Delivery Date:</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.deliveryDate ? new Date(selectedOrder.deliveryDate).toLocaleDateString() : 'TBD'}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-                    <h4 className="font-bold text-green-900 mb-4">Customer Information</h4>
-                    <div className="space-y-3">
+                  <div className="bg-gray-50 rounded-lg p-4 border">
+                    <h4 className="font-semibold text-gray-900 mb-3">Customer Information</h4>
+                    <div className="space-y-2 text-sm">
                       <div>
-                        <span className="text-green-700 text-sm">Name:</span>
-                        <p className="font-semibold text-green-900">{selectedOrder.customerInfo.name}</p>
+                        <span className="text-gray-600">Name:</span>
+                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo.name}</p>
                       </div>
                       <div>
-                        <span className="text-green-700 text-sm">Address:</span>
-                        <p className="font-semibold text-green-900">{selectedOrder.customerInfo.address.street}, {selectedOrder.customerInfo.address.city}, {selectedOrder.customerInfo.address.state} {selectedOrder.customerInfo.address.zipCode}</p>
+                        <span className="text-gray-600">Address:</span>
+                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo.address.street}, {selectedOrder.customerInfo.address.city}, {selectedOrder.customerInfo.address.state} {selectedOrder.customerInfo.address.zipCode}</p>
                       </div>
                       <div>
-                        <span className="text-green-700 text-sm">Phone:</span>
-                        <p className="font-semibold text-green-900">{selectedOrder.customerInfo.phone}</p>
+                        <span className="text-gray-600">Phone:</span>
+                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo.phone}</p>
                       </div>
                       <div>
-                        <span className="text-green-700 text-sm">Email:</span>
-                        <p className="font-semibold text-green-900">{selectedOrder.customerInfo.email}</p>
+                        <span className="text-gray-600">Email:</span>
+                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo.email}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Items and Pricing */}
-                <div className="space-y-6">
-                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
-                    <h4 className="font-bold text-blue-900 mb-4">Order Items</h4>
-                    <div className="space-y-3">
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4 border">
+                    <h4 className="font-semibold text-gray-900 mb-3">Order Items</h4>
+                    <div className="space-y-2">
                       {selectedOrder.items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center py-2 border-b border-blue-200 last:border-b-0">
+                        <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0 text-sm">
                           <div>
-                            <p className="font-medium text-blue-900">{item.name}</p>
-                            <p className="text-sm text-blue-700">Qty: {item.quantity}</p>
+                            <p className="font-medium text-gray-900">{item.name}</p>
+                            <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
                           </div>
-                          <span className="font-semibold text-blue-900">₹{item.price.toFixed(2)}</span>
+                          <span className="font-semibold text-gray-900">₹{item.price.toFixed(2)}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border border-orange-200">
-                    <h4 className="font-bold text-orange-900 mb-4">Order Summary</h4>
-                    <div className="space-y-3">
+                  <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+                    <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-orange-700">Total Items:</span>
-                        <span className="font-semibold text-orange-900">{selectedOrder.totalItems} items</span>
+                        <span className="text-gray-700">Total Items:</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.totalItems} items</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-orange-700">Total Weight:</span>
-                        <span className="font-semibold text-orange-900">{selectedOrder.weight}</span>
+                        <span className="text-gray-700">Weight:</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.weight}</span>
                       </div>
-                      <div className="border-t border-orange-200 pt-3">
+                      <div className="border-t pt-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-orange-900">Total Amount:</span>
-                          <span className="text-2xl font-bold text-orange-900">₹{selectedOrder.totalAmount}</span>
+                          <span className="text-base font-semibold text-gray-900">Total:</span>
+                          <span className="text-xl font-bold text-yellow-600">₹{selectedOrder.totalAmount}</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex space-x-3">
-                    <button className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center space-x-2">
-                      <ChatBubbleLeftRightIcon className="h-5 w-5" />
-                      <span>Contact Support</span>
-                    </button>
-                    <button className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 rounded-xl font-medium transition-all duration-200 flex items-center justify-center space-x-2">
-                      <PhoneIcon className="h-5 w-5" />
-                      <span>Call Us</span>
+                  <div className="flex gap-2">
+                    {selectedOrder.paymentStatus === 'paid' && (
+                      <button 
+                        onClick={() => navigate(`/invoice/${selectedOrder._id}`)}
+                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-medium transition-colors text-sm"
+                      >
+                        Invoice
+                      </button>
+                    )}
+                    
+                    {(['order-placed', 'order-accepted'].includes(selectedOrder.status)) && (
+                      <button 
+                        onClick={() => {
+                          setCancellingOrder(selectedOrder);
+                          setShowCancelModal(true);
+                        }}
+                        className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-medium transition-colors text-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    
+                    <button 
+                      onClick={() => setShowOrderDetails(false)}
+                      className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg font-medium transition-colors text-sm"
+                    >
+                      Close
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Review Form Modal */}
+        {showReviewForm && selectedOrder && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Write a Review</h3>
+                <button
+                  onClick={() => setShowReviewForm(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <ReviewForm
+                orderId={selectedOrder._id}
+                orderNumber={selectedOrder.orderNumber}
+                customerInfo={selectedOrder.customerInfo}
+                onSubmitSuccess={() => {
+                  setShowReviewForm(false);
+                  alert('Thank you for your review!');
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Order Modal */}
+        {showCancelModal && cancellingOrder && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Cancel Order</h3>
+                <button
+                  onClick={() => {
+                    setShowCancelModal(false);
+                    setCancelReason('');
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-gray-600 mb-4">Are you sure you want to cancel order <strong>{cancellingOrder.orderNumber}</strong>?</p>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Cancellation Reason
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Please tell us why you're cancelling..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500 resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCancelModal(false);
+                    setCancelReason('');
+                  }}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Keep Order
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.patch(`/orders/${cancellingOrder._id}/cancel`, {
+                        reason: cancelReason || 'Customer request',
+                        email: userEmail
+                      });
+                      alert('Order cancelled successfully. Refund will be processed.');
+                      setShowCancelModal(false);
+                      setCancelReason('');
+                      // Refresh orders
+                      const updatedOrders = await loadOrders(userEmail);
+                      setOrders(updatedOrders);
+                      setFilteredOrders(updatedOrders);
+                      setShowOrderDetails(false);
+                    } catch (error) {
+                      alert(error.response?.data?.message || 'Failed to cancel order');
+                    }
+                  }}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium transition-colors"
+                >
+                  Cancel Order
+                </button>
               </div>
             </div>
           </div>

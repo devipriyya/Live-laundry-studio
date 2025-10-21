@@ -19,7 +19,12 @@ const DashboardStore = React.lazy(() => import('./pages/dashboard/DashboardStore
 const DashboardLegal = React.lazy(() => import('./pages/dashboard/DashboardLegal'));
 const DashboardAbout = React.lazy(() => import('./pages/dashboard/DashboardAbout'));
 const DashboardShoeCleaning = React.lazy(() => import('./pages/dashboard/DashboardShoeCleaning'));
+const DashboardStainRemoval = React.lazy(() => import('./pages/dashboard/DashboardStainRemoval'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
+const AdminDashboardModern = React.lazy(() => import('./pages/AdminDashboardModern'));
+const AdminOrderManagement = React.lazy(() => import('./pages/AdminOrderManagement'));
+const DeliveryBoyDashboard = React.lazy(() => import('./pages/DeliveryBoyDashboard'));
+const AdminLoginDebug = React.lazy(() => import('./pages/AdminLoginDebug'));
 const AdminDashboardTest = React.lazy(() => import('./pages/AdminDashboardTest'));
 const AdminDashboardFixed = React.lazy(() => import('./pages/AdminDashboardFixed'));
 const AdminLoginTest = React.lazy(() => import('./pages/AdminLoginTest'));
@@ -31,6 +36,11 @@ const Profile = React.lazy(() => import('./pages/Profile'));
 const ProfileTest = React.lazy(() => import('./pages/ProfileTest'));
 const LaundrySegment = React.lazy(() => import('./pages/LaundrySegment'));
 const OrderSuccess = React.lazy(() => import('./pages/OrderSuccess'));
+const Invoice = React.lazy(() => import('./pages/Invoice'));
+const MyOrders = React.lazy(() => import('./pages/MyOrders'));
+const CustomerManagementPage = React.lazy(() => import('./pages/CustomerManagementPage'));
+const CustomerManagementTestPage = React.lazy(() => import('./pages/CustomerManagementTestPage'));
+const CustomerManagementDirect = React.lazy(() => import('./pages/CustomerManagementDirect'));
 const ProtectedRoute = React.lazy(() => import('./components/ProtectedRoute'));
 const ChatSupport = React.lazy(() => import('./components/ChatSupport'));
 const ErrorBoundary = React.lazy(() => import('./components/ErrorBoundary'));
@@ -55,12 +65,13 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/admin-login-test" element={<AdminLoginTest />} />
+            <Route path="/admin-login-debug" element={<AdminLoginDebug />} />
 
             {/* Protected Dashboard with nested routes */}
             <Route 
               path="/dashboard" 
               element={
-                <ProtectedRoute roles={['customer', 'delivery']}>
+                <ProtectedRoute roles={['customer']}>
                   <DashboardLayout />
                 </ProtectedRoute>
               }
@@ -70,6 +81,7 @@ function App() {
               <Route path="profile" element={<DashboardProfile />} />
               <Route path="laundry" element={<DashboardLaundry />} />
               <Route path="shoe-cleaning" element={<DashboardShoeCleaning />} />
+              <Route path="stain-removal" element={<DashboardStainRemoval />} />
               <Route path="schedule" element={<DashboardSchedule />} />
               <Route path="orders" element={<DashboardOrders />} />
               <Route path="payment" element={<DashboardPayment />} />
@@ -96,27 +108,67 @@ function App() {
               path="/admin-dashboard" 
               element={
                 <ProtectedRoute roles={['admin']}>
-                  <AdminDashboard />
+                  <AdminDashboardModern />
                 </ProtectedRoute>
               } 
             />
             
-            {/* Admin Test Page */}
-            <Route 
-              path="/admin-test" 
-              element={
-                <ProtectedRoute roles={['admin']}>
-                  <AdminTest />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Original Admin Dashboard for testing */}
+            {/* Original Admin Dashboard (for comparison) */}
             <Route 
               path="/admin-dashboard-original" 
               element={
                 <ProtectedRoute roles={['admin']}>
                   <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Admin Order Management */}
+            <Route 
+              path="/admin-orders" 
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <AdminOrderManagement />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Customer Management */}
+            <Route 
+              path="/customer-management" 
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <CustomerManagementPage />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Customer Management Test Page */}
+            <Route 
+              path="/customer-management-test" 
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <CustomerManagementTestPage />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Customer Management Direct Page */}
+            <Route 
+              path="/customer-management-direct" 
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <CustomerManagementDirect />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Delivery Boy Dashboard */}
+            <Route 
+              path="/delivery-dashboard" 
+              element={
+                <ProtectedRoute roles={['deliveryBoy']}>
+                  <DeliveryBoyDashboard />
                 </ProtectedRoute>
               } 
             />
@@ -183,6 +235,26 @@ function App() {
               element={
                 <ProtectedRoute>
                   <OrderSuccess />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Protected Invoice */}
+            <Route 
+              path="/invoice/:orderId" 
+              element={
+                <ProtectedRoute>
+                  <Invoice />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Protected My Orders */}
+            <Route 
+              path="/my-orders" 
+              element={
+                <ProtectedRoute>
+                  <MyOrders />
                 </ProtectedRoute>
               } 
             />

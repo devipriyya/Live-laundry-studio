@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
-const { isAdmin } = require('../middleware/role');
+const { isAdmin, isDeliveryBoy, isAdminOrDeliveryBoy } = require('../middleware/role');
 
 // create order (customer)
 router.post('/', async (req, res) => {
@@ -222,10 +222,10 @@ router.patch('/:id/status', protect, async (req, res) => {
     
     // Check permissions
     const isAdminUser = req.user.role === 'admin';
-    const isAssignedDelivery = req.user.role === 'delivery' && 
+    const isAssignedDeliveryBoy = req.user.role === 'deliveryBoy' && 
       order.deliveryBoyId?.toString() === req.user._id.toString();
     
-    if (!isAdminUser && !isAssignedDelivery) {
+    if (!isAdminUser && !isAssignedDeliveryBoy) {
       return res.status(403).json({ message: 'Not authorized to update this order' });
     }
     
@@ -298,6 +298,245 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
     }
     
     res.json({ message: 'Order deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Cancel order (customer or admin)
+router.patch('/:id/cancel', async (req, res) => {
+  try {
+    const { reason, email } = req.body;
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check if order can be cancelled
+    const cancellableStatuses = ['order-placed', 'order-accepted'];
+    if (!cancellableStatuses.includes(order.status)) {
+      return res.status(400).json({ 
+        message: 'Order cannot be cancelled at this stage' 
+      });
+    }
+
+    // Verify ownership (for customer cancellation)
+    if (email && order.customerInfo.email !== email) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    order.status = 'cancelled';
+    order.statusHistory.push({
+      status: 'cancelled',
+      timestamp: new Date(),
+      note: `Order cancelled. Reason: ${reason || 'Customer request'}`
+    });
+
+    // If payment was made, initiate refund
+    if (order.paymentStatus === 'paid') {
+      order.paymentStatus = 'refund-pending';
+    }
+
+    await order.save();
+    res.json({ 
+      message: 'Order cancelled successfully', 
+      order 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Process refund (admin only)
+router.patch('/:id/refund', protect, isAdmin, async (req, res) => {
+  try {
+    const { refundAmount, refundMethod, refundId } = req.body;
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (order.paymentStatus !== 'refund-pending' && order.status !== 'cancelled') {
+      return res.status(400).json({ 
+        message: 'Order is not eligible for refund' 
+      });
+    }
+
+    order.paymentStatus = 'refunded';
+    order.refundInfo = {
+      amount: refundAmount || order.totalAmount,
+      method: refundMethod || order.paymentMethod,
+      refundId: refundId,
+      processedAt: new Date(),
+      processedBy: req.user._id
+    };
+
+    order.statusHistory.push({
+      status: order.status,
+      timestamp: new Date(),
+      updatedBy: req.user._id,
+      note: `Refund processed: ₹${refundAmount || order.totalAmount}`
+    });
+
+    await order.save();
+    res.json({ 
+      message: 'Refund processed successfully', 
+      order 
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delivery Boy Routes
+
+// Get all delivery boys (admin only)
+router.get('/delivery-boys/list', protect, isAdmin, async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const deliveryBoys = await User.find({ role: 'deliveryBoy' })
+      .select('name email phone profilePicture')
+      .sort({ name: 1 });
+    
+    // Get order count for each delivery boy
+    const deliveryBoysWithStats = await Promise.all(
+      deliveryBoys.map(async (boy) => {
+        const activeOrders = await Order.countDocuments({
+          deliveryBoyId: boy._id,
+          status: { $in: ['out-for-pickup', 'pickup-completed', 'out-for-delivery'] }
+        });
+        
+        const completedOrders = await Order.countDocuments({
+          deliveryBoyId: boy._id,
+          status: 'delivery-completed'
+        });
+        
+        return {
+          _id: boy._id,
+          name: boy.name,
+          email: boy.email,
+          phone: boy.phone,
+          profilePicture: boy.profilePicture,
+          activeOrders,
+          completedOrders
+        };
+      })
+    );
+    
+    res.json({ deliveryBoys: deliveryBoysWithStats });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get assigned orders for delivery boy
+router.get('/my-deliveries', protect, isDeliveryBoy, async (req, res) => {
+  try {
+    const { status } = req.query;
+    
+    let query = { deliveryBoyId: req.user._id };
+    
+    // Filter by status if provided
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+    
+    const orders = await Order.find(query)
+      .populate('userId', 'name email phone')
+      .populate('serviceId')
+      .sort({ createdAt: -1 });
+    
+    res.json({ orders });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get delivery boy statistics
+router.get('/my-deliveries/stats', protect, isDeliveryBoy, async (req, res) => {
+  try {
+    const totalDeliveries = await Order.countDocuments({ 
+      deliveryBoyId: req.user._id 
+    });
+    
+    const activeDeliveries = await Order.countDocuments({
+      deliveryBoyId: req.user._id,
+      status: { $in: ['out-for-pickup', 'pickup-completed', 'out-for-delivery'] }
+    });
+    
+    const completedToday = await Order.countDocuments({
+      deliveryBoyId: req.user._id,
+      status: 'delivery-completed',
+      updatedAt: { $gte: new Date().setHours(0, 0, 0, 0) }
+    });
+    
+    const pendingPickups = await Order.countDocuments({
+      deliveryBoyId: req.user._id,
+      status: 'out-for-pickup'
+    });
+    
+    const pendingDeliveries = await Order.countDocuments({
+      deliveryBoyId: req.user._id,
+      status: 'out-for-delivery'
+    });
+    
+    res.json({
+      totalDeliveries,
+      activeDeliveries,
+      completedToday,
+      pendingPickups,
+      pendingDeliveries
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Update delivery status (delivery boy only)
+router.patch('/:id/delivery-status', protect, isDeliveryBoy, async (req, res) => {
+  try {
+    const { status, note, location } = req.body;
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    // Check if this delivery boy is assigned to this order
+    if (order.deliveryBoyId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to update this order' });
+    }
+    
+    // Allowed status transitions for delivery boy
+    const allowedStatuses = [
+      'out-for-pickup',
+      'pickup-completed',
+      'out-for-delivery',
+      'delivery-completed'
+    ];
+    
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ 
+        message: 'Invalid status. Delivery boys can only update pickup and delivery statuses.' 
+      });
+    }
+    
+    order.status = status;
+    order.statusHistory.push({
+      status: status,
+      timestamp: new Date(),
+      updatedBy: req.user._id,
+      note: note || `Status updated to ${status} by delivery boy`
+    });
+    
+    await order.save();
+    await order.populate('userId', 'name email');
+    await order.populate('serviceId');
+    await order.populate('deliveryBoyId', 'name email');
+    
+    res.json({ message: 'Status updated successfully', order });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

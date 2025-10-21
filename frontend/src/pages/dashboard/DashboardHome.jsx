@@ -16,7 +16,7 @@ import {
   ShieldCheckIcon,
   UserGroupIcon,
   HeartIcon,
-  EnvelopeIcon,
+  // EnvelopeIcon,  // Removed mail icon import
   PhoneIcon,
   MapPinIcon,
   ChevronDownIcon,
@@ -60,16 +60,6 @@ const DashboardHome = () => {
       action: 'View Profile'
     },
     {
-      id: 'laundry',
-      title: 'Laundry Services',
-      description: 'Browse our complete range of laundry and dry cleaning services',
-      icon: CubeIcon,
-      gradient: 'from-purple-500 to-pink-500',
-      bgColor: 'bg-gradient-to-br from-purple-100 to-pink-200',
-      path: '/dashboard/laundry',
-      action: 'Explore Services'
-    },
-    {
       id: 'shoe-cleaning',
       title: 'Shoe Polishing',
       description: 'Professional shoe cleaning and polishing services',
@@ -89,6 +79,17 @@ const DashboardHome = () => {
       bgColor: 'bg-gradient-to-br from-green-100 to-emerald-200',
       path: '/dashboard/schedule',
       action: 'Schedule Now'
+    },
+    {
+      id: 'stain-removal',
+      title: 'Stain Removal',
+      description: 'Professional stain removal service for your clothes',
+      icon: BeakerIcon,
+      gradient: 'from-purple-500 to-indigo-500',
+      bgColor: 'bg-gradient-to-br from-purple-100 to-indigo-200',
+      path: '/dashboard/stain-removal',
+      action: 'Remove Stains',
+      badge: 'NEW'
     },
     {
       id: 'orders',
@@ -153,7 +154,7 @@ const DashboardHome = () => {
     },
     {
       id: 'about',
-      title: 'About Us',
+      title: 'Notifications',
       description: 'Learn more about our company and our commitment to quality',
       icon: QuestionMarkCircleIcon,
       gradient: 'from-blue-600 to-indigo-600',
@@ -379,66 +380,13 @@ const DashboardHome = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Welcome Section */}
-      <div className="relative bg-gradient-to-br from-cyan-50 via-blue-50 to-white overflow-hidden">
-        {/* Decorative background pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-cyan-400 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-400 rounded-full blur-3xl"></div>
-        </div>
-        
-        <div className="relative z-10 px-6 py-12 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="text-center lg:text-left">
-              <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-                Welcome Back, <span className="text-cyan-500">{user?.name?.split(' ')[0] || 'User'}!</span>
-              </h1>
-              <p className="text-gray-600 text-lg max-w-2xl mx-auto lg:mx-0 mb-6">
-                Access all your laundry services and manage your account from one place
-              </p>
-              <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-                <button 
-                  onClick={() => navigate('/dashboard/schedule')}
-                  className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  Schedule Pickup
-                </button>
-                <button 
-                  onClick={() => navigate('/dashboard/orders')}
-                  className="bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  My Orders
-                </button>
-              </div>
-            </div>
-
-            {/* Right Hero Image */}
-            <div className="relative">
-              <div className="bg-gradient-to-br from-cyan-100 to-blue-100 rounded-3xl p-6 shadow-2xl">
-                <img 
-                  src="/bg_image_1.png" 
-                  alt="Laundry service hero"
-                  className="w-full h-full object-cover rounded-2xl shadow-lg"
-                />
-              </div>
-              {/* Decorative elements */}
-              <div className="absolute -top-6 -right-6 w-32 h-32 bg-yellow-300 rounded-full opacity-30 blur-2xl"></div>
-              <div className="absolute -bottom-6 -left-6 w-40 h-40 bg-cyan-300 rounded-full opacity-30 blur-2xl"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Dashboard Functionalities Section */}
+      {/* Main Dashboard Functionalities Section - Starting directly without welcome section */}
       <div className="px-6 py-12 max-w-7xl mx-auto">
         <div className="mb-12">
           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-            Your <span className="text-cyan-500">Dashboard</span>
+            <span className="text-cyan-500">Stay fresh, stay organized with your laundry services</span>
           </h2>
-          <p className="text-gray-600 text-lg">
-            Quick access to all features and services
-          </p>
+          
         </div>
 
         {/* Functionality Cards Grid */}
@@ -602,39 +550,6 @@ const DashboardHome = () => {
             animation: pulse-slow 2s ease-in-out infinite;
           }
         `}</style>
-        {/* Our Services Section */}
-        <div className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-              Our <span className="text-cyan-500">Services</span>
-            </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Comprehensive laundry solutions tailored to your needs
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {services.map((service) => (
-              <div
-                key={service.id}
-                onClick={() => handleQuickAction('laundry')}
-                className="group relative bg-gradient-to-br from-cyan-50 to-blue-50 rounded-3xl p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-cyan-100 cursor-pointer overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-200 rounded-full opacity-20 -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-500"></div>
-                <div className="relative">
-                  <div className="p-4 bg-white rounded-2xl w-fit mb-4 shadow-md group-hover:shadow-lg transition-shadow">
-                    <service.icon className="h-10 w-10 text-cyan-600" />
-                  </div>
-                  <h3 className="font-bold text-xl text-gray-900 mb-2">{service.name}</h3>
-                  <p className="text-gray-600 text-sm mb-4 leading-relaxed">{service.description}</p>
-                  <div className="mt-4 pt-4 border-t border-cyan-200">
-                    <p className="text-cyan-600 font-semibold text-sm">Learn More →</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Getting Tired With Your Laundry Section */}
         {/* Background Image: Add bg_image_2.png to show person with laundry */}
         <div className="mb-20 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-3xl overflow-hidden">
@@ -754,87 +669,6 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        {/* Customer Testimonials */}
-        <div className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-              What Our <span className="text-cyan-500">Customers</span> Say
-            </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Don't just take our word for it - hear from our satisfied customers
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial) => (
-              <div
-                key={testimonial.id}
-                className="bg-white rounded-3xl p-8 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-gray-100"
-              >
-                <div className="flex items-center justify-center mb-6">
-                  <div className="bg-gradient-to-br from-cyan-400 to-blue-500 text-white rounded-full h-20 w-20 flex items-center justify-center font-bold text-2xl shadow-lg">
-                    {testimonial.name.charAt(0)}
-                  </div>
-                </div>
-                <h3 className="font-bold text-xl text-gray-900 text-center mb-1">{testimonial.name}</h3>
-                <p className="text-cyan-600 text-sm text-center mb-4">{testimonial.location}</p>
-                <p className="text-gray-600 text-center leading-relaxed italic">"{testimonial.comment}"</p>
-                <div className="flex items-center justify-center mt-4 space-x-1">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <StarIconSolid key={i} className="h-5 w-5 text-yellow-400" />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* FAQ Section */}
-        <div className="mb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            {/* Image */}
-            <div className="relative">
-              <div className="bg-gradient-to-br from-cyan-100 to-blue-100 rounded-3xl p-8 shadow-xl">
-                <img 
-                  src="/bg_image_3.png" 
-                  alt="Person with hand raised - FAQ"
-                  className="w-full h-full object-cover rounded-2xl shadow-lg"
-                />
-              </div>
-            </div>
-
-            {/* FAQ Content */}
-            <div>
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-2">
-                <span className="text-cyan-500">Frequently Asked</span>
-              </h2>
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-8">Question</h2>
-              
-              <div className="space-y-4">
-                {faqs.map((faq) => (
-                  <div key={faq.id} className="bg-white rounded-2xl border-2 border-gray-100 overflow-hidden">
-                    <button
-                      onClick={() => toggleFaq(faq.id)}
-                      className="w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 transition-all duration-300"
-                    >
-                      <span className="font-semibold text-white text-left">{faq.question}</span>
-                      {openFaq === faq.id ? (
-                        <ChevronUpIcon className="h-5 w-5 text-white flex-shrink-0 ml-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-5 w-5 text-white flex-shrink-0 ml-4" />
-                      )}
-                    </button>
-                    {openFaq === faq.id && (
-                      <div className="px-6 py-4 bg-cyan-50">
-                        <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* News and Blog Section */}
         <div className="mb-20">
           <div className="text-center mb-12">
@@ -878,9 +712,10 @@ const DashboardHome = () => {
 
         {/* Newsletter Section */}
         <div className="mb-12 bg-gradient-to-br from-cyan-400 via-cyan-500 to-teal-500 rounded-3xl overflow-hidden relative">
-          {/* Decorative elements */}
+          {/* Decorative elements - removed EnvelopeIcon */}
           <div className="absolute top-0 left-0 w-96 h-96 opacity-10">
-            <EnvelopeIcon className="w-96 h-96 text-white" />
+            {/* <EnvelopeIcon className="w-96 h-96 text-white" /> */} {/* Removed mail icon */}
+            <NewspaperIcon className="w-96 h-96 text-white" /> {/* Replaced with NewspaperIcon */}
           </div>
           
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-12">

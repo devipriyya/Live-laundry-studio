@@ -41,7 +41,7 @@ const PaymentManagement = () => {
       processingFee: 2.70,
       netAmount: 87.29,
       gateway: 'Stripe',
-      currency: 'USD',
+      currency: 'INR',
       refundable: true,
       notes: 'Premium service payment'
     },
@@ -59,7 +59,7 @@ const PaymentManagement = () => {
       processingFee: 1.04,
       netAmount: 33.46,
       gateway: 'PayPal',
-      currency: 'USD',
+      currency: 'INR',
       refundable: false,
       notes: 'Regular wash & fold service'
     },
@@ -77,7 +77,7 @@ const PaymentManagement = () => {
       processingFee: 0.00,
       netAmount: 0.00,
       gateway: 'Bank Direct',
-      currency: 'USD',
+      currency: 'INR',
       refundable: false,
       notes: 'Express service - payment failed, retry required'
     },
@@ -95,7 +95,7 @@ const PaymentManagement = () => {
       processingFee: 2.03,
       netAmount: 65.47,
       gateway: 'Stripe',
-      currency: 'USD',
+      currency: 'INR',
       refundable: false,
       notes: 'Customer requested refund due to service issue'
     }
@@ -254,16 +254,16 @@ const PaymentManagement = () => {
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Amount:</span>
-                      <span className="font-medium">${payment.amount.toFixed(2)}</span>
+                      <span className="font-medium">₹{payment.amount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Processing Fee:</span>
-                      <span className="font-medium">-${payment.processingFee.toFixed(2)}</span>
+                      <span className="font-medium">-₹{payment.processingFee.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-gray-200 pt-2">
                       <div className="flex justify-between font-bold">
                         <span>Net Amount:</span>
-                        <span className="text-green-600">${payment.netAmount.toFixed(2)}</span>
+                        <span className="text-green-600">₹{payment.netAmount.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -323,7 +323,7 @@ const PaymentManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Total Revenue</p>
-                <p className="text-2xl font-bold text-green-600">${totalRevenue.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-green-600">₹{totalRevenue.toFixed(2)}</p>
               </div>
               <div className="bg-green-100 p-3 rounded-lg">
                 <CurrencyDollarIcon className="h-6 w-6 text-green-600" />
@@ -335,7 +335,7 @@ const PaymentManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Pending Payments</p>
-                <p className="text-2xl font-bold text-yellow-600">${pendingAmount.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-yellow-600">₹{pendingAmount.toFixed(2)}</p>
               </div>
               <div className="bg-yellow-100 p-3 rounded-lg">
                 <ClockIcon className="h-6 w-6 text-yellow-600" />
@@ -347,7 +347,7 @@ const PaymentManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Refunded Amount</p>
-                <p className="text-2xl font-bold text-purple-600">${refundedAmount.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-purple-600">₹{refundedAmount.toFixed(2)}</p>
               </div>
               <div className="bg-purple-100 p-3 rounded-lg">
                 <ArrowPathIcon className="h-6 w-6 text-purple-600" />
@@ -359,7 +359,7 @@ const PaymentManagement = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Processing Fees</p>
-                <p className="text-2xl font-bold text-red-600">${processingFees.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-red-600">₹{processingFees.toFixed(2)}</p>
               </div>
               <div className="bg-red-100 p-3 rounded-lg">
                 <BanknotesIcon className="h-6 w-6 text-red-600" />

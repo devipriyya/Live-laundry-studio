@@ -2,8 +2,15 @@ const isAdmin = (req, res, next) => {
   if (req.user && req.user.role === 'admin') return next();
   return res.status(403).json({ message: 'Admin only' });
 };
-const isDelivery = (req, res, next) => {
+
+const isDeliveryBoy = (req, res, next) => {
   if (req.user && req.user.role === 'delivery') return next();
-  return res.status(403).json({ message: 'Delivery only' });
+  return res.status(403).json({ message: 'Delivery staff only' });
 };
-module.exports = { isAdmin, isDelivery };
+
+const isAdminOrDeliveryBoy = (req, res, next) => {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'delivery')) return next();
+  return res.status(403).json({ message: 'Admin or delivery staff only' });
+};
+
+module.exports = { isAdmin, isDeliveryBoy, isAdminOrDeliveryBoy };

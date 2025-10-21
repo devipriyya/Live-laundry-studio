@@ -12,7 +12,7 @@ import {
   ArrowRightOnRectangleIcon,
   MapPinIcon,
   PhoneIcon,
-  EnvelopeIcon,
+  // EnvelopeIcon,  // Removed mail icon import
   SparklesIcon,
   ShoppingBagIcon,
   CubeIcon,
@@ -104,9 +104,7 @@ const DashboardLayout = () => {
               <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
             </button>
             
-            <button className="p-2 text-gray-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all duration-200">
-              <EnvelopeIcon className="h-6 w-6" />
-            </button>
+            {/* Removed mail icon button */}
             
             <button 
               onClick={() => {

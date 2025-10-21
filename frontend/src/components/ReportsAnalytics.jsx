@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   ChartBarIcon,
   ChartPieIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CalendarDaysIcon,
   CurrencyDollarIcon,
   UsersIcon,
@@ -75,9 +75,9 @@ const ReportsAnalytics = () => {
           <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
           <div className="flex items-center mt-2">
             {growth >= 0 ? (
-              <TrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+              <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
             ) : (
-              <TrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
+              <ArrowTrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
             )}
             <span className={`text-sm font-medium ${growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {Math.abs(growth)}% {growth >= 0 ? 'increase' : 'decrease'}
@@ -194,9 +194,9 @@ const ReportsAnalytics = () => {
                 <td className="py-3">
                   <div className="flex items-center">
                     {customer.growth >= 0 ? (
-                      <TrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                      <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
                     ) : (
-                      <TrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
+                      <ArrowTrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
                     )}
                     <span className={`text-sm ${customer.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {Math.abs(customer.growth)}%
@@ -303,7 +303,7 @@ const ReportsAnalytics = () => {
             title="Avg Order Value"
             value={`$${analyticsData.overview.avgOrderValue}`}
             growth={analyticsData.overview.avgOrderGrowth}
-            icon={TrendingUpIcon}
+            icon={ArrowTrendingUpIcon}
             color="bg-gradient-to-br from-orange-500 to-orange-600"
           />
         </div>
@@ -325,7 +325,7 @@ const ReportsAnalytics = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center mb-2">
-                <TrendingUpIcon className="h-5 w-5 text-blue-600 mr-2" />
+                <ArrowTrendingUpIcon className="h-5 w-5 text-blue-600 mr-2" />
                 <span className="font-medium text-blue-900">Revenue Growth</span>
               </div>
               <p className="text-sm text-blue-700">

@@ -70,16 +70,17 @@ const SchedulePickup = () => {
 
   const states = [
     { value: '', label: 'Select State' },
-    { value: 'CA', label: 'California' },
-    { value: 'NY', label: 'New York' },
-    { value: 'TX', label: 'Texas' },
-    { value: 'FL', label: 'Florida' },
-    { value: 'IL', label: 'Illinois' },
-    { value: 'PA', label: 'Pennsylvania' },
-    { value: 'OH', label: 'Ohio' },
-    { value: 'MI', label: 'Michigan' },
-    { value: 'GA', label: 'Georgia' },
-    { value: 'NC', label: 'North Carolina' }
+    { value: 'AH', label: 'Ahmedabad' },
+    { value: 'BL', label: 'Bangalore' },
+    { value: 'CH', label: 'Chennai' },
+    { value: 'DL', label: 'Delhi' },
+    { value: 'HY', label: 'Hyderabad' },
+    { value: 'JA', label: 'Jaipur' },
+    { value: 'KO', label: 'Kolkata' },
+    { value: 'KE', label: 'Kerala' },
+    { value: 'LU', label: 'Lucknow' },
+    { value: 'MU', label: 'Mumbai' },
+    { value: 'PU', label: 'Pune' }
   ];
 
   const clothingData = {
@@ -146,6 +147,178 @@ const SchedulePickup = () => {
     setTotalPrice(total);
   }, [selectedClothes]);
 
+  // Add helper functions for date validation
+  const getTodayDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
+  // Add function to get max date (3 months from today)
+  const getMaxDate = () => {
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3);
+    return maxDate.toISOString().split('T')[0];
+  };
+
+  // Add enhanced validation functions
+  const validatePickupDate = (dateString) => {
+    if (!dateString) return 'Pickup date is required';
+    
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Set selected date time to 0 for accurate comparison
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    // Check if date is in the past
+    if (selectedDate < today) {
+      return 'Pickup date cannot be in the past';
+    }
+    
+    // Check if date exceeds 3 months from today
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3);
+    maxDate.setHours(0, 0, 0, 0);
+    if (selectedDate > maxDate) {
+      return 'Pickup date cannot be more than 3 months from today';
+    }
+    
+    return '';
+  };
+
+  const validatePhoneNumber = (phone) => {
+    if (!phone) return 'Phone number is required';
+    // Remove any non-digit characters for validation
+    const digitsOnly = phone.replace(/\D/g, '');
+    if (digitsOnly.length !== 10) {
+      return 'Phone number must be exactly 10 digits';
+    }
+    // Check if it starts with a valid Indian mobile prefix (6, 7, 8, or 9)
+    if (!/^[6-9]/.test(digitsOnly)) {
+      return 'Phone number must start with 6, 7, 8, or 9';
+    }
+    return '';
+  };
+
+  const validateEmail = (email) => {
+    if (!email) return 'Email is required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return 'Please enter a valid email address';
+    }
+    return '';
+  };
+
+  // Real-time form validation
+  useEffect(() => {
+    console.log('Schedule data changed:', scheduleData);
+    // Only validate if the user has started filling the form
+    if (
+      scheduleData.pickupDate ||
+      scheduleData.pickupTime ||
+      scheduleData.address.street ||
+      scheduleData.address.city ||
+      scheduleData.address.state ||
+      scheduleData.address.zipCode ||
+      scheduleData.contact.name ||
+      scheduleData.contact.phone ||
+      scheduleData.contact.email
+    ) {
+      console.log('Validating form...');
+      validateForm();
+    }
+  }, [scheduleData]);
+
+  const handleInputChange = (section, field, value) => {
+    console.log(`Input changed: section=${section}, field=${field}, value=${value}`);
+    
+    // Special handling for phone number formatting
+    if (section === 'contact' && field === 'phone') {
+      // Remove all non-digit characters
+      let digitsOnly = value.replace(/\D/g, '');
+      // Limit to 10 digits
+      digitsOnly = digitsOnly.slice(0, 10);
+      value = digitsOnly;
+    }
+    
+    setScheduleData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+    
+    // Clear errors when typing
+    if (errors[field] || errors[`${section}.${field}`]) {
+      setErrors(prev => ({ 
+        ...prev, 
+        [field]: '', 
+        [`${section}.${field}`]: '' 
+      }));
+    }
+    
+    // Real-time validation for specific fields
+    if (section === 'address') {
+      switch (field) {
+        case 'street':
+          if (value.trim().length > 0 && value.trim().length < 5) {
+            setErrors(prev => ({ 
+              ...prev, 
+              street: 'Street address must be at least 5 characters' 
+            }));
+          }
+          break;
+        case 'city':
+          if (value.trim().length > 0 && !/^[a-zA-Z\s]+$/.test(value.trim())) {
+            setErrors(prev => ({ 
+              ...prev, 
+              city: 'City must contain letters and spaces only' 
+            }));
+          }
+          break;
+        case 'zipCode':
+          if (value.trim().length > 0 && !/^\d{6}$/.test(value.trim())) {
+            setErrors(prev => ({ 
+              ...prev, 
+              zipCode: 'ZIP code must be exactly 6 digits' 
+            }));
+          }
+          break;
+      }
+    } else if (section === 'contact') {
+      switch (field) {
+        case 'name':
+          if (value.trim().length > 0 && !/^[a-zA-Z\s]+$/.test(value.trim())) {
+            setErrors(prev => ({ 
+              ...prev, 
+              name: 'Name must contain letters and spaces only' 
+            }));
+          }
+          break;
+        case 'phone':
+          // Enhanced phone validation
+          const phoneError = validatePhoneNumber(value);
+          if (phoneError) {
+            setErrors(prev => ({ ...prev, phone: phoneError }));
+          } else {
+            setErrors(prev => ({ ...prev, phone: '' }));
+          }
+          break;
+        case 'email':
+          // Enhanced email validation
+          const emailError = validateEmail(value);
+          if (emailError) {
+            setErrors(prev => ({ ...prev, email: emailError }));
+          } else {
+            setErrors(prev => ({ ...prev, email: '' }));
+          }
+          break;
+      }
+    }
+  };
+
   const updateClothQuantity = (itemName, change) => {
     setSelectedClothes(prev => {
       const currentQuantity = prev[itemName] || 0;
@@ -165,99 +338,77 @@ const SchedulePickup = () => {
 
   const validateForm = () => {
     const newErrors = {};
+    
+    // Get today's date for future date validation
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    // Required fields validation
-    if (!scheduleData.pickupDate) newErrors.pickupDate = 'Pickup date is required';
-    if (!scheduleData.pickupTime) newErrors.pickupTime = 'Pickup time is required';
-    
+    // Enhanced Pickup Date validation
+    const dateError = validatePickupDate(scheduleData.pickupDate);
+    if (dateError) {
+      newErrors.pickupDate = dateError;
+    }
+
+    // Pickup Time validation: required
+    if (!scheduleData.pickupTime) {
+      newErrors.pickupTime = 'Pickup time is required';
+    }
+
     // Address validation
-    if (!scheduleData.address.street.trim()) newErrors.street = 'Street address is required';
-    if (!scheduleData.address.city.trim()) newErrors.city = 'City is required';
-    if (!scheduleData.address.state) newErrors.state = 'State is required';
-    if (!scheduleData.address.zipCode.trim()) newErrors.zipCode = 'ZIP code is required';
-    
-    // Contact validation
-    if (!scheduleData.contact.name.trim()) newErrors.name = 'Name is required';
-    if (!scheduleData.contact.phone.trim()) newErrors.phone = 'Phone number is required';
-    if (!scheduleData.contact.email.trim()) newErrors.email = 'Email is required';
-    
+    // Street Address: required, min 5 chars
+    if (!scheduleData.address.street.trim()) {
+      newErrors.street = 'Street address is required';
+    } else if (scheduleData.address.street.trim().length < 5) {
+      newErrors.street = 'Street address must be at least 5 characters';
+    }
+
+    // City: required, letters only
+    if (!scheduleData.address.city.trim()) {
+      newErrors.city = 'City is required';
+    } else if (!/^[a-zA-Z\s]+$/.test(scheduleData.address.city.trim())) {
+      newErrors.city = 'City must contain letters and spaces only';
+    }
+
+    // State: required (not "Select State")
+    if (!scheduleData.address.state || scheduleData.address.state === '') {
+      newErrors.state = 'State is required';
+    }
+
+    // ZIP Code: required, exactly 6 digits
+    if (!scheduleData.address.zipCode.trim()) {
+      newErrors.zipCode = 'ZIP code is required';
+    } else if (!/^\d{6}$/.test(scheduleData.address.zipCode.trim())) {
+      newErrors.zipCode = 'ZIP code must be exactly 6 digits';
+    }
+
+    // Contact validation with enhanced validation
+    // Name: required, letters and spaces only
+    if (!scheduleData.contact.name.trim()) {
+      newErrors.name = 'Name is required';
+    } else if (!/^[a-zA-Z\s]+$/.test(scheduleData.contact.name.trim())) {
+      newErrors.name = 'Name must contain letters and spaces only';
+    }
+
+    // Phone Number: required, exactly 10 digits, numbers only
+    const phoneError = validatePhoneNumber(scheduleData.contact.phone);
+    if (phoneError) {
+      newErrors.phone = phoneError;
+    }
+
+    // Email: required, must match valid email format
+    const emailError = validateEmail(scheduleData.contact.email);
+    if (emailError) {
+      newErrors.email = emailError;
+    }
+
     // Cloth selection validation
     if (Object.keys(selectedClothes).length === 0 || totalPrice === 0) {
       newErrors.clothes = 'Please select at least one item for washing';
     }
 
+    console.log('Validation errors:', newErrors);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-
-  const handleInputChange = (section, field, value) => {
-    setScheduleData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
-      }
-    }));
-    
-    // Clear errors when typing
-    if (errors[field] || errors[`${section}.${field}`]) {
-      setErrors(prev => ({ 
-        ...prev, 
-        [field]: '', 
-        [`${section}.${field}`]: '' 
-      }));
-    }
-  };
-
-  const processPayment = () => {
-    return new Promise((resolve, reject) => {
-      // Create Razorpay options
-      const options = {
-        key: 'rzp_test_RIlW2V6HMBx49X', // Replace with your Razorpay key
-        amount: totalPrice * 100, // Amount in paise
-        currency: 'INR',
-        name: 'Fabrico Laundry',
-        description: 'Laundry Service Payment',
-        image: '/logo.png',
-        handler: function (response) {
-          console.log('Payment successful:', response);
-          resolve(response);
-        },
-        prefill: {
-          name: scheduleData.contact.name,
-          email: scheduleData.contact.email,
-          contact: scheduleData.contact.phone
-        },
-        notes: {
-          address: `${scheduleData.address.street}, ${scheduleData.address.city}`
-        },
-        theme: {
-          color: '#8B5CF6'
-        },
-        modal: {
-          ondismiss: function() {
-            reject(new Error('Payment cancelled by user'));
-          }
-        }
-      };
-
-      // Check if Razorpay is loaded
-      if (typeof window.Razorpay !== 'undefined') {
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-      } else {
-        // Fallback: simulate payment success for demo
-        console.log('Razorpay not loaded, simulating payment success');
-        setTimeout(() => {
-          resolve({
-            razorpay_payment_id: 'pay_demo_' + Date.now(),
-            razorpay_order_id: 'order_demo_' + Date.now(),
-            razorpay_signature: 'demo_signature'
-          });
-        }, 2000);
-      }
-    });
   };
 
   const handleSubmit = async (e) => {
@@ -268,16 +419,37 @@ const SchedulePickup = () => {
     console.log('SchedulePickup: Selected clothes:', selectedClothes);
     console.log('SchedulePickup: Total price:', totalPrice);
     
-    if (!validateForm()) {
-      // Scroll to first error
-      const firstError = Object.keys(errors)[0];
-      const errorElement = document.querySelector(`[name="${firstError}"]`);
-      if (errorElement) {
-        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    // Validate form before submission
+    const isFormValid = validateForm();
+    console.log('Form validation result:', isFormValid);
+    console.log('Current errors:', errors);
+    
+    // Since state updates are async, we need to check errors directly from validation
+    // The validateForm function returns true if there are no errors
+    if (!isFormValid) {
+      console.log('Form is not valid, preventing submission');
+      // Scroll to first error after a brief delay to allow state update
+      setTimeout(() => {
+        const errorKeys = Object.keys(errors);
+        if (errorKeys.length > 0) {
+          const firstError = errorKeys[0];
+          console.log('First error field:', firstError);
+          const errorElement = document.querySelector(`[name="${firstError}"]`);
+          if (errorElement) {
+            errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            // Try to find the first error element by ID or other means
+            const errorElements = document.querySelectorAll('[class*="error"], [class*="red"]');
+            if (errorElements.length > 0) {
+              errorElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }
+        }
+      }, 10);
       return;
     }
 
+    console.log('Form is valid, proceeding with submission');
     setLoading(true);
     try {
       // Process payment first
@@ -391,83 +563,119 @@ const SchedulePickup = () => {
     }
   };
 
-  const getTodayDate = () => new Date().toISOString().split('T')[0];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* Header */}
-      <div className="bg-white text-gray-900 backdrop-blur-sm shadow-sm sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
+      {/* Modern Header */}
+      <div className="bg-white border-b-2 border-teal-500 shadow-sm sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-gray-600 hover:text-teal-600 transition-colors p-2 hover:bg-teal-50 rounded-lg"
             >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              Back
+              <ArrowLeftIcon className="h-5 w-5" />
+              <span className="font-medium">Back</span>
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">Schedule Pickup</h1>
-            <div className="w-16"></div> {/* Spacer for center alignment */}
+            <div className="text-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">Schedule Pickup</h1>
+              <p className="text-sm text-gray-600 mt-1">Easy 3-step booking process</p>
+            </div>
+            <div className="w-20"></div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center">
+            <div className="flex items-center">
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                  1
+                </div>
+                <span className="text-xs font-medium text-teal-600 mt-2">Select Items</span>
+              </div>
+              <div className="w-20 h-1 bg-teal-200 mx-2"></div>
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                  2
+                </div>
+                <span className="text-xs font-medium text-teal-600 mt-2">Schedule</span>
+              </div>
+              <div className="w-20 h-1 bg-teal-200 mx-2"></div>
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                  3
+                </div>
+                <span className="text-xs font-medium text-teal-600 mt-2">Confirm</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* Cloth Selection */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-white/20">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Select Your Items</h2>
-              <p className="text-gray-600">Choose the clothes you want to wash with their quantities</p>
+          {/* Modern Cloth Selection */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-teal-100">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-gradient-to-br from-teal-500 to-cyan-500 w-10 h-10 rounded-lg flex items-center justify-center">
+                  <ShoppingBagIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Select Your Items</h2>
+                  <p className="text-sm text-gray-600">Choose clothes and quantities</p>
+                </div>
+              </div>
             </div>
 
             {Object.entries(clothingData).map(([category, items]) => (
-              <div key={category} className="mb-8">
-                <div className="flex items-center mb-4">
-                  <ShoppingBagIcon className="h-6 w-6 text-blue-600 mr-2" />
-                  <h3 className="text-xl font-semibold text-gray-900">{category}</h3>
-                </div>
+              <div key={category} className="mb-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
+                  {category}
+                </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {items.map((item) => (
-                    <div key={item.name} className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-100">
-                      <div className="flex justify-between items-start mb-3">
+                    <div key={item.name} className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg p-4 border-2 border-teal-100 hover:border-teal-300 transition-all">
+                      <div className="flex justify-between items-start mb-2">
                         <div>
                           <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
-                          <p className="text-blue-600 font-bold">₹{item.price}</p>
+                          <p className="text-teal-600 font-bold text-lg">₹{item.price}</p>
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Quantity:</span>
-                        <div className="flex items-center space-x-2">
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="text-xs text-gray-600 font-medium">Quantity:</span>
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => updateClothQuantity(item.name, -1)}
                             disabled={!selectedClothes[item.name] || selectedClothes[item.name] === 0}
-                            className="w-8 h-8 rounded-full bg-red-100 text-red-600 hover:bg-red-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                            className="w-7 h-7 rounded-lg bg-white border-2 border-red-300 text-red-600 hover:bg-red-50 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center transition-colors font-bold"
                           >
-                            <MinusIcon className="h-4 w-4" />
+                            −
                           </button>
                           
-                          <span className="w-8 text-center font-semibold text-gray-900">
+                          <span className="w-10 text-center font-bold text-gray-900 text-lg">
                             {selectedClothes[item.name] || 0}
                           </span>
                           
                           <button
                             type="button"
                             onClick={() => updateClothQuantity(item.name, 1)}
-                            className="w-8 h-8 rounded-full bg-green-100 text-green-600 hover:bg-green-200 flex items-center justify-center transition-colors"
+                            className="w-7 h-7 rounded-lg bg-white border-2 border-teal-300 text-teal-600 hover:bg-teal-50 flex items-center justify-center transition-colors font-bold"
                           >
-                            <PlusIcon className="h-4 w-4" />
+                            +
                           </button>
                         </div>
                       </div>
                       
                       {selectedClothes[item.name] > 0 && (
-                        <div className="mt-2 pt-2 border-t border-blue-200">
-                          <p className="text-sm font-semibold text-blue-700">
+                        <div className="mt-3 pt-3 border-t-2 border-teal-200">
+                          <p className="text-sm font-bold text-teal-700">
                             Subtotal: ₹{(item.price * selectedClothes[item.name]).toFixed(0)}
                           </p>
                         </div>
@@ -478,18 +686,17 @@ const SchedulePickup = () => {
               </div>
             ))}
 
-            {/* Total Price Display */}
-            <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-6 border border-purple-200">
+            {/* Modern Total Price Display */}
+            <div className="bg-gradient-to-r from-teal-500 to-cyan-500 rounded-xl p-5 shadow-md border-2 border-teal-400">
               <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Total Amount</h3>
-                  <p className="text-gray-600">Including all selected items</p>
+                <div className="text-white">
+                  <h3 className="text-lg font-bold">Total Amount</h3>
+                  <p className="text-teal-50 text-sm">
+                    {Object.values(selectedClothes).reduce((sum, quantity) => sum + quantity, 0)} items selected
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-3xl font-bold text-purple-600">₹{totalPrice.toFixed(0)}</p>
-                  <p className="text-sm text-gray-600">
-                    {Object.values(selectedClothes).reduce((sum, quantity) => sum + quantity, 0)} items
-                  </p>
+                  <p className="text-3xl font-black text-white">₹{totalPrice.toFixed(0)}</p>
                 </div>
               </div>
             </div>
@@ -504,107 +711,137 @@ const SchedulePickup = () => {
             )}
           </div>
 
-          {/* Pickup Schedule */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-white/20">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Pickup Schedule</h2>
-              <p className="text-gray-600">Set your preferred pickup date and time</p>
+          {/* Modern Pickup Schedule */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-teal-100">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-gradient-to-br from-teal-500 to-cyan-500 w-10 h-10 rounded-lg flex items-center justify-center">
+                  <CalendarDaysIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Pickup Schedule</h2>
+                  <p className="text-sm text-gray-600">When should we collect?</p>
+                </div>
+              </div>
             </div>
 
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-100">
-                <div className="flex items-center mb-6">
-                  <div className="bg-blue-500 p-3 rounded-xl mr-4">
-                    <TruckIcon className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">Pickup Details</h3>
-                    <p className="text-gray-600 text-sm">When should we collect your items?</p>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-5 border-2 border-teal-200">
+                  <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <CalendarDaysIcon className="h-5 w-5 text-teal-600" />
+                    Pickup Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="pickupDate"
+                    min={getTodayDate()}
+                    max={getMaxDate()}
+                    value={scheduleData.pickupDate}
+                    onChange={(e) => {
+                      const selectedDate = e.target.value;
+                      console.log('Date changed:', selectedDate);
+                      setScheduleData(prev => ({ ...prev, pickupDate: selectedDate }));
+                      
+                      // Clear error when date is selected
+                      if (errors.pickupDate) {
+                        setErrors(prev => ({ ...prev, pickupDate: '' }));
+                      }
+                      
+                      // Enhanced date validation
+                      const dateError = validatePickupDate(selectedDate);
+                      console.log('Date validation result:', dateError);
+                      if (dateError) {
+                        setErrors(prev => ({ ...prev, pickupDate: dateError }));
+                      }
+                    }}
+                    className={`w-full px-4 py-3 rounded-lg border-2 transition-all bg-white text-gray-900 font-medium
+                    ${errors.pickupDate 
+                      ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
+                      : 'border-teal-200 focus:border-teal-500 focus:ring-teal-200'
+                    } focus:ring-4`}
+                  />
+                  {errors.pickupDate && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <ExclamationTriangleIcon className="h-4 w-4" />
+                      {errors.pickupDate}
+                    </p>
+                  )}
                 </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Pickup Date *
-                    </label>
-                    <input
-                      type="date"
-                      name="pickupDate"
-                      min={getTodayDate()}
-                      value={scheduleData.pickupDate}
-                      onChange={(e) => setScheduleData(prev => ({ ...prev, pickupDate: e.target.value }))}
-                      className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 bg-white text-gray-900
-                        ${errors.pickupDate 
-                          ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
-                          : 'border-gray-200 focus:border-blue-500 focus:ring-blue-200'
-                        } focus:ring-4 bg-white text-gray-900 placeholder-gray-500`}
-                    />
-                    {errors.pickupDate && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center">
-                        <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-                        {errors.pickupDate}
-                      </p>
-                    )}
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-5 border-2 border-teal-200">
+                  <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <ClockIcon className="h-5 w-5 text-teal-600" />
+                    Pickup Time *
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-2">
+                    {timeSlots.map(slot => (
+                      <button
+                        key={slot.value}
+                        type="button"
+                        disabled={!slot.available}
+                        onClick={() => {
+                          setScheduleData(prev => ({ ...prev, pickupTime: slot.value }));
+                          
+                          // Clear error when time is selected
+                          if (errors.pickupTime) {
+                            setErrors(prev => ({ ...prev, pickupTime: '' }));
+                          }
+                        }}
+                        className={`
+                          p-2.5 rounded-lg text-sm font-semibold transition-all relative
+                          ${scheduleData.pickupTime === slot.value
+                            ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md border-2 border-teal-400'
+                            : slot.available
+                              ? 'bg-white border-2 border-teal-200 text-gray-700 hover:border-teal-400 hover:bg-teal-50'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed border-2 border-gray-200'
+                          }
+                        `}
+                      >
+                        {slot.value}
+                        {slot.popular && slot.available && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full"></span>
+                        )}
+                      </button>
+                    ))}
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Pickup Time *
-                    </label>
-                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                      {timeSlots.map(slot => (
-                        <button
-                          key={slot.value}
-                          type="button"
-                          disabled={!slot.available}
-                          onClick={() => setScheduleData(prev => ({ ...prev, pickupTime: slot.value }))}
-                          className={`
-                            p-3 rounded-lg text-sm font-medium transition-all relative
-                            ${scheduleData.pickupTime === slot.value
-                              ? 'bg-blue-500 text-white shadow-lg ring-2 ring-blue-300'
-                              : slot.available
-                                ? 'bg-white border border-gray-200 text-gray-700 hover:bg-blue-50 hover:border-blue-300'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            }
-                          `}
-                        >
-                          {slot.value}
-                          {slot.popular && slot.available && (
-                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-400 rounded-full"></span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                    {errors.pickupTime && (
-                      <p className="text-red-500 text-sm mt-1 flex items-center">
-                        <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
-                        {errors.pickupTime}
-                      </p>
-                    )}
-                  </div>
+                  {errors.pickupTime && (
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
+                      <ExclamationTriangleIcon className="h-4 w-4" />
+                      {errors.pickupTime}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Address & Contact Information */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-white/20">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Address & Contact</h2>
-              <p className="text-gray-600">Where should we pick up your items?</p>
+          {/* Modern Address & Contact */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-teal-100">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-gradient-to-br from-teal-500 to-cyan-500 w-10 h-10 rounded-lg flex items-center justify-center">
+                  <MapPinIcon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Address & Contact</h2>
+                  <p className="text-sm text-gray-600">Pickup location details</p>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Address Information */}
               <div className="space-y-4">
-                <div className="flex items-center mb-4">
-                  <MapPinIcon className="h-6 w-6 text-purple-600 mr-2" />
-                  <h3 className="text-xl font-semibold text-gray-900">Address</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-6 bg-gradient-to-b from-teal-500 to-cyan-500 rounded"></div>
+                  <h3 className="text-lg font-bold text-gray-800">Pickup Address</h3>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
                     Street Address *
                   </label>
                   <input
@@ -613,14 +850,14 @@ const SchedulePickup = () => {
                     placeholder="123 Main Street, Apt 4B"
                     value={scheduleData.address.street}
                     onChange={(e) => handleInputChange('address', 'street', e.target.value)}
-                    className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
+                    className={`w-full px-4 py-3 rounded-lg border-2 transition-all font-medium
                       ${errors.street 
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
-                        : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'
-                      } focus:ring-4 bg-white text-gray-900 placeholder-gray-500`}
+                        : 'border-gray-200 focus:border-teal-500 focus:ring-teal-200'
+                      } focus:ring-4 bg-white text-gray-900 placeholder-gray-400`}
                   />
                   {errors.street && (
-                    <p className="text-red-500 text-sm mt-1">{errors.street}</p>
+                    <p className="text-red-500 text-sm mt-1 font-medium">{errors.street}</p>
                   )}
                 </div>
                 
@@ -653,7 +890,15 @@ const SchedulePickup = () => {
                     <select
                       name="state"
                       value={scheduleData.address.state}
-                      onChange={(e) => handleInputChange('address', 'state', e.target.value)}
+                      onChange={(e) => {
+                        const selectedState = e.target.value;
+                        handleInputChange('address', 'state', selectedState);
+                        
+                        // Clear error when state is selected
+                        if (errors.state && selectedState !== '') {
+                          setErrors(prev => ({ ...prev, state: '' }));
+                        }
+                      }}
                       className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
                         ${errors.state 
                           ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
@@ -677,9 +922,13 @@ const SchedulePickup = () => {
                   <input
                     type="text"
                     name="zipCode"
-                    placeholder="12345"
+                    placeholder="123456"
                     value={scheduleData.address.zipCode}
-                    onChange={(e) => handleInputChange('address', 'zipCode', e.target.value)}
+                    onChange={(e) => {
+                      // Only allow digits
+                      const value = e.target.value.replace(/\D/g, '');
+                      handleInputChange('address', 'zipCode', value);
+                    }}
                     className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
                       ${errors.zipCode 
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
@@ -707,11 +956,9 @@ const SchedulePickup = () => {
 
               {/* Contact Information */}
               <div className="space-y-4">
-                <div className="flex items-center mb-4">
-                  <div className="bg-purple-100 p-2 rounded-lg mr-2">
-                    <span className="text-purple-600 text-lg">📞</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900">Contact</h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-6 bg-gradient-to-b from-teal-500 to-cyan-500 rounded"></div>
+                  <h3 className="text-lg font-bold text-gray-800">Contact Details</h3>
                 </div>
                 
                 <div>
@@ -742,9 +989,11 @@ const SchedulePickup = () => {
                   <input
                     type="tel"
                     name="phone"
-                    placeholder="(555) 123-4567"
+                    placeholder="9876543210"
                     value={scheduleData.contact.phone}
-                    onChange={(e) => handleInputChange('contact', 'phone', e.target.value)}
+                    onChange={(e) => {
+                      handleInputChange('contact', 'phone', e.target.value);
+                    }}
                     className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
                       ${errors.phone 
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
@@ -754,6 +1003,7 @@ const SchedulePickup = () => {
                   {errors.phone && (
                     <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
                   )}
+                  <p className="text-xs text-gray-500 mt-1">Enter 10-digit mobile number</p>
                 </div>
                 
                 <div>
@@ -765,7 +1015,10 @@ const SchedulePickup = () => {
                     name="email"
                     placeholder="john@example.com"
                     value={scheduleData.contact.email}
-                    onChange={(e) => handleInputChange('contact', 'email', e.target.value)}
+                    onChange={(e) => {
+                      console.log('Email changed:', e.target.value);
+                      handleInputChange('contact', 'email', e.target.value);
+                    }}
                     className={`w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
                       ${errors.email 
                         ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
@@ -837,29 +1090,30 @@ const SchedulePickup = () => {
             </div>
           )}
 
-          {/* Submit Button */}
-          <div className="flex justify-end space-x-4">
+          {/* Modern Submit Buttons */}
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-200"
+              className="px-8 py-3.5 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 hover:border-gray-400 transition-all"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading || totalPrice === 0}
-              className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-200 flex items-center"
+              disabled={loading || totalPrice === 0 || Object.keys(errors).length > 0}
+              onClick={() => console.log('Submit button clicked, errors:', errors, 'errors length:', Object.keys(errors).length)}
+              className="px-8 py-3.5 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg font-bold shadow-md hover:shadow-lg hover:from-teal-700 hover:to-cyan-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Processing Payment...
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Processing Payment...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircleIcon className="h-5 w-5 mr-2" />
-                  Pay ₹{totalPrice.toFixed(0)} & Schedule Pickup
+                  <CheckCircleIcon className="h-5 w-5" />
+                  <span>Pay ₹{totalPrice.toFixed(0)} & Schedule</span>
                 </>
               )}
             </button>
