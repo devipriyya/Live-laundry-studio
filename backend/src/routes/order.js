@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const PDFDocument = require('pdfkit');
 const Order = require('../models/Order');
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 const { isAdmin, isDeliveryBoy, isAdminOrDeliveryBoy } = require('../middleware/role');
 
 // Admin: Get order trends (last 7 days)
@@ -136,57 +137,108 @@ router.get('/analytics/income', protect, isAdmin, async (req, res) => {
   }
 });
 
-// create order (customer)
-router.post('/', protect, async (req, res) => {
+// Admin: Get service performance analytics
+router.get('/analytics/services', protect, isAdmin, async (req, res) => {
   try {
-    // Use authenticated user ID
-    const userId = req.user._id;
+    // Aggregate orders by service type to get performance metrics
+    const servicePerformance = await Order.aggregate([
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.name',
+          orders: { $sum: 1 },
+          revenue: { $sum: { $multiply: ['$items.quantity', '$items.price'] } },
+          totalQuantity: { $sum: '$items.quantity' }
+        }
+      },
+      {
+        $sort: { revenue: -1 }
+      }
+    ]);
     
-    // Validate required fields for dry cleaning orders
+    // Calculate percentages and format data
+    const totalRevenue = servicePerformance.reduce((sum, service) => sum + service.revenue, 0);
+    
+    const formattedData = servicePerformance.map((service, index) => {
+      const percentage = totalRevenue > 0 ? (service.revenue / totalRevenue) * 100 : 0;
+      
+      // Define colors for different services
+      const colors = [
+        'bg-blue-500',
+        'bg-green-500', 
+        'bg-purple-500',
+        'bg-orange-500',
+        'bg-red-500',
+        'bg-indigo-500',
+        'bg-pink-500',
+        'bg-yellow-500'
+      ];
+      
+      return {
+        service: service._id,
+        revenue: parseFloat(service.revenue.toFixed(2)),
+        orders: service.orders,
+        quantity: service.totalQuantity,
+        percentage: parseFloat(percentage.toFixed(1)),
+        color: colors[index % colors.length]
+      };
+    });
+    
+    res.json(formattedData);
+  } catch (error) {
+    console.error('Error fetching service performance data:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// create order (customer)
+router.post('/', optionalAuth, async (req, res) => {
+  try {
+    const authenticatedUserId = req.user?._id;
+
     const { customerInfo, items, totalAmount, pickupDate, timeSlot } = req.body;
-    
+
     if (!customerInfo || !items || !totalAmount || !pickupDate || !timeSlot) {
-      return res.status(400).json({ 
-        message: 'Missing required fields for order creation' 
+      return res.status(400).json({
+        message: 'Missing required fields for order creation'
       });
     }
-    
-    // Validate customer info
+
     if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
-      return res.status(400).json({ 
-        message: 'Customer name, email, and phone are required' 
+      return res.status(400).json({
+        message: 'Customer name, email, and phone are required'
       });
     }
-    
-    // Validate address for shoe care service
+
     if (items.some(item => item.service === 'shoe-care')) {
       const { address } = customerInfo;
       if (!address || !address.street || !address.city || !address.state || !address.zipCode) {
-        return res.status(400).json({ 
-          message: 'Complete pickup address is required for shoe care orders' 
+        return res.status(400).json({
+          message: 'Complete pickup address is required for shoe care orders'
         });
       }
     }
-    
+
+    const orderNumber = req.body.orderNumber || `ORD-${Date.now()}`;
+
     const orderData = {
       ...req.body,
-      userId: userId,
-      orderNumber: req.body.orderNumber || `ORD-${Date.now()}`,
+      userId: authenticatedUserId || null,
+      orderNumber,
       statusHistory: [{
         status: 'order-placed',
         timestamp: new Date(),
-        updatedBy: userId,
+        updatedBy: authenticatedUserId || null,
         note: 'Order placed by customer'
       }]
     };
-    
+
     const order = new Order(orderData);
     await order.save();
-    
-    // Send confirmation response
+
     res.status(201).json({
       message: 'Order created successfully',
-      order: order
+      order
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -194,12 +246,10 @@ router.post('/', protect, async (req, res) => {
 });
 
 // Create dry cleaning order with specific validation
-router.post('/dry-cleaning', protect, async (req, res) => {
+router.post('/dry-cleaning', optionalAuth, async (req, res) => {
   try {
-    // Use authenticated user ID
-    const userId = req.user._id;
-    
-    // Extract and validate required fields
+    const authenticatedUserId = req.user?._id;
+
     const {
       shoeType,
       serviceType,
@@ -209,31 +259,27 @@ router.post('/dry-cleaning', protect, async (req, res) => {
       pickupAddress,
       contactInfo
     } = req.body;
-    
-    // Validate required fields
+
     if (!shoeType || !serviceType || !numberOfPairs || !pickupDate || !pickupTime || !pickupAddress || !contactInfo) {
-      return res.status(400).json({ 
-        message: 'All fields are required for dry cleaning order' 
+      return res.status(400).json({
+        message: 'All fields are required for dry cleaning order'
       });
     }
-    
-    // Validate contact information
+
     if (!contactInfo.name || !contactInfo.phone || !contactInfo.email) {
-      return res.status(400).json({ 
-        message: 'Contact name, phone, and email are required' 
+      return res.status(400).json({
+        message: 'Contact name, phone, and email are required'
       });
     }
-    
-    // Validate pickup address
+
     if (!pickupAddress.street || !pickupAddress.city || !pickupAddress.state || !pickupAddress.zipCode) {
-      return res.status(400).json({ 
-        message: 'Complete pickup address is required' 
+      return res.status(400).json({
+        message: 'Complete pickup address is required'
       });
     }
-    
-    // Create order data structure that matches our Order model
+
     const orderData = {
-      userId: userId,
+      userId: authenticatedUserId || null,
       orderNumber: `ORD-${Date.now()}`,
       customerInfo: {
         name: contactInfo.name,
@@ -250,12 +296,12 @@ router.post('/dry-cleaning', protect, async (req, res) => {
       items: [{
         name: shoeType,
         quantity: numberOfPairs,
-        price: 15.99, // Default price for shoe care, can be adjusted
+        price: 15.99,
         service: 'shoe-care'
       }],
       totalAmount: 15.99 * numberOfPairs,
       totalItems: numberOfPairs,
-      pickupDate: pickupDate,
+      pickupDate,
       timeSlot: pickupTime,
       specialInstructions: pickupAddress.instructions || '',
       status: 'order-placed',
@@ -263,18 +309,17 @@ router.post('/dry-cleaning', protect, async (req, res) => {
       statusHistory: [{
         status: 'order-placed',
         timestamp: new Date(),
-        updatedBy: userId,
+        updatedBy: authenticatedUserId || null,
         note: 'Dry cleaning order placed by customer'
       }]
     };
-    
+
     const order = new Order(orderData);
     await order.save();
-    
-    // Send confirmation response
+
     res.status(201).json({
       message: 'Dry cleaning order created successfully',
-      order: order
+      order
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -282,12 +327,10 @@ router.post('/dry-cleaning', protect, async (req, res) => {
 });
 
 // Create dry cleaning order for clothes
-router.post('/dry-cleaning-clothes', protect, async (req, res) => {
+router.post('/dry-cleaning-clothes', optionalAuth, async (req, res) => {
   try {
-    // Use authenticated user ID
-    const userId = req.user._id;
+    const authenticatedUserId = req.user?._id;
 
-    // Extract and validate required fields
     const {
       items,
       pickupDate,
@@ -297,30 +340,26 @@ router.post('/dry-cleaning-clothes', protect, async (req, res) => {
       totalAmount
     } = req.body;
 
-    // Validate required fields
     if (!items || !pickupDate || !pickupTime || !pickupAddress || !contactInfo || !totalAmount) {
       return res.status(400).json({
         message: 'All fields are required for dry cleaning order'
       });
     }
 
-    // Validate contact information
     if (!contactInfo.name || !contactInfo.phone || !contactInfo.email) {
       return res.status(400).json({
         message: 'Contact name, phone, and email are required'
       });
     }
 
-    // Validate pickup address
     if (!pickupAddress.street || !pickupAddress.city || !pickupAddress.state || !pickupAddress.zipCode) {
       return res.status(400).json({
         message: 'Complete pickup address is required'
       });
     }
 
-    // Create order data structure that matches our Order model
     const orderData = {
-      userId: userId,
+      userId: authenticatedUserId || null,
       orderNumber: `ORD-${Date.now()}`,
       customerInfo: {
         name: contactInfo.name,
@@ -334,10 +373,10 @@ router.post('/dry-cleaning-clothes', protect, async (req, res) => {
           instructions: pickupAddress.instructions || ''
         }
       },
-      items: items,
-      totalAmount: totalAmount,
+      items,
+      totalAmount,
       totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
-      pickupDate: pickupDate,
+      pickupDate,
       timeSlot: pickupTime,
       specialInstructions: pickupAddress.instructions || '',
       status: 'order-placed',
@@ -345,7 +384,7 @@ router.post('/dry-cleaning-clothes', protect, async (req, res) => {
       statusHistory: [{
         status: 'order-placed',
         timestamp: new Date(),
-        updatedBy: userId,
+        updatedBy: authenticatedUserId || null,
         note: 'Dry cleaning order placed by customer'
       }]
     };
@@ -353,10 +392,9 @@ router.post('/dry-cleaning-clothes', protect, async (req, res) => {
     const order = new Order(orderData);
     await order.save();
 
-    // Send confirmation response
     res.status(201).json({
       message: 'Dry cleaning order created successfully',
-      order: order
+      order
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -1037,6 +1075,142 @@ router.post('/fix-user-associations-improved', protect, isAdmin, async (req, res
   } catch (error) {
     console.error('Error fixing order user associations:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Admin: Export all orders as CSV
+router.get('/export/csv', protect, isAdmin, async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('userId', 'name email')
+      .populate('deliveryBoyId', 'name')
+      .sort({ createdAt: -1 });
+
+    // Create CSV header
+    const csvHeader = [
+      'Order ID',
+      'Customer Name',
+      'Email',
+      'Products',
+      'Quantity',
+      'Price',
+      'Total',
+      'Order Date',
+      'Payment Status',
+      'Delivery Status'
+    ].join(',');
+
+    // Create CSV rows
+    const csvRows = orders.map(order => {
+      // Combine all items into a single string
+      const products = order.items.map(item => item.name).join('; ');
+      const quantities = order.items.map(item => item.quantity).join('; ');
+      const prices = order.items.map(item => item.price).join('; ');
+      
+      return [
+        `"${order.orderNumber}"`,
+        `"${order.customerInfo.name}"`,
+        `"${order.customerInfo.email}"`,
+        `"${products}"`,
+        `"${quantities}"`,
+        `"${prices}"`,
+        `"${order.totalAmount}"`,
+        `"${new Date(order.createdAt).toLocaleDateString()}"`,
+        `"${order.paymentStatus}"`,
+        `"${order.status}"`
+      ].join(',');
+    });
+
+    const csvContent = [csvHeader, ...csvRows].join('\n');
+
+    // Set headers for CSV download
+    res.header('Content-Type', 'text/csv');
+    res.attachment('orders-export.csv');
+    res.status(200).send(csvContent);
+  } catch (error) {
+    console.error('Error exporting orders as CSV:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Export all orders as PDF
+router.get('/export/pdf', protect, isAdmin, async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('userId', 'name email')
+      .populate('deliveryBoyId', 'name')
+      .sort({ createdAt: -1 });
+
+    // Calculate summary statistics
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+    // Create a document
+    const doc = new PDFDocument();
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=orders-export.pdf');
+    
+    // Pipe the PDF into the response
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(20).text('Orders Export', { align: 'center' });
+    doc.moveDown();
+
+    // Summary section
+    doc.fontSize(12);
+    doc.text(`Total Orders: ${totalOrders}`);
+    doc.text(`Total Revenue: ₹${totalRevenue.toFixed(2)}`);
+    doc.moveDown();
+    doc.moveDown();
+
+    // Table headers
+    const tableTop = doc.y;
+    const rowHeight = 20;
+    const startX = 30;
+    
+    doc.fontSize(10);
+    doc.font('Helvetica-Bold');
+    doc.text('Order ID', startX, tableTop);
+    doc.text('Customer', startX + 80, tableTop);
+    doc.text('Email', startX + 160, tableTop);
+    doc.text('Products', startX + 240, tableTop);
+    doc.text('Total', startX + 320, tableTop);
+    doc.text('Date', startX + 380, tableTop);
+    doc.text('Payment', startX + 440, tableTop);
+    doc.text('Status', startX + 500, tableTop);
+    doc.font('Helvetica');
+
+    // Draw table rows
+    let y = tableTop + rowHeight;
+    
+    for (const order of orders) {
+      if (y > 750) { // Create new page if needed
+        doc.addPage();
+        y = 50;
+      }
+      
+      const products = order.items.map(item => item.name).join(', ');
+      
+      doc.text(order.orderNumber, startX, y);
+      doc.text(order.customerInfo.name, startX + 80, y);
+      doc.text(order.customerInfo.email, startX + 160, y);
+      doc.text(products, startX + 240, y, { width: 80 });
+      doc.text(`₹${order.totalAmount.toFixed(2)}`, startX + 320, y);
+      doc.text(new Date(order.createdAt).toLocaleDateString(), startX + 380, y);
+      doc.text(order.paymentStatus, startX + 440, y);
+      doc.text(order.status, startX + 500, y);
+      
+      y += rowHeight;
+    }
+
+    // Finalize the PDF
+    doc.end();
+  } catch (error) {
+    console.error('Error exporting orders as PDF:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

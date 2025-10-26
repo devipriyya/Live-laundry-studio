@@ -223,10 +223,10 @@ const Dashboard = () => {
     { id: 'payment', name: 'Online Payment', icon: CreditCardIcon },
     { id: 'quality', name: 'Quality Approval', icon: CheckCircleIcon },
     { id: 'rate', name: 'Get Rate Card', icon: DocumentTextIcon },
-    { id: 'products', name: 'Jivika Labs Products', icon: TagIcon, badge: 'NEW' },
+    { id: 'products', name: 'WashLab Products', icon: TagIcon, badge: 'NEW' },
     { id: 'store', name: 'Store Locator', icon: BuildingStorefrontIcon },
     { id: 'legal', name: 'Legal Info', icon: InformationCircleIcon, hasSubmenu: true },
-    { id: 'about', name: 'About Us', icon: QuestionMarkCircleIcon },
+    { id: 'notifications', name: 'Notifications', icon: BellIcon },
     { id: 'logout', name: 'Log Out', icon: ArrowRightOnRectangleIcon }
   ];
 
@@ -255,6 +255,8 @@ const Dashboard = () => {
       navigate('/track-order');
     } else if (itemId === 'schedule') {
       navigate('/schedule-pickup');
+    } else if (itemId === 'notifications') {
+      navigate('/notifications');
     }
   };
 
@@ -354,7 +356,7 @@ const Dashboard = () => {
               <SparklesIcon className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-blue-600">fabricspa</h1>
+              <h1 className="text-xl font-bold text-blue-600">WashLab</h1>
             </div>
           </div>
         </div>

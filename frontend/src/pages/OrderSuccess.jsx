@@ -72,7 +72,7 @@ const OrderSuccess = () => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: 'FabricSpa Order Confirmation',
+        title: 'WashLab Order Confirmation',
         text: `My laundry order ${orderNumber} has been confirmed!`,
         url: window.location.href
       });

@@ -153,7 +153,7 @@ const AdminDashboardNew = () => {
         name: 'David Rodriguez',
         role: 'Manager',
         department: 'Operations',
-        email: 'david.r@fabricspa.com',
+        email: 'david.r@washlab.com',
         phone: '+1 555-0201',
         status: 'Active',
         rating: 4.9,
@@ -165,7 +165,7 @@ const AdminDashboardNew = () => {
         name: 'Lisa Park',
         role: 'Technician',
         department: 'Dry Cleaning',
-        email: 'lisa.p@fabricspa.com',
+        email: 'lisa.p@washlab.com',
         phone: '+1 555-0202',
         status: 'Active',
         rating: 4.7,
@@ -306,7 +306,7 @@ const AdminDashboardNew = () => {
               <SparklesIcon className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              FabricSpa Admin
+              WashLab Admin
             </h1>
           </div>
           <button

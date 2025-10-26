@@ -125,7 +125,7 @@ const Profile = () => {
           phone: userData.phone || '',
           dateOfBirth: userData.dateOfBirth || '',
           gender: userData.gender || 'prefer-not-to-say',
-          bio: userData.bio || 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
+          bio: userData.bio || 'Loyal WashLab customer who loves eco-friendly cleaning services.',
           profileImageUrl: userData.profilePicture || null
         });
         
@@ -172,7 +172,7 @@ const Profile = () => {
           phone: '+1 (555) 123-4567',
           dateOfBirth: '1990-01-01',
           gender: 'prefer-not-to-say',
-          bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
+          bio: 'Loyal WashLab customer who loves eco-friendly cleaning services.',
           profileImageUrl: null
         });
       } finally {

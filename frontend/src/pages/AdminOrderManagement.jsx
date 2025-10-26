@@ -14,7 +14,8 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   MapPinIcon,
-  TruckIcon
+  TruckIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
@@ -35,6 +36,7 @@ const AdminOrderManagement = () => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authRetryAttempted, setAuthRetryAttempted] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   // Enhanced order workflow statuses
   const workflowStatuses = [
@@ -738,6 +740,32 @@ const AdminOrderManagement = () => {
     </div>
   );
 
+  const exportOrders = async (format) => {
+    try {
+      setExportLoading(true);
+      const response = await api.get(`/orders/export/${format}`, {
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `orders-export.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(`Error exporting orders as ${format}:`, error);
+      alert(`Failed to export orders as ${format.toUpperCase()}`);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-sky-50 to-emerald-50">
@@ -764,13 +792,35 @@ const AdminOrderManagement = () => {
               </h1>
               <p className="text-gray-600 mt-1">Manage workflow, assign staff, and generate invoices</p>
             </div>
-            <button
-              onClick={fetchOrders}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700"
-            >
-              <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            <div className="flex gap-3">
+              <div className="relative">
+                <button
+                  onClick={() => exportOrders('csv')}
+                  disabled={exportLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 disabled:opacity-50"
+                >
+                  <ArrowDownTrayIcon className="w-5 h-5" />
+                  {exportLoading ? 'Exporting...' : 'Export CSV'}
+                </button>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => exportOrders('pdf')}
+                  disabled={exportLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl hover:from-red-700 hover:to-orange-700 disabled:opacity-50"
+                >
+                  <ArrowDownTrayIcon className="w-5 h-5" />
+                  {exportLoading ? 'Exporting...' : 'Export PDF'}
+                </button>
+              </div>
+              <button
+                onClick={fetchOrders}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700"
+              >
+                <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
           </div>
         </div>
       </div>

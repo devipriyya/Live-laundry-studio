@@ -1,30 +1,22 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase';
 
 const ProtectedRoute = ({ children, roles }) => {
-  const { user } = useContext(AuthContext);
-  const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setLoading(false);
-      setAuthChecked(true);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const { user, loading } = useContext(AuthContext);
+  
+  // Debug logging
+  console.log('ProtectedRoute: Rendering with user:', user, 'loading:', loading);
+  console.log('ProtectedRoute: Required roles:', roles);
 
   // Show loading spinner while checking authentication
-  if (loading && !authChecked) {
+  if (loading) {
+    console.log('ProtectedRoute: Showing loading spinner');
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
     );

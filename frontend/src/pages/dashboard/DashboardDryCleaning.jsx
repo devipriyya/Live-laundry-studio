@@ -325,7 +325,7 @@ const DashboardDryCleaning = () => {
         description: 'Professional Dry Cleaning Service',
         image: '/logo.png',
         handler: function (response) {
-          alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
+          console.log('Payment Successful! Payment ID:', response.razorpay_payment_id);
           console.log('Booking Details:', {
             user: user?.email,
             items: selectedItems,
@@ -337,7 +337,41 @@ const DashboardDryCleaning = () => {
             paymentId: response.razorpay_payment_id
           });
           
-          // Create order in backend after successful payment
+          // Prepare cart items for order success page
+          const cartItems = [];
+          Object.entries(selectedItems).forEach(([itemName, quantity]) => {
+            Object.values(dryCleaningPricing).forEach(category => {
+              const item = category.find(i => i.name === itemName);
+              if (item) {
+                cartItems.push({
+                  id: itemName,
+                  name: itemName,
+                  icon: '👔', // Default icon for dry cleaning
+                  serviceType: 'Dry Cleaning',
+                  quantity: quantity,
+                  price: item.price
+                });
+              }
+            });
+          });
+          
+          // Navigate to order success page with order details
+          navigate('/order-success', {
+            state: {
+              orderData: {
+                orderNumber: `ORD-${Date.now()}`,
+                pickupDate,
+                pickupTime,
+                address,
+                status: 'order-placed'
+              },
+              cartItems: cartItems,
+              totalPrice: amount,
+              message: 'Payment successful! Your dry cleaning order is being processed.'
+            }
+          });
+          
+          // Create order in backend after successful navigation
           createOrderAfterPayment(response.razorpay_payment_id, amount);
         },
         modal: {
@@ -351,7 +385,7 @@ const DashboardDryCleaning = () => {
           contact: contactInfo.phone
         },
         theme: {
-          color: '#A855F7'
+          color: '#8B5CF6'
         }
       };
 
@@ -369,7 +403,7 @@ const DashboardDryCleaning = () => {
     }
   };
 
-  // Create order in backend after successful payment
+  // Create order in backend after successful payment with improved auth handling
   const createOrderAfterPayment = async (paymentId, amount) => {
     try {
       // Prepare items array for the order
@@ -405,18 +439,70 @@ const DashboardDryCleaning = () => {
 
       console.log('Creating order with data:', orderData);
 
-      // Send order to backend
+      // Enhanced token handling - ensure we have a valid token before proceeding
+      let token = localStorage.getItem('token');
+      console.log('Token status before order creation:', token ? 'Present' : 'Missing');
+      
+      // If no token, try to refresh authentication for privileged users only
+      if (!token) {
+        console.log('No token found, checking user role');
+        // Try to get user from localStorage
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          console.log('Stored user:', user);
+          // Only try to refresh token for admin or delivery users
+          if (user.role === 'admin' || user.role === 'deliveryBoy') {
+            console.log('Attempting to refresh token for privileged user');
+            try {
+              // Try to refresh by making a simple authenticated request
+              const profileResponse = await api.get('/auth/profile');
+              console.log('Profile request successful, token should be refreshed');
+              // Get the new token
+              token = localStorage.getItem('token');
+            } catch (refreshError) {
+              console.log('Token refresh failed:', refreshError.message);
+            }
+          }
+          // For regular customers, we'll proceed without a token as they use Firebase auth
+          else if (user.role === 'customer') {
+            console.log('Regular customer, proceeding without JWT token');
+          }
+        }
+      }
+
+      // For customer users, we don't require a token as they use Firebase auth
+      // Only redirect to login for privileged users without tokens
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        // Only require token for admin/delivery users
+        if ((user.role === 'admin' || user.role === 'deliveryBoy') && !token) {
+          console.log('Privileged user without token, redirecting to login');
+          alert('Session expired. Please log in again to complete your order.');
+          // Use replace to avoid navigation history issues
+          navigate('/login', { replace: true });
+          return;
+        }
+      }
+
+      // Send order to backend with better error handling
       const response = await api.post('/orders/dry-cleaning-clothes', orderData);
       
       if (response.data) {
         console.log('Order created successfully:', response.data);
         // Dispatch event to refresh orders in other components
         window.dispatchEvent(new CustomEvent('orderPlaced'));
+        // Store user email for MyOrders page
+        if (contactInfo.email) {
+          localStorage.setItem('userEmail', contactInfo.email);
+        }
         // Reset form
         resetForm();
-        // Navigate to My Orders page
+        // Navigate to My Orders page with success message
         alert('Order placed successfully! Redirecting to My Orders page.');
-        navigate('/my-orders');
+        // Use replace to avoid navigation history issues
+        navigate('/my-orders', { replace: true });
       } else {
         throw new Error('Failed to create order');
       }
@@ -429,6 +515,21 @@ const DashboardDryCleaning = () => {
         stack: error.stack
       });
       
+      // Handle authorization errors specifically
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        alert('Order creation failed: Not authorized. Please try logging in again and then place your order.');
+        // Use replace to avoid navigation history issues
+        navigate('/login', { replace: true });
+        return;
+      }
+      
+      // Handle network errors
+      if (!error.response) {
+        alert('Network error: Unable to connect to server. Please check your internet connection and try again.');
+        // Stay on current page to allow retry
+        return;
+      }
+      
       let errorMessage = 'Order was paid but there was an issue saving your order. Please contact support with your payment ID: ' + paymentId;
       
       if (error.response && error.response.data && error.response.data.message) {
@@ -438,6 +539,9 @@ const DashboardDryCleaning = () => {
       }
       
       alert(errorMessage);
+      // Navigate to My Orders page anyway so user can see if order was created
+      // Use replace to avoid navigation history issues
+      navigate('/my-orders', { replace: true });
     }
   };
 

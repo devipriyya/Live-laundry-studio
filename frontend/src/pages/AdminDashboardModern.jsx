@@ -5,8 +5,8 @@ import AdminOrderManagement from '../components/AdminOrderManagement';
 import CustomerManagement from '../components/CustomerManagement';
 import StaffManagement from '../components/StaffManagement';
 import InventoryManagement from '../components/InventoryManagement';
-import PaymentManagement from '../components/PaymentManagement';
-import ReportsAnalytics from '../components/ReportsAnalytics';
+import EnhancedPaymentManagement from '../components/EnhancedPaymentManagement';
+import EnhancedReportsAnalytics from './EnhancedReportsAnalytics'; // Changed to import EnhancedReportsAnalytics
 import Settings from '../components/Settings';
 import DeliveryManagement from './DeliveryManagement';
 import api from '../api';
@@ -24,7 +24,7 @@ import {
   UserCircleIcon, ShieldCheckIcon, BoltIcon, SunIcon, MoonIcon,
   PlusIcon, DocumentChartBarIcon, InformationCircleIcon, RocketLaunchIcon,
   EyeIcon, PencilIcon, TrashIcon, FireIcon, LightBulbIcon, TagIcon,
-  ArrowTrendingUpIcon, ArrowTrendingDownIcon
+  ArrowTrendingUpIcon, ArrowTrendingDownIcon, ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 
 const AdminDashboardModern = () => {
@@ -32,29 +32,9 @@ const AdminDashboardModern = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Debug logging
-  console.log('AdminDashboardModern: Component rendering');
-  console.log('AdminDashboardModern: User data:', user);
-  
-  // Check if user exists
-  if (!user) {
-    console.error('AdminDashboardModern: No user data available!');
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h1>
-          <p className="text-gray-600 mb-4">Please log in to access the admin dashboard.</p>
-          <button
-            onClick={() => navigate('/')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Go to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
+  // Move all hooks to the top level to avoid "Rendered more hooks than during the previous render" error
+  const [loading, setLoading] = useState(true);
+  const [authVerified, setAuthVerified] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(false);
@@ -108,8 +88,8 @@ const AdminDashboardModern = () => {
     { id: 'customers', label: 'Customers', icon: UsersIcon },
     { id: 'staff', label: 'Staff', icon: UserGroupIcon },
     { id: 'inventory', label: 'Inventory', icon: CubeIcon },
-    { id: 'payments', label: 'Payments', icon: CreditCardIcon },
-    { id: 'reports', label: 'Reports', icon: ChartBarIcon }, // This will link to enhanced analytics
+    { id: 'payments', label: 'Payment Management', icon: CreditCardIcon },
+    { id: 'reports', label: 'Reports', icon: ChartBarIcon }, // Changed this to stay within dashboard
     { id: 'settings', label: 'Settings', icon: Cog6ToothIcon },
   ];
 
@@ -124,12 +104,52 @@ const AdminDashboardModern = () => {
     { id: 2, title: 'Add Customer', description: 'Register new customer', icon: UserCircleIcon, color: 'purple', action: () => setActiveSection('customers') },
     { id: 3, title: 'Schedule Pickup', description: 'Arrange delivery', icon: CalendarDaysIcon, color: 'orange', action: () => setActiveSection('delivery') },
     { id: 4, title: 'Generate Report', description: 'View analytics', icon: DocumentChartBarIcon, color: 'teal', action: () => setActiveSection('reports') },
-    { id: 5, title: 'Customer Management', description: 'Manage all customers', icon: UsersIcon, color: 'indigo', action: () => navigate('/customer-management') }
+    { id: 5, title: 'Customer Management', description: 'Manage all customers', icon: UsersIcon, color: 'indigo', action: () => setActiveSection('customers') }
   ];
 
   // Recent orders data
   const [recentOrders, setRecentOrders] = useState([]);
 
+  // Debug logging
+  console.log('AdminDashboardModern: Component rendering');
+  console.log('AdminDashboardModern: User data:', user);
+  console.log('AdminDashboardModern: User type:', typeof user);
+  console.log('AdminDashboardModern: User keys:', user ? Object.keys(user) : 'null');
+  
+  // Verify authentication on component mount
+  useEffect(() => {
+    console.log('AdminDashboardModern: useEffect triggered');
+    const verifyAuth = async () => {
+      console.log('AdminDashboardModern: Verifying authentication...');
+      
+      // Check if we have a user and token
+      const token = localStorage.getItem('token');
+      console.log('AdminDashboardModern: Token present:', !!token);
+      
+      if (!user || !token) {
+        console.log('AdminDashboardModern: Missing user or token, attempting re-authentication...');
+        try {
+          // Try to re-authenticate
+          if (typeof adminDemoLogin === 'function') {
+            await adminDemoLogin();
+            console.log('AdminDashboardModern: Re-authentication attempt completed');
+          }
+        } catch (error) {
+          console.error('AdminDashboardModern: Re-authentication failed:', error);
+        }
+      }
+      
+      // Small delay to ensure context updates
+      setTimeout(() => {
+        setLoading(false);
+        setAuthVerified(true);
+        console.log('AdminDashboardModern: Loading state set to false');
+      }, 300);
+    };
+    
+    verifyAuth();
+  }, []);
+  
   // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
@@ -138,7 +158,7 @@ const AdminDashboardModern = () => {
       // Check if we have a valid token
       const token = localStorage.getItem('token');
       if (!token) {
-        console.log('No token found, attempting to re-authenticate...');
+        console.log('No token found, attempting to re-authentication...');
         // Try to get a new token
         if (typeof adminDemoLogin === 'function') {
           await adminDemoLogin();
@@ -210,11 +230,6 @@ const AdminDashboardModern = () => {
     setSidebarOpen(false);
   };
 
-  // Add navigation to enhanced analytics
-  const navigateToEnhancedAnalytics = () => {
-    navigate('/enhanced-analytics');
-  };
-
   const handleRefresh = () => {
     setRefreshing(true);
     if (activeSection === 'dashboard') {
@@ -239,6 +254,296 @@ const AdminDashboardModern = () => {
     }
   };
 
+  // Show loading state while verifying authentication
+  if (loading || !authVerified) {
+    console.log('AdminDashboardModern: Showing loading state');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading admin dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Check if user exists and has admin role
+  console.log('AdminDashboardModern: Checking user authentication');
+  console.log('AdminDashboardModern: User exists:', !!user);
+  console.log('AdminDashboardModern: User role:', user ? user.role : 'no user');
+  
+  if (!user || user.role !== 'admin') {
+    console.error('AdminDashboardModern: No admin user data available!');
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You must be logged in as an administrator to access this dashboard.</p>
+          <p className="text-gray-500 mb-4">Current user role: {user ? user.role : 'none'}</p>
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate('/admin-login-debug')}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mr-3"
+            >
+              Admin Login
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+            >
+              Home Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  console.log('AdminDashboardModern: Rendering dashboard content');
+  
+  // Render the appropriate component based on activeSection
+  const renderActiveComponent = () => {
+    switch (activeSection) {
+      case 'orders':
+        return <AdminOrderManagement />;
+      case 'customers':
+        return <CustomerManagement />;
+      case 'staff':
+        return <StaffManagement />;
+      case 'inventory':
+        return <InventoryManagement />;
+      case 'payments':
+        return <EnhancedPaymentManagement />;
+      case 'reports':
+        // Render reports within the dashboard layout
+        return <EnhancedReportsAnalytics inDashboard={true} />;
+      case 'settings':
+        return <Settings />;
+      case 'delivery':
+        return <DeliveryManagement />;
+      default:
+        return (
+          <div className="p-6">
+            {/* Dashboard Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-gray-600 mt-2">Welcome back, {user?.name || 'Admin'}!</p>
+              </div>
+              <div className="mt-4 md:mt-0 flex items-center space-x-4">
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <ArrowPathIcon className={`h-5 w-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className="p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  {darkMode ? (
+                    <SunIcon className="h-5 w-5 text-yellow-500" />
+                  ) : (
+                    <MoonIcon className="h-5 w-5 text-gray-700" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-blue-50 to-blue-100'} border border-blue-200`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-blue-600'}`}>Total Orders</p>
+                    <p className="text-3xl font-bold mt-2">{stats.totalOrders}</p>
+                  </div>
+                  <div className="p-3 bg-blue-100 rounded-full">
+                    <ShoppingBagIcon className="h-8 w-8 text-blue-600" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center">
+                  <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
+                  <span className="text-sm text-green-500 ml-1">{stats.orderGrowth}%</span>
+                  <span className={`text-sm ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>from last month</span>
+                </div>
+              </div>
+
+              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-green-50 to-green-100'} border border-green-200`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-green-600'}`}>Total Revenue</p>
+                    <p className="text-3xl font-bold mt-2">₹{stats.totalRevenue.toLocaleString()}</p>
+                  </div>
+                  <div className="p-3 bg-green-100 rounded-full">
+                    <CurrencyDollarIcon className="h-8 w-8 text-green-600" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center">
+                  <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
+                  <span className="text-sm text-green-500 ml-1">{stats.revenueGrowth}%</span>
+                  <span className={`text-sm ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>from last month</span>
+                </div>
+              </div>
+
+              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-purple-50 to-purple-100'} border border-purple-200`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-purple-600'}`}>Customers</p>
+                    <p className="text-3xl font-bold mt-2">{stats.totalCustomers}</p>
+                  </div>
+                  <div className="p-3 bg-purple-100 rounded-full">
+                    <UsersIcon className="h-8 w-8 text-purple-600" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center">
+                  <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
+                  <span className="text-sm text-green-500 ml-1">{stats.customerGrowth}%</span>
+                  <span className={`text-sm ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>from last month</span>
+                </div>
+              </div>
+
+              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-amber-50 to-amber-100'} border border-amber-200`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-amber-600'}`}>Pending Orders</p>
+                    <p className="text-3xl font-bold mt-2">{stats.pendingOrders}</p>
+                  </div>
+                  <div className="p-3 bg-amber-100 rounded-full">
+                    <ClockIcon className="h-8 w-8 text-amber-600" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center">
+                  <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />
+                  <span className="text-sm text-red-500 ml-1">2.5%</span>
+                  <span className={`text-sm ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>from last month</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Charts and Recent Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {/* Order Trends Chart */}
+              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <h2 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Order Trends</h2>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={orderTrendData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                      <XAxis dataKey="day" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                      <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                      <Tooltip 
+                        contentStyle={darkMode ? { 
+                          backgroundColor: '#1f2937', 
+                          borderColor: '#374151',
+                          color: '#f9fafb'
+                        } : {}} 
+                      />
+                      <Area type="monotone" dataKey="orders" stroke="#3b82f6" fill="#93c5fd" fillOpacity={0.3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Monthly Income Chart */}
+              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <h2 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Monthly Income</h2>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthlyIncomeData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                      <XAxis dataKey="month" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                      <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                      <Tooltip 
+                        contentStyle={darkMode ? { 
+                          backgroundColor: '#1f2937', 
+                          borderColor: '#374151',
+                          color: '#f9fafb'
+                        } : {}} 
+                      />
+                      <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Orders and Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Recent Orders */}
+              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recent Orders</h2>
+                  <button 
+                    onClick={() => handleMenuClick('orders')}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    View All
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {recentOrders.length > 0 ? (
+                    recentOrders.map((order) => (
+                      <div key={order.id} className={`flex items-center justify-between p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <div>
+                          <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>#{order.orderNumber}</p>
+                          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{order.customerName}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{order.totalAmount}</p>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No recent orders</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <h2 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Quick Actions</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {quickActions.map((action) => (
+                    <button
+                      key={action.id}
+                      onClick={action.action}
+                      className={`flex flex-col items-center justify-center p-6 rounded-xl transition-all hover:scale-105 ${
+                        darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gradient-to-br from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100'
+                      } border border-gray-200`}
+                    >
+                      <div className={`p-3 rounded-full mb-3 ${
+                        action.color === 'blue' ? 'bg-blue-100' :
+                        action.color === 'purple' ? 'bg-purple-100' :
+                        action.color === 'orange' ? 'bg-orange-100' :
+                        action.color === 'teal' ? 'bg-teal-100' :
+                        action.color === 'indigo' ? 'bg-indigo-100' : 'bg-gray-100'
+                      }`}>
+                        <action.icon className={`h-6 w-6 ${
+                          action.color === 'blue' ? 'text-blue-600' :
+                          action.color === 'purple' ? 'text-purple-600' :
+                          action.color === 'orange' ? 'text-orange-600' :
+                          action.color === 'teal' ? 'text-teal-600' :
+                          action.color === 'indigo' ? 'text-indigo-600' : 'text-gray-600'
+                        }`} />
+                      </div>
+                      <h3 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{action.title}</h3>
+                      <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{action.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50'} flex`}>
       {/* Sidebar */}
@@ -256,518 +561,115 @@ const AdminDashboardModern = () => {
             </div>
             <div>
               <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
-                FabricsPa
+                WashLab
               </h1>
-              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Admin Portal</p>
+              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Admin Dashboard</p>
             </div>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className={`lg:hidden p-2 rounded-lg ${darkMode ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-400 hover:bg-gray-100'} transition-colors`}>
-            <XMarkIcon className="h-6 w-6" />
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <XMarkIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
           </button>
         </div>
 
+        {/* Search */}
+        <div className="p-4">
+          <div className={`relative rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'
+              }`}
+            />
+          </div>
+        </div>
+
         {/* Navigation */}
-        <nav className="mt-5 flex-1 px-2 space-y-1">
-          {menuItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === 'reports') {
-                  navigateToEnhancedAnalytics();
-                } else {
-                  handleMenuClick(item.id);
-                }
-              }}
-              className={`${
-                (activeSection === item.id || (item.id === 'reports' && location.pathname === '/enhanced-analytics'))
-                  ? (darkMode ? 'bg-gray-700 text-white' : 'bg-blue-50 text-blue-700')
-                  : (darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100')
-              } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full text-left transition-colors duration-200`}
-            >
-              <item.icon
-                className={`${
-                  (activeSection === item.id || (item.id === 'reports' && location.pathname === '/enhanced-analytics'))
-                    ? (darkMode ? 'text-white' : 'text-blue-700')
-                    : (darkMode ? 'text-gray-400' : 'text-gray-500')
-                } mr-3 flex-shrink-0 h-6 w-6`}
-              />
-              {item.label}
-            </button>
-          ))}
+        <nav className="flex-1 px-4 py-6">
+          <ul className="space-y-2">
+            {menuItems.map((item) => (
+              <li key={item.id}>
+                <button
+                  onClick={() => handleMenuClick(item.id)}
+                  className={`w-full flex items-center px-4 py-3 rounded-xl text-left transition-colors ${
+                    activeSection === item.id
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+                      : darkMode
+                      ? 'text-gray-300 hover:bg-gray-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  <item.icon className="h-6 w-6 mr-3" />
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </nav>
 
         {/* User Profile */}
         <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-4 ring-blue-100">
-              <span className="text-white font-bold text-lg">{(user?.name || 'Admin').charAt(0).toUpperCase()}</span>
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                <UserCircleIcon className="h-6 w-6 text-white" />
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{user?.name || 'Admin User'}</p>
-              <p className={`text-xs truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user?.email || 'admin@fabricspa.com'}</p>
+            <div className="ml-3 flex-1 min-w-0">
+              <p className={`text-sm font-medium truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                {user?.name || 'Admin User'}
+              </p>
+              <p className={`text-xs truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                {user?.email || 'admin@washlab.com'}
+              </p>
             </div>
+            <button
+              onClick={handleLogout}
+              className="ml-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <ArrowRightOnRectangleIcon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+            </button>
           </div>
-          <button onClick={handleLogout}
-            className={`w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl transition-all duration-200 ${darkMode ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'} shadow-lg hover:shadow-xl`}>
-            <ArrowRightOnRectangleIcon className="h-5 w-5" />
-            <span className="font-medium">Logout</span>
-          </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <header className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white/80 backdrop-blur-xl border-gray-200'} border-b sticky top-0 z-40 shadow-sm`}>
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-4">
-              <button onClick={() => setSidebarOpen(true)}
-                className={`lg:hidden p-2 rounded-xl ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'} transition-colors`}>
-                <Bars3Icon className="h-6 w-6" />
-              </button>
-              <div>
-                <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {menuItems.find(item => item.id === activeSection)?.name || 'Dashboard'}
-                </h1>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Welcome back, {user?.name?.split(' ')[0] || 'Admin'}! 👋
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              {/* Search Bar */}
-              <div className="hidden md:flex items-center space-x-2">
-                <div className="relative">
-                  <input type="text" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                    className={`pl-10 pr-4 py-2 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-gray-50 border-gray-200 text-gray-900'} focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all w-64`}
-                  />
-                  <MagnifyingGlassIcon className={`absolute left-3 top-2.5 h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-                </div>
-              </div>
-
-              {/* Refresh Button */}
-              <button onClick={handleRefresh}
-                className={`p-2.5 rounded-xl ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'} transition-all ${refreshing ? 'animate-spin' : ''}`}
-                title="Refresh">
-                <ArrowPathIcon className="h-5 w-5" />
-              </button>
-
-              {/* Dark Mode Toggle */}
-              <button onClick={() => setDarkMode(!darkMode)}
-                className={`p-2.5 rounded-xl ${darkMode ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-600'} hover:shadow-lg transition-all`}
-                title={darkMode ? 'Light Mode' : 'Dark Mode'}>
-                {darkMode ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-              </button>
-
-              {/* Notifications */}
-              <div className="relative">
-                <button onClick={() => setShowNotifications(!showNotifications)}
-                  className={`relative p-2.5 rounded-xl ${darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-600 hover:bg-gray-100'} transition-all`}>
-                  <BellIcon className="h-6 w-6" />
-                  {notifications.filter(n => !n.read).length > 0 && (
-                    <span className="absolute top-1 right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold animate-pulse">
-                      {notifications.filter(n => !n.read).length}
-                    </span>
-                  )}
-                </button>
-
-                {/* Notifications Dropdown */}
-                {showNotifications && (
-                  <div className={`absolute right-0 mt-2 w-96 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-2xl shadow-2xl border overflow-hidden z-50`}>
-                    <div className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Notifications</h3>
-                    </div>
-                    <div className="max-h-96 overflow-y-auto">
-                      {notifications.length > 0 ? (
-                        notifications.map((notification) => (
-                          <div key={notification.id}
-                            className={`px-4 py-3 border-b ${darkMode ? 'border-gray-700 hover:bg-gray-700/50' : 'border-gray-100 hover:bg-gray-50'} transition-colors ${
-                              !notification.read ? darkMode ? 'bg-gray-700/30' : 'bg-blue-50' : ''
-                            }`}>
-                            <div className="flex items-start space-x-3">
-                              <div className={`p-2 rounded-lg ${
-                                notification.type === 'success' ? 'bg-green-100 text-green-600' :
-                                notification.type === 'warning' ? 'bg-yellow-100 text-yellow-600' : 'bg-blue-100 text-blue-600'
-                              }`}>
-                                {notification.type === 'success' && <CheckCircleIcon className="h-4 w-4" />}
-                                {notification.type === 'warning' && <ExclamationTriangleIcon className="h-4 w-4" />}
-                                {notification.type === 'info' && <InformationCircleIcon className="h-4 w-4" />}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{notification.title}</p>
-                                <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{notification.message}</p>
-                                <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{notification.time}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-12 text-center">
-                          <BellIcon className={`h-12 w-12 ${darkMode ? 'text-gray-600' : 'text-gray-400'} mx-auto mb-3`} />
-                          <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No notifications</p>
-                          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>You're all caught up!</p>
-                        </div>
-                      )}
-                    </div>
-                    <div className={`px-4 py-3 text-center border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <button className={`text-sm font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
-                        View All Notifications
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+      <div className="flex-1 flex flex-col lg:ml-0">
+        {/* Mobile header */}
+        <header className={`lg:hidden flex items-center justify-between h-20 px-6 border-b ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <Bars3Icon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+          </button>
+          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            WashLab Admin
+          </h1>
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+          >
+            <BellIcon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+            {notifications.length > 0 && (
+              <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
+            )}
+          </button>
         </header>
 
-        {/* Dashboard Content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {activeSection === 'dashboard' && (
-            <div className="max-w-7xl mx-auto space-y-6">
-              {/* Welcome Banner */}
-              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-8 shadow-2xl">
-                <div className="absolute top-0 right-0 -mt-4 -mr-16 opacity-20">
-                  <RocketLaunchIcon className="h-64 w-64" />
-                </div>
-                <div className="relative z-10">
-                  <h2 className="text-3xl font-bold text-white mb-2">
-                    Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {user?.name?.split(' ')[0] || 'Admin'}! 🎉
-                  </h2>
-                  <p className="text-blue-100 text-lg">Here's what's happening with your laundry management system today</p>
-                  <div className="flex items-center space-x-4 mt-6">
-                    <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                      <span className="text-white text-sm font-medium">System Online</span>
-                    </div>
-                    <div className="text-white/90 text-sm">Last updated: {new Date().toLocaleTimeString()}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Total Users */}
-                <div className={`group ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border ${darkMode ? 'border-gray-700' : 'border-gray-100'} hover:scale-105`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg">
-                      <UsersIcon className="h-8 w-8 text-white" />
-                    </div>
-                    <div className="flex items-center space-x-1 text-green-500 text-sm font-semibold">
-                      <ArrowTrendingUpIcon className="h-4 w-4" /><span>{stats.customerGrowth}%</span>
-                    </div>
-                  </div>
-                  <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Total Users</h3>
-                  <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.totalCustomers.toLocaleString()}</p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} flex items-center space-x-1`}>
-                    <FireIcon className="h-4 w-4 text-orange-500" />
-                    <span>{stats.newCustomers} new this month</span>
-                  </p>
-                </div>
-
-                {/* Total Orders */}
-                <div className={`group ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border ${darkMode ? 'border-gray-700' : 'border-gray-100'} hover:scale-105`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
-                      <ClipboardDocumentListIcon className="h-8 w-8 text-white" />
-                    </div>
-                    <div className="flex items-center space-x-1 text-green-500 text-sm font-semibold">
-                      <ArrowTrendingUpIcon className="h-4 w-4" /><span>{stats.orderGrowth}%</span>
-                    </div>
-                  </div>
-                  <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Total Orders</h3>
-                  <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.totalOrders.toLocaleString()}</p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} flex items-center space-x-1`}>
-                    <FireIcon className="h-4 w-4 text-orange-500" />
-                    <span>{stats.completedToday} completed today</span>
-                  </p>
-                </div>
-
-                {/* Total Revenue */}
-                <div className={`group ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border ${darkMode ? 'border-gray-700' : 'border-gray-100'} hover:scale-105`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-lg">
-                      <CurrencyDollarIcon className="h-8 w-8 text-white" />
-                    </div>
-                    <div className="flex items-center space-x-1 text-green-500 text-sm font-semibold">
-                      <ArrowTrendingUpIcon className="h-4 w-4" /><span>{stats.revenueGrowth}%</span>
-                    </div>
-                  </div>
-                  <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Total Revenue</h3>
-                  <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>₹{stats.totalRevenue.toLocaleString()}</p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} flex items-center space-x-1`}>
-                    <FireIcon className="h-4 w-4 text-orange-500" />
-                    <span>₹{stats.todayRevenue.toFixed(2)} today</span>
-                  </p>
-                </div>
-
-                {/* Today's Orders / Pending Orders */}
-                <div className={`group ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border ${darkMode ? 'border-gray-700' : 'border-gray-100'} hover:scale-105`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl shadow-lg">
-                      <ClockIcon className="h-8 w-8 text-white" />
-                    </div>
-                    <div className="flex items-center space-x-1 text-blue-500 text-sm font-semibold">
-                      <BoltIcon className="h-4 w-4" /><span>Live</span>
-                    </div>
-                  </div>
-                  <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Today's Orders</h3>
-                  <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>{stats.todayOrders}</p>
-                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>{stats.pendingOrders} pending orders</p>
-                </div>
-              </div>
-
-              {/* Charts Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Order Trends Chart */}
-                <div className={`rounded-2xl ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border shadow-lg overflow-hidden`}>
-                  <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Order Trends (Last 7 Days)</h3>
-                  </div>
-                  <div className="p-6">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={orderTrendData}>
-                        <defs>
-                          <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                        <XAxis dataKey="day" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
-                        <YAxis yAxisId="left" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
-                        <YAxis yAxisId="right" orientation="right" stroke={darkMode ? '#9ca3af' : '#6b7280'} 
-                          tickFormatter={(value) => `₹${value.toLocaleString()}`}
-                        />
-                        <Tooltip 
-                          contentStyle={{
-                            backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-                            border: '1px solid ' + (darkMode ? '#374151' : '#e5e7eb'),
-                            borderRadius: '8px'
-                          }}
-                          formatter={(value, name, props) => {
-                            if (name === 'revenue') {
-                              return [`₹${parseFloat(value).toFixed(2)}`, 'Revenue'];
-                            }
-                            return [value, name === 'orders' ? 'Orders' : name];
-                          }}
-                        />
-                        <Area yAxisId="left" type="monotone" dataKey="orders" stroke="#3b82f6" fillOpacity={1} fill="url(#colorOrders)" name="Orders" />
-                        <Area yAxisId="right" type="monotone" dataKey="revenue" stroke="#10b981" fillOpacity={0.3} fill="#10b981" name="Revenue" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Income Trend Chart */}
-                <div className={`rounded-2xl ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border shadow-lg overflow-hidden`}>
-                  <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Revenue Trend (Last 7 Days)</h3>
-                  </div>
-                  <div className="p-6">
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={orderTrendData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                        <XAxis dataKey="day" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
-                        <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} 
-                          tickFormatter={(value) => `₹${value.toLocaleString()}`}
-                        />
-                        <Tooltip 
-                          contentStyle={{
-                            backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-                            border: '1px solid ' + (darkMode ? '#374151' : '#e5e7eb'),
-                            borderRadius: '8px'
-                          }}
-                          formatter={(value) => [`₹${parseFloat(value).toFixed(2)}`, 'Revenue']}
-                        />
-                        <Bar dataKey="revenue" fill="#8b5cf6" radius={[8, 8, 0, 0]} name="Revenue" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-
-              {/* Monthly Income Trend */}
-              <div className={`rounded-2xl ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border shadow-lg overflow-hidden`}>
-                <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                  <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Monthly Income Trend</h3>
-                </div>
-                <div className="p-6">
-                  <ResponsiveContainer width="100%" height={350}>
-                    <LineChart data={monthlyIncomeData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                      <XAxis dataKey="month" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
-                      <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} 
-                        tickFormatter={(value) => `₹${value.toLocaleString()}`}
-                      />
-                      <Tooltip 
-                        contentStyle={{
-                          backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-                          border: '1px solid ' + (darkMode ? '#374151' : '#e5e7eb'),
-                          borderRadius: '8px'
-                        }}
-                        formatter={(value) => [`₹${parseFloat(value).toFixed(2)}`, 'Income']}
-                      />
-                      <Legend />
-                      <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} name="Income" />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                {quickActions.map((action) => (
-                  <button key={action.id} onClick={action.action}
-                    className={`group p-6 rounded-xl border-2 border-dashed ${darkMode ? 'border-gray-600 hover:border-blue-500 hover:bg-gray-700/50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'} transition-all duration-200`}>
-                    <div className={`p-3 ${darkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-blue-50 to-purple-50'} rounded-xl mx-auto w-fit mb-3 group-hover:scale-110 transition-transform`}>
-                      <action.icon className={`h-8 w-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                    </div>
-                    <p className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} text-center mb-1`}>{action.title}</p>
-                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-center`}>{action.description}</p>
-                  </button>
-                ))}
-                <button
-                  onClick={navigateToEnhancedAnalytics}
-                  className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  <div className="flex items-center">
-                    <ChartBarIcon className="h-8 w-8 mr-3" />
-                    <div className="text-left">
-                      <h3 className="font-bold text-lg">Enhanced Analytics</h3>
-                      <p className="text-purple-100 text-sm">Advanced reporting</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              {/* Recent Activity & Orders Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Recent Orders */}
-                <div className="lg:col-span-2">
-                  <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'} overflow-hidden`}>
-                    <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
-                      <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recent Orders</h3>
-                      <button onClick={() => setActiveSection('orders')}
-                        className={`text-sm font-medium ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}>
-                        View All →
-                      </button>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className={darkMode ? 'bg-gray-700/50' : 'bg-gray-50'}>
-                          <tr>
-                            <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Order ID</th>
-                            <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Customer</th>
-                            <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Service</th>
-                            <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Status</th>
-                            <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Amount</th>
-                            <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                          {recentOrders.length > 0 ? (
-                            recentOrders.map((order) => (
-                              <tr key={order.id} className={darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}>
-                                <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{order.id}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div>
-                                    <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{order.customer}</div>
-                                    <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{order.email}</div>
-                                  </div>
-                                </td>
-                                <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{order.service}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                                    {order.status}
-                                  </span>
-                                </td>
-                                <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>${order.amount}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                  <div className="flex space-x-2">
-                                    <button className={`p-1.5 rounded-lg ${darkMode ? 'text-blue-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'} transition-colors`}>
-                                      <EyeIcon className="h-4 w-4" />
-                                    </button>
-                                    <button className={`p-1.5 rounded-lg ${darkMode ? 'text-green-400 hover:bg-gray-700' : 'text-green-600 hover:bg-green-50'} transition-colors`}>
-                                      <PencilIcon className="h-4 w-4" />
-                                    </button>
-                                    <button className={`p-1.5 rounded-lg ${darkMode ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'} transition-colors`}>
-                                      <TrashIcon className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan="6" className="px-6 py-12 text-center">
-                                <div className="flex flex-col items-center justify-center">
-                                  <ClipboardDocumentListIcon className={`h-12 w-12 ${darkMode ? 'text-gray-600' : 'text-gray-400'} mb-3`} />
-                                  <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No orders yet</p>
-                                  <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>Orders will appear here once created</p>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Recent Activities */}
-                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                  <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Recent Activity</h3>
-                  <div className="space-y-4">
-                    {recentActivities.length > 0 ? (
-                      recentActivities.map((activity) => (
-                        <div key={activity.id} className="flex items-start space-x-3">
-                          <div className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                            <activity.icon className={`h-5 w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{activity.action}</p>
-                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{activity.user}</p>
-                            <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>{activity.details}</p>
-                            <p className={`text-xs ${darkMode ? 'text-gray-600' : 'text-gray-400'} mt-1`}>{activity.time}</p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-8">
-                        <BoltIcon className={`h-12 w-12 ${darkMode ? 'text-gray-600' : 'text-gray-400'} mb-3`} />
-                        <p className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No recent activity</p>
-                        <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>Activity will appear here</p>
-                      </div>
-                    )}
-                  </div>
-                  <button onClick={() => setActiveSection('reports')}
-                    className={`w-full mt-4 px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'} transition-colors font-medium text-sm`}>
-                    View All Activity
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Other Sections */}
-          {activeSection === 'orders' && <AdminOrderManagement />}
-          {activeSection === 'customers' && <CustomerManagement />}
-          {activeSection === 'staff' && <StaffManagement />}
-          {activeSection === 'inventory' && <InventoryManagement />}
-          {activeSection === 'payments' && <PaymentManagement />}
-          {activeSection === 'delivery' && <DeliveryManagement />}
-          {activeSection === 'reports' && <ReportsAnalytics />}
-          {activeSection === 'settings' && <Settings />}
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto">
+          {renderActiveComponent()}
         </main>
       </div>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div onClick={() => setSidebarOpen(false)}
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40" />
-      )}
     </div>
   );
 };

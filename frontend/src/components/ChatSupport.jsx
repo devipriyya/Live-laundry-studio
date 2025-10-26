@@ -22,7 +22,7 @@ const ChatSupport = () => {
   const initialMessages = [
     {
       id: 1,
-      text: "Hello! Welcome to FabricSpa support. How can I help you today?",
+      text: "Hello! Welcome to WashLab support. How can I help you today?",
       sender: 'agent',
       timestamp: new Date(Date.now() - 300000),
       agentName: 'Sarah Johnson'
@@ -179,7 +179,7 @@ const ChatSupport = () => {
                   <ChatBubbleLeftRightIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">FabricSpa Support</h3>
+                  <h3 className="font-semibold">WashLab Support</h3>
                   <div className="flex items-center space-x-1 text-blue-100 text-sm">
                     <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                     <span>{onlineAgents} agents online</span>
@@ -258,7 +258,7 @@ const ChatSupport = () => {
               </button>
             </div>
             <div className="text-xs text-gray-500 mt-2 text-center">
-              Powered by FabricSpa Support • Average response time: 2 minutes
+              Powered by WashLab Support • Average response time: 2 minutes
             </div>
           </div>
         </div>

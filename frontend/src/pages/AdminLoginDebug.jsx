@@ -7,27 +7,30 @@ const AdminLoginDebug = () => {
   const { user, adminDemoLogin, deliveryBoyDemoLogin, demoLogin, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleAdminLogin = () => {
+  const handleAdminLogin = async () => {
     console.log('AdminLoginDebug: Logging in as admin...');
-    adminDemoLogin();
+    await adminDemoLogin();
+    // Add a small delay to ensure state updates
     setTimeout(() => {
       console.log('AdminLoginDebug: Navigating to dashboard...');
       navigate('/admin-dashboard');
     }, 500);
   };
 
-  const handleDeliveryBoyLogin = () => {
+  const handleDeliveryBoyLogin = async () => {
     console.log('AdminLoginDebug: Logging in as delivery boy...');
-    deliveryBoyDemoLogin();
+    await deliveryBoyDemoLogin();
+    // Add a small delay to ensure state updates
     setTimeout(() => {
       console.log('AdminLoginDebug: Navigating to delivery dashboard...');
       navigate('/delivery-dashboard');
     }, 500);
   };
 
-  const handleCustomerLogin = () => {
+  const handleCustomerLogin = async () => {
     console.log('AdminLoginDebug: Logging in as customer...');
-    demoLogin();
+    await demoLogin();
+    // Add a small delay to ensure state updates
     setTimeout(() => {
       console.log('AdminLoginDebug: Navigating to customer dashboard...');
       navigate('/dashboard');
@@ -51,7 +54,7 @@ const AdminLoginDebug = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-2xl w-full">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">FabricSpa Demo Login</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2 text-center">WashLab Demo Login</h1>
         <p className="text-gray-600 text-center mb-6">Select a role to explore the system</p>
         
         <div className="mb-6 p-4 bg-gray-50 rounded-lg">

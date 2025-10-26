@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Fabrico Dry Cleaning Service",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test:selenium": "cd selenium-tests && node testRunner.js",
+    "test:selenium:login": "cd selenium-tests && node loginTest.js",
+    "test:selenium:register": "cd selenium-tests && node registerTest.js",
+    "test:selenium:dashboard": "cd selenium-tests && node dashboardTest.js"
   },
   "dependencies": {
     "axios": "^1.12.2",
@@ -12,6 +16,8 @@
     "mongoose": "^8.19.2"
   },
   "devDependencies": {
-    "jest": "^30.2.0"
+    "chromedriver": "^141.0.4",
+    "jest": "^30.2.0",
+    "selenium-webdriver": "^4.38.0"
   }
 }

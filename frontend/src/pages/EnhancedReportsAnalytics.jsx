@@ -22,7 +22,8 @@ import api from '../api';
 import { isAdmin } from '../utils/authHelpers';
 import '../styles/analytics.css';
 
-const EnhancedReportsAnalytics = () => {
+// Add a prop to control whether the component is used within a dashboard
+const EnhancedReportsAnalytics = ({ inDashboard = false }) => {
   const navigate = useNavigate();
   const [dateRange, setDateRange] = useState('7days');
   const [selectedMetric, setSelectedMetric] = useState('revenue');
@@ -45,28 +46,32 @@ const EnhancedReportsAnalytics = () => {
       setError(null);
       try {
         // Fetch data from backend API endpoints
-        const [orderTrendsRes, monthlyIncomeRes, topCustomersRes] = await Promise.all([
+        const [orderTrendsRes, monthlyIncomeRes, dashboardStatsRes, topCustomersRes, servicePerformanceRes] = await Promise.all([
           api.get('/orders/analytics/orders'),
           api.get('/orders/analytics/income'),
-          api.get('/orders/stats') // Additional endpoint for customer data
+          api.get('/auth/dashboard/stats'), // New endpoint for dashboard stats
+          api.get('/orders/stats'), // Additional endpoint for customer data
+          api.get('/orders/analytics/services') // New endpoint for service performance
         ]);
 
         const orderTrends = Array.isArray(orderTrendsRes.data) ? orderTrendsRes.data : [];
         const monthlyIncome = Array.isArray(monthlyIncomeRes.data) ? monthlyIncomeRes.data : [];
+        const dashboardStats = dashboardStatsRes.data || {};
         const topCustomersData = Array.isArray(topCustomersRes.data) ? topCustomersRes.data : [];
+        const servicePerformanceData = Array.isArray(servicePerformanceRes.data) ? servicePerformanceRes.data : [];
 
         // Process the data to match the expected format
         const processedData = {
           overview: {
-            totalRevenue: monthlyIncome.reduce((sum, month) => sum + (month.income || 0), 0),
-            revenueGrowth: calculateGrowth(monthlyIncome, 'income'),
-            totalOrders: orderTrends.reduce((sum, day) => sum + (day.orders || 0), 0),
-            ordersGrowth: calculateGrowth(orderTrends, 'orders'),
-            totalCustomers: topCustomersData.length, // Real total customers
-            customersGrowth: 0, // Would need historical data
-            avgOrderValue: orderTrends.reduce((sum, day) => sum + (day.orders || 0), 0) > 0 
-              ? monthlyIncome.reduce((sum, month) => sum + (month.income || 0), 0) / 
-                orderTrends.reduce((sum, day) => sum + (day.orders || 0), 0)
+            totalRevenue: dashboardStats.totalRevenue || monthlyIncome.reduce((sum, month) => sum + (month.income || 0), 0),
+            revenueGrowth: dashboardStats.revenueGrowth || calculateGrowth(monthlyIncome, 'income'),
+            totalOrders: dashboardStats.totalOrders || orderTrends.reduce((sum, day) => sum + (day.orders || 0), 0),
+            ordersGrowth: dashboardStats.orderGrowth || calculateGrowth(orderTrends, 'orders'),
+            totalCustomers: dashboardStats.totalCustomers || topCustomersData.length,
+            customersGrowth: dashboardStats.customerGrowth || 0,
+            avgOrderValue: dashboardStats.totalOrders > 0 
+              ? (dashboardStats.totalRevenue || monthlyIncome.reduce((sum, month) => sum + (month.income || 0), 0)) / 
+                dashboardStats.totalOrders
               : 0,
             avgOrderGrowth: 0 // Would need historical data
           },
@@ -75,41 +80,51 @@ const EnhancedReportsAnalytics = () => {
             revenue: day.revenue || 0,
             orders: day.orders || 0
           })),
-          // Enhanced static data for service performance
-          serviceBreakdown: [
-            { 
-              service: 'Wash & Fold', 
-              revenue: 45230, 
-              orders: 1240, 
-              percentage: 32,
-              description: 'Basic laundry service with folding',
-              color: 'bg-blue-500'
-            },
-            { 
-              service: 'Dry Cleaning', 
-              revenue: 67890, 
-              orders: 890, 
-              percentage: 28,
-              description: 'Professional dry cleaning for delicate items',
-              color: 'bg-green-500'
-            },
-            { 
-              service: 'Steam Press', 
-              revenue: 32560, 
-              orders: 1120, 
-              percentage: 22,
-              description: 'Professional pressing for crisp look',
-              color: 'bg-purple-500'
-            },
-            { 
-              service: 'Premium Wash', 
-              revenue: 41870, 
-              orders: 650, 
-              percentage: 18,
-              description: 'Premium detergent and special care',
-              color: 'bg-orange-500'
-            }
-          ],
+          // Real service performance data
+          serviceBreakdown: servicePerformanceData.length > 0 
+            ? servicePerformanceData.map((service, index) => ({
+                service: service.service,
+                revenue: service.revenue,
+                orders: service.orders,
+                percentage: service.percentage,
+                description: `${service.quantity} items processed`,
+                color: service.color || 'bg-blue-500'
+              }))
+            : [
+                // Fallback to dummy data if no real data is available
+                { 
+                  service: 'Wash & Fold', 
+                  revenue: 45230, 
+                  orders: 1240, 
+                  percentage: 32,
+                  description: 'Basic laundry service with folding',
+                  color: 'bg-blue-500'
+                },
+                { 
+                  service: 'Dry Cleaning', 
+                  revenue: 67890, 
+                  orders: 890, 
+                  percentage: 28,
+                  description: 'Professional dry cleaning for delicate items',
+                  color: 'bg-green-500'
+                },
+                { 
+                  service: 'Steam Press', 
+                  revenue: 32560, 
+                  orders: 1120, 
+                  percentage: 22,
+                  description: 'Professional pressing for crisp look',
+                  color: 'bg-purple-500'
+                },
+                { 
+                  service: 'Premium Wash', 
+                  revenue: 41870, 
+                  orders: 650, 
+                  percentage: 18,
+                  description: 'Premium detergent and special care',
+                  color: 'bg-orange-500'
+                }
+              ],
           topCustomers: topCustomersData.slice(0, 5).map((customer, index) => ({
             name: customer.name || `Customer ${index + 1}`,
             email: customer.email || 'N/A',
@@ -210,7 +225,7 @@ const EnhancedReportsAnalytics = () => {
           </div>
           <p className="text-2xl font-bold text-gray-900 mt-1">
             {title === 'Total Revenue' || title === 'Avg Order Value' 
-              ? Math.round(value || 0).toLocaleString() 
+              ? `₹${Math.round(value || 0).toLocaleString()}` 
               : (value?.toLocaleString() || '0')}
           </p>
           <div className="flex items-center mt-2">
@@ -239,7 +254,11 @@ const EnhancedReportsAnalytics = () => {
     if (!data || data.length === 0) {
       return (
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">No data available</p>
+          <div className="text-center">
+            <ChartBarIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No data available</p>
+            <p className="text-gray-400 text-sm mt-1">No analytics data found for the selected period</p>
+          </div>
         </div>
       );
     }
@@ -248,7 +267,11 @@ const EnhancedReportsAnalytics = () => {
     if (validData.length === 0) {
       return (
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">No valid data available</p>
+          <div className="text-center">
+            <ChartBarIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No valid data available</p>
+            <p className="text-gray-400 text-sm mt-1">Analytics data is not available for the selected period</p>
+          </div>
         </div>
       );
     }
@@ -274,7 +297,7 @@ const EnhancedReportsAnalytics = () => {
                     style={{ width: `${maxValue > 0 ? (item.revenue / maxValue) * 100 : 0}%` }}
                   ></div>
                   <span className="absolute right-2 text-xs font-medium text-gray-700">
-                    {item.revenue.toLocaleString()}
+                    ₹{item.revenue.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -289,14 +312,24 @@ const EnhancedReportsAnalytics = () => {
     if (!data || data.length === 0) {
       return (
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">No data available</p>
+          <div className="text-center">
+            <ChartBarIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No service data available</p>
+            <p className="text-gray-400 text-sm mt-1">Service performance data will appear here once orders are processed</p>
+          </div>
         </div>
       );
     }
     
+    // Calculate total revenue for displaying in the header
+    const totalRevenue = data.reduce((sum, service) => sum + service.revenue, 0);
+    
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Service Performance</h3>
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-semibold text-gray-900">Service Performance</h3>
+          <span className="text-sm text-gray-500">Total: ₹{totalRevenue.toLocaleString()}</span>
+        </div>
         <div className="space-y-4">
           {data.map((service, index) => (
             <div key={index} className="space-y-2">
@@ -306,7 +339,7 @@ const EnhancedReportsAnalytics = () => {
                   <p className="text-xs text-gray-500">{service.description}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-sm font-bold text-gray-900">{service.revenue.toLocaleString()}</span>
+                  <span className="text-sm font-bold text-gray-900">₹{service.revenue.toLocaleString()}</span>
                   <span className="text-xs text-gray-500 ml-2">({service.orders} orders)</span>
                 </div>
               </div>
@@ -330,7 +363,11 @@ const EnhancedReportsAnalytics = () => {
     if (!customers || customers.length === 0) {
       return (
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">No customer data available</p>
+          <div className="text-center">
+            <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No customer data available</p>
+            <p className="text-gray-400 text-sm mt-1">Customer analytics data is not available</p>
+          </div>
         </div>
       );
     }
@@ -376,7 +413,7 @@ const EnhancedReportsAnalytics = () => {
                   <div className="text-sm text-gray-900">{customer.orders}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{customer.revenue.toLocaleString()}</div>
+                  <div className="text-sm text-gray-900">₹{customer.revenue.toLocaleString()}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className={`flex items-center ${customer.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -400,7 +437,7 @@ const EnhancedReportsAnalytics = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`${inDashboard ? 'p-0' : 'min-h-screen bg-gray-50 flex items-center justify-center'}`}>
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading analytics data...</p>
@@ -411,21 +448,26 @@ const EnhancedReportsAnalytics = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className={`${inDashboard ? 'p-0' : 'min-h-screen bg-gray-50 p-6'}`}>
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={handleBack}
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              Back
-            </button>
-          </div>
+          {!inDashboard && (
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={handleBack}
+                className="flex items-center text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                Back
+              </button>
+            </div>
+          )}
           
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h3 className="text-lg font-medium text-red-800 mb-2">Error Loading Data</h3>
-            <p className="text-red-700 mb-4">{error}</p>
+            <div className="flex items-center">
+              <InformationCircleIcon className="h-6 w-6 text-red-500 mr-2" />
+              <h3 className="text-lg font-medium text-red-800">Error Loading Data</h3>
+            </div>
+            <p className="text-red-700 mt-2 mb-4">{error}</p>
             <button 
               onClick={handleRefresh}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
@@ -439,70 +481,111 @@ const EnhancedReportsAnalytics = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${fullscreenMode ? 'fixed inset-0 z-50 overflow-auto' : ''}`}>
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <div className="flex items-center mb-4 md:mb-0">
-            <button
-              onClick={handleBack}
-              className="flex items-center text-gray-600 hover:text-gray-900 mr-4"
-            >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              Back
-            </button>
+    <div className={`${inDashboard ? 'p-0' : fullscreenMode ? 'fixed inset-0 z-50 overflow-auto' : 'min-h-screen bg-gray-50 p-6'}`}>
+      <div className={inDashboard ? '' : 'max-w-7xl mx-auto'}>
+        {/* Header - only show when not in dashboard */}
+        {!inDashboard && (
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            <div className="flex items-center mb-4 md:mb-0">
+              <button
+                onClick={handleBack}
+                className="flex items-center text-gray-600 hover:text-gray-900 mr-4"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                Back
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
+                <p className="text-gray-600">Comprehensive business insights and performance metrics</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="7days">Last 7 Days</option>
+                <option value="30days">Last 30 Days</option>
+                <option value="90days">Last 90 Days</option>
+                <option value="1year">Last Year</option>
+              </select>
+              
+              <button
+                onClick={toggleFullscreen}
+                className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                {fullscreenMode ? (
+                  <>
+                    <ArrowsPointingInIcon className="h-5 w-5 mr-2" />
+                    Exit Fullscreen
+                  </>
+                ) : (
+                  <>
+                    <ArrowsPointingOutIcon className="h-5 w-5 mr-2" />
+                    Fullscreen
+                  </>
+                )}
+              </button>
+              
+              <button
+                onClick={handleRefresh}
+                className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2 transform rotate-180" />
+                Refresh
+              </button>
+              
+              <button 
+                onClick={handleExport}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
+                Export
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Header - simplified version for dashboard */}
+        {inDashboard && (
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
               <p className="text-gray-600">Comprehensive business insights and performance metrics</p>
             </div>
+            
+            <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="7days">Last 7 Days</option>
+                <option value="30days">Last 30 Days</option>
+                <option value="90days">Last 90 Days</option>
+                <option value="1year">Last Year</option>
+              </select>
+              
+              <button
+                onClick={handleRefresh}
+                className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2 transform rotate-180" />
+                Refresh
+              </button>
+              
+              <button 
+                onClick={handleExport}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
+                Export
+              </button>
+            </div>
           </div>
-          
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="7days">Last 7 Days</option>
-              <option value="30days">Last 30 Days</option>
-              <option value="90days">Last 90 Days</option>
-              <option value="1year">Last Year</option>
-            </select>
-            
-            <button
-              onClick={toggleFullscreen}
-              className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              {fullscreenMode ? (
-                <>
-                  <ArrowsPointingInIcon className="h-5 w-5 mr-2" />
-                  Exit Fullscreen
-                </>
-              ) : (
-                <>
-                  <ArrowsPointingOutIcon className="h-5 w-5 mr-2" />
-                  Fullscreen
-                </>
-              )}
-            </button>
-            
-            <button
-              onClick={handleRefresh}
-              className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <ArrowLeftIcon className="h-5 w-5 mr-2 transform rotate-180" />
-              Refresh
-            </button>
-            
-            <button 
-              onClick={handleExport}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
-              Export
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Navigation Tabs */}
         <div className="mb-6 border-b border-gray-200">

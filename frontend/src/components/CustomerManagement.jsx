@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 import {
@@ -32,19 +32,22 @@ const CustomerManagement = ({ isAdminView = false }) => {
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' }); // For success/error messages
   const [customerOrders, setCustomerOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [showExportModal, setShowExportModal] = useState(false);
+  const searchDebounceRef = useRef(null);
 
   // Fetch data based on user role
   const fetchData = async () => {
@@ -68,6 +71,18 @@ const CustomerManagement = ({ isAdminView = false }) => {
       const filteredUsers = response.data.users.filter(user => user.email !== 'admin@gmail.com');
       setCustomers(filteredUsers);
       setFilteredCustomers(filteredUsers);
+      // Show success notification when refreshing
+      if (loading === false) { // Only show notification on manual refresh
+        setNotification({
+          show: true,
+          message: 'Customer data refreshed successfully!',
+          type: 'success'
+        });
+        // Hide notification after 3 seconds
+        setTimeout(() => {
+          setNotification(prev => ({ ...prev, show: false }));
+        }, 3000);
+      }
     } catch (err) {
       console.error('Error fetching customers:', err);
       let errorMessage = 'Failed to load customers. Please try again. Showing sample data.';
@@ -141,35 +156,43 @@ const CustomerManagement = ({ isAdminView = false }) => {
     }
   };
 
+  // Handle add customer
+  const handleAddCustomer = async (customerData) => {
+    try {
+      const response = await api.post('/auth/users', customerData);
+      setCustomers([...customers, response.data.user]);
+      setFilteredCustomers([...filteredCustomers, response.data.user]);
+      setShowAddCustomerModal(false);
+      // Show success notification
+      setNotification({
+        show: true,
+        message: 'Customer added successfully!',
+        type: 'success'
+      });
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+    } catch (err) {
+      console.error('Error adding customer:', err);
+      // Show error notification
+      setNotification({
+        show: true,
+        message: 'Failed to add customer. Please try again.',
+        type: 'error'
+      });
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+    }
+  };
+
   // Handle view customer details
   const handleViewCustomer = async (customer) => {
     setSelectedCustomer(customer);
     setShowModal(true);
     await fetchCustomerOrders(customer._id);
-  };
-
-  // Handle edit user (modified for regular users)
-  const handleEditUser = async (userId, userData) => {
-    try {
-      // Regular users should only be able to edit their own profile
-      // We'll use the profile endpoint for this
-      const response = await api.put('/profile', userData);
-      console.log('Profile updated successfully:', response.data);
-      
-      // Update the current user in the state
-      setCustomers(prev => prev.map(user => 
-        user._id === userId ? { ...user, ...response.data.user } : user
-      ));
-      setFilteredCustomers(prev => prev.map(user => 
-        user._id === userId ? { ...user, ...response.data.user } : user
-      ));
-      
-      setShowEditModal(false);
-      setSelectedCustomer(null);
-    } catch (err) {
-      console.error('Error updating profile:', err);
-      setError('Failed to update profile. Please try again.');
-    }
   };
 
   // Handle block/unblock user (modified for regular users)
@@ -204,10 +227,28 @@ const CustomerManagement = ({ isAdminView = false }) => {
       setCustomers(customers.filter(c => c._id !== selectedCustomer._id));
       setShowDeleteModal(false);
       setSelectedCustomer(null);
-      alert('Customer deleted successfully!');
+      // Show success notification
+      setNotification({
+        show: true,
+        message: 'Customer deleted successfully!',
+        type: 'success'
+      });
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
     } catch (err) {
       console.error('Error deleting customer:', err);
-      alert('Failed to delete customer. Please try again.');
+      // Show error notification
+      setNotification({
+        show: true,
+        message: 'Failed to delete customer. Please try again.',
+        type: 'error'
+      });
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
     }
   };
 
@@ -221,10 +262,28 @@ const CustomerManagement = ({ isAdminView = false }) => {
       setCustomers(customers.map(c => 
         c._id === customer._id ? response.data.user : c
       ));
-      alert(newBlockStatus ? 'Customer blocked successfully!' : 'Customer unblocked successfully!');
+      // Show success notification
+      setNotification({
+        show: true,
+        message: newBlockStatus ? 'Customer blocked successfully!' : 'Customer unblocked successfully!',
+        type: 'success'
+      });
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
     } catch (err) {
       console.error('Error toggling block status:', err);
-      alert('Failed to update customer status. Please try again.');
+      // Show error notification
+      setNotification({
+        show: true,
+        message: 'Failed to update customer status. Please try again.',
+        type: 'error'
+      });
+      // Hide notification after 3 seconds
+      setTimeout(() => {
+        setNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
     }
   };
 
@@ -433,93 +492,6 @@ const CustomerManagement = ({ isAdminView = false }) => {
     );
   };
 
-  // Edit Customer Modal
-  const EditCustomerModal = ({ customer, onClose, onSave }) => {
-    if (!customer) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">Edit Customer</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <XMarkIcon className="h-6 w-6 text-gray-500" />
-            </button>
-          </div>
-
-          <form onSubmit={onSave} className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                <input
-                  type="text"
-                  value={customer.name}
-                  onChange={(e) => setSelectedCustomer({ ...customer, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={customer.email}
-                  onChange={(e) => setSelectedCustomer({ ...customer, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  value={customer.phone || ''}
-                  onChange={(e) => setSelectedCustomer({ ...customer, phone: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                <select
-                  value={customer.role}
-                  onChange={(e) => setSelectedCustomer({ ...customer, role: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="customer">Customer</option>
-                  <option value="admin">Admin</option>
-                  <option value="delivery">Delivery Staff</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Save Changes
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
   // Delete Confirmation Modal
   const DeleteConfirmationModal = ({ customer, onClose, onConfirm }) => {
     if (!customer) return null;
@@ -585,43 +557,57 @@ const CustomerManagement = ({ isAdminView = false }) => {
 
   // Sort customers
   const sortCustomers = (customers) => {
-    return [...customers].sort((a, b) => {
-      let aValue, bValue;
-      
-      switch (sortBy) {
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'email':
-          aValue = a.email.toLowerCase();
-          bValue = b.email.toLowerCase();
-          break;
-        case 'role':
-          aValue = a.role;
-          bValue = b.role;
-          break;
-        case 'orders':
-          aValue = a.stats?.totalOrders || 0;
-          bValue = b.stats?.totalOrders || 0;
-          break;
-        case 'spent':
-          aValue = a.stats?.totalSpent || 0;
-          bValue = b.stats?.totalSpent || 0;
-          break;
-        case 'createdAt':
-        default:
-          aValue = new Date(a.createdAt || a.stats?.memberSince);
-          bValue = new Date(b.createdAt || b.stats?.memberSince);
-          break;
-      }
-      
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : -1;
-      } else {
-        return aValue < bValue ? 1 : -1;
-      }
-    });
+    try {
+      return [...customers].sort((a, b) => {
+        let aValue, bValue;
+        
+        switch (sortBy) {
+          case 'name':
+            aValue = (a.name || '').toLowerCase();
+            bValue = (b.name || '').toLowerCase();
+            break;
+          case 'email':
+            aValue = (a.email || '').toLowerCase();
+            bValue = (b.email || '').toLowerCase();
+            break;
+          case 'role':
+            aValue = a.role || '';
+            bValue = b.role || '';
+            break;
+          case 'orders':
+            aValue = a.stats?.totalOrders || 0;
+            bValue = b.stats?.totalOrders || 0;
+            break;
+          case 'spent':
+            aValue = a.stats?.totalSpent || 0;
+            bValue = b.stats?.totalSpent || 0;
+            break;
+          case 'createdAt':
+          default:
+            // Handle cases where neither createdAt nor stats.memberSince exist
+            const aDate = a.createdAt || (a.stats?.memberSince) || new Date(0);
+            const bDate = b.createdAt || (b.stats?.memberSince) || new Date(0);
+            aValue = new Date(aDate);
+            bValue = new Date(bDate);
+            break;
+        }
+        
+        // Handle comparison for different data types
+        if (sortOrder === 'asc') {
+          if (aValue < bValue) return -1;
+          if (aValue > bValue) return 1;
+          return 0;
+        } else {
+          if (aValue > bValue) return -1;
+          if (aValue < bValue) return 1;
+          return 0;
+        }
+      });
+    } catch (error) {
+      console.error('Error sorting customers:', error);
+      // Return original array if sorting fails
+      return [...customers];
+    }
   };
 
   // Get sorted customers
@@ -676,6 +662,117 @@ const CustomerManagement = ({ isAdminView = false }) => {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Add Customer Modal
+  const AddCustomerModal = ({ onClose, onAdd }) => {
+    const [formData, setFormData] = useState({
+      name: '',
+      email: '',
+      phone: '',
+      role: 'customer',
+      isBlocked: false
+    });
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      onAdd(formData);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-900">Add New Customer</h2>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <XMarkIcon className="h-6 w-6 text-gray-500" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <select
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="customer">Customer</option>
+                  <option value="admin">Admin</option>
+                  <option value="delivery">Delivery Staff</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="isBlocked"
+                checked={formData.isBlocked}
+                onChange={(e) => setFormData({ ...formData, isBlocked: e.target.checked })}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isBlocked" className="ml-2 block text-sm text-gray-900">
+                Blocked Account
+              </label>
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add Customer
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
@@ -795,65 +892,125 @@ const CustomerManagement = ({ isAdminView = false }) => {
     setLoading(false);
   };
 
+  // Memoize customer counts for stats cards
+  const customerCounts = useMemo(() => {
+    return {
+      total: customers.length,
+      customers: customers.filter(c => c.role === 'customer').length,
+      admins: customers.filter(c => c.role === 'admin').length,
+      blocked: customers.filter(c => c.isBlocked).length
+    };
+  }, [customers]);
+
   // Load data based on user role
   useEffect(() => {
     fetchData();
   }, [isAdminView, user]);
 
+  // Debounce search term
+  useEffect(() => {
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms debounce delay
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchTerm]);
+
   // Filter customers
   useEffect(() => {
-    let filtered = customers;
+    try {
+      let filtered = customers;
 
-    if (searchTerm) {
-      filtered = filtered.filter(customer =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (customer.phone && customer.phone.includes(searchTerm))
-      );
-    }
-
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter(customer => customer.role === roleFilter);
-    }
-
-    if (statusFilter !== 'all') {
-      if (statusFilter === 'blocked') {
-        filtered = filtered.filter(customer => customer.isBlocked);
-      } else if (statusFilter === 'active') {
-        filtered = filtered.filter(customer => !customer.isBlocked);
+      if (debouncedSearchTerm) {
+        const trimmedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
+        if (trimmedSearchTerm) {
+          filtered = filtered.filter(customer => {
+            // Safely check if properties exist before accessing them
+            const name = customer.name || '';
+            const email = customer.email || '';
+            const phone = customer.phone || '';
+            
+            return name.toLowerCase().includes(trimmedSearchTerm) ||
+                   email.toLowerCase().includes(trimmedSearchTerm) ||
+                   phone.includes(trimmedSearchTerm);
+          });
+        }
       }
-    }
 
-    setFilteredCustomers(filtered);
-  }, [searchTerm, statusFilter, roleFilter, customers]);
+      if (roleFilter !== 'all') {
+        filtered = filtered.filter(customer => (customer.role || '') === roleFilter);
+      }
+
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'blocked') {
+          filtered = filtered.filter(customer => customer.isBlocked === true);
+        } else if (statusFilter === 'active') {
+          filtered = filtered.filter(customer => customer.isBlocked !== true);
+        }
+      }
+
+      setFilteredCustomers(filtered);
+    } catch (error) {
+      console.error('Error filtering customers:', error);
+      // Set filtered customers to empty array if filtering fails
+      setFilteredCustomers([]);
+    }
+  }, [debouncedSearchTerm, statusFilter, roleFilter, customers]);
 
   return (
     <div className="p-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isAdminView && user?.role === 'admin' ? 'Customer Management' : 'My Profile'}
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {isAdminView && user?.role === 'admin' 
-              ? 'Manage customer relationships and track customer data' 
-              : 'View and manage your account information'}
-          </p>
+      {/* Header with consistent admin dashboard styling */}
+      <div className="mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isAdminView && user?.role === 'admin' ? 'Customer Management' : 'My Profile'}
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              {isAdminView && user?.role === 'admin' 
+                ? 'Manage customer relationships and track customer data' 
+                : 'View and manage your account information'}
+            </p>
+          </div>
+          
+          {isAdminView && user?.role === 'admin' && (
+            <div className="mt-4 md:mt-0">
+              <button
+                onClick={() => setShowAddCustomerModal(true)}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Add Customer
+              </button>
+            </div>
+          )}
         </div>
         
-        {isAdminView && user?.role === 'admin' && (
-          <div className="mt-4 md:mt-0">
-            <button
-              onClick={() => setShowModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Customer
-            </button>
-          </div>
-        )}
+        {/* Divider */}
+        <div className="mt-6 border-t border-gray-200"></div>
       </div>
+
+      {/* Notification */}
+      {notification.show && (
+        <div className={`mb-6 p-4 rounded-lg ${notification.type === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+          <div className="flex">
+            {notification.type === 'success' ? (
+              <CheckCircleIcon className="h-5 w-5 text-green-400" />
+            ) : (
+              <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+            )}
+            <div className="ml-3">
+              <p className={`text-sm font-medium ${notification.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                {notification.message}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards - Only show for admin view */}
       {isAdminView && user?.role === 'admin' && (
@@ -862,7 +1019,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">{customers.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{customerCounts.total}</p>
               </div>
               <div className="bg-blue-100 p-3 rounded-lg">
                 <UserIcon className="h-6 w-6 text-blue-600" />
@@ -875,7 +1032,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
               <div>
                 <p className="text-gray-600 text-sm">Customers</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {customers.filter(c => c.role === 'customer').length}
+                  {customerCounts.customers}
                 </p>
               </div>
               <div className="bg-blue-100 p-3 rounded-lg">
@@ -889,7 +1046,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
               <div>
                 <p className="text-gray-600 text-sm">Admins</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {customers.filter(c => c.role === 'admin').length}
+                  {customerCounts.admins}
                 </p>
               </div>
               <div className="bg-purple-100 p-3 rounded-lg">
@@ -903,7 +1060,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
               <div>
                 <p className="text-gray-600 text-sm">Blocked Users</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {customers.filter(c => c.isBlocked).length}
+                  {customerCounts.blocked}
                 </p>
               </div>
               <div className="bg-red-100 p-3 rounded-lg">
@@ -1040,7 +1197,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCustomers.map((customer) => (
+              {sortedCustomers.map((customer) => (
                 <tr key={customer._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -1098,25 +1255,17 @@ const CustomerManagement = ({ isAdminView = false }) => {
                         >
                           <EyeIcon className="h-5 w-5" />
                         </button>
-                        <button
-                          onClick={() => {
-                            setSelectedCustomer(customer);
-                            setShowEditModal(true);
-                          }}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          <PencilIcon className="h-5 w-5" />
-                        </button>
+
                         {!customer.isBlocked ? (
                           <button
-                            onClick={() => handleBlockUser(customer._id, true)}
+                            onClick={() => handleToggleBlock(customer)}
                             className="text-yellow-600 hover:text-yellow-900"
                           >
                             <NoSymbolIcon className="h-5 w-5" />
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleBlockUser(customer._id, false)}
+                            onClick={() => handleToggleBlock(customer)}
                             className="text-green-600 hover:text-green-900"
                           >
                             <CheckIcon className="h-5 w-5" />
@@ -1140,7 +1289,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
           </table>
         </div>
         
-        {filteredCustomers.length === 0 && !loading && (
+        {sortedCustomers.length === 0 && !loading && (
           <div className="text-center py-12">
             <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No customers found</h3>
@@ -1148,6 +1297,48 @@ const CustomerManagement = ({ isAdminView = false }) => {
           </div>
         )}
       </div>
+      
+      {/* Modals */}
+      {showModal && selectedCustomer && (
+        <CustomerDetailModal 
+          customer={selectedCustomer} 
+          onClose={() => {
+            setShowModal(false);
+            setSelectedCustomer(null);
+          }} 
+        />
+      )}
+      
+      {showAddCustomerModal && (
+        <AddCustomerModal 
+          onClose={() => setShowAddCustomerModal(false)}
+          onAdd={handleAddCustomer}
+        />
+      )}
+
+      {showDeleteModal && selectedCustomer && (
+        <DeleteConfirmationModal 
+          customer={selectedCustomer} 
+          onClose={() => {
+            setShowDeleteModal(false);
+            setSelectedCustomer(null);
+          }}
+          onConfirm={confirmDelete}
+        />
+      )}
+      
+      {showExportModal && (
+        <ExportModal 
+          onClose={() => setShowExportModal(false)}
+          onExport={(format) => {
+            if (format === 'csv') {
+              exportToCSV();
+            }
+            // Add other format exports here if needed
+            setShowExportModal(false);
+          }}
+        />
+      )}
     </div>
   );
 };

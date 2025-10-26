@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Settings = require('../models/Settings');
 const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
 const { isAdmin } = require('../middleware/role');
@@ -272,6 +273,90 @@ router.get('/dashboard/stats', protect, isAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Get business settings
+router.get('/settings', protect, isAdmin, async (req, res) => {
+  try {
+    // Get the first settings document or create default settings
+    let settings = await Settings.findOne();
+    
+    if (!settings) {
+      // Create default settings if none exist
+      settings = new Settings({
+        businessName: 'WashLab Laundry',
+        businessEmail: 'admin@washlab.com',
+        businessPhone: '+1 555-0100',
+        businessAddress: '123 Business St, City, State 12345',
+        timezone: 'America/New_York',
+        currency: 'INR',
+        language: 'en'
+      });
+      await settings.save();
+    }
+    
+    res.json(settings);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Update business settings
+router.put('/settings', protect, isAdmin, async (req, res) => {
+  try {
+    const { general, notifications, security, payment } = req.body;
+    
+    // Validate required fields
+    if (!general.businessName || !general.businessEmail || !general.businessPhone || !general.businessAddress) {
+      return res.status(400).json({ 
+        message: 'Business name, email, phone, and address are required' 
+      });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(general.businessEmail)) {
+      return res.status(400).json({ 
+        message: 'Invalid email format' 
+      });
+    }
+    
+    // Validate phone format (simple validation)
+    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+    if (!phoneRegex.test(general.businessPhone.replace(/[\s\-\(\)]/g, ''))) {
+      return res.status(400).json({ 
+        message: 'Invalid phone number format' 
+      });
+    }
+    
+    // Find and update settings
+    let settings = await Settings.findOne();
+    
+    if (!settings) {
+      // Create new settings if none exist
+      settings = new Settings({
+        ...general,
+        notifications: notifications || {},
+        security: security || {},
+        payment: payment || {}
+      });
+    } else {
+      // Update existing settings
+      Object.assign(settings, {
+        ...general,
+        notifications: { ...settings.notifications, ...notifications },
+        security: { ...settings.security, ...security },
+        payment: { ...settings.payment, ...payment }
+      });
+    }
+    
+    await settings.save();
+    res.json({ message: 'Settings updated successfully', settings });
+  } catch (error) {
+    console.error('Error updating settings:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

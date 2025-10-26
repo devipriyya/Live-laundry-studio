@@ -1,10 +1,10 @@
 import React from 'react';
-import PaymentManagement from '../components/PaymentManagement';
+import EnhancedPaymentManagement from '../components/EnhancedPaymentManagement';
 
 const PaymentManagementPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <PaymentManagement />
+      <EnhancedPaymentManagement />
     </div>
   );
 };

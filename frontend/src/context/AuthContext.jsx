@@ -7,6 +7,12 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
+  const [loading, setLoading] = useState(true);
+
+  // Debug logging
+  console.log('AuthContext: Initializing AuthProvider');
+  console.log('AuthContext: Initial user state:', user);
+  console.log('AuthContext: Initial loading state:', loading);
 
   // Function to verify user exists in backend database
   const verifyUserInDatabase = async (userData) => {
@@ -30,6 +36,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    console.log('AuthContext: useEffect triggered');
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log('AuthContext: Firebase user state changed:', firebaseUser);
       if (firebaseUser) {
@@ -56,6 +63,7 @@ export const AuthProvider = ({ children }) => {
         // If this is an admin or delivery user, ensure we have a valid token
         if (needsToken) {
           const currentToken = localStorage.getItem('token');
+          console.log('AuthContext: Current token:', currentToken);
           if (!currentToken) {
             console.log('AuthContext: No token found for privileged user, calling demo login');
             // Call the appropriate demo login function based on role
@@ -71,6 +79,7 @@ export const AuthProvider = ({ children }) => {
         console.log('AuthContext: Setting user data:', verifiedUser);
         setUser(verifiedUser);
         localStorage.setItem('user', JSON.stringify(verifiedUser));
+        setLoading(false);
       } else {
         const storedToken = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
@@ -83,12 +92,27 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
           localStorage.removeItem('user');
         }
+        setLoading(false);
       }
     });
-    return () => unsubscribe();
+    
+    // Set loading to false after a timeout to prevent infinite loading
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.log('AuthContext: Loading timeout reached');
+        setLoading(false);
+      }
+    }, 2000);
+    
+    return () => {
+      console.log('AuthContext: Cleaning up');
+      unsubscribe();
+      clearTimeout(timer);
+    };
   }, []);
 
   const logout = () => {
+    console.log('AuthContext: Logging out');
     auth.signOut();
     setUser(null);
     localStorage.removeItem('user');
@@ -96,6 +120,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const demoLogin = async () => {
+    console.log('AuthContext: Demo login called');
     const demoUser = {
       uid: 'demo-user',
       email: 'demo@fabrico.com',
@@ -264,8 +289,11 @@ export const AuthProvider = ({ children }) => {
     console.log("AuthContext: Delivery boy user set successfully");
   };
 
+  // Debug logging
+  console.log('AuthContext: Rendering children with user:', user, 'loading:', loading);
+
   return (
-    <AuthContext.Provider value={{ user, setUser, logout, demoLogin, adminDemoLogin, deliveryBoyDemoLogin }}>
+    <AuthContext.Provider value={{ user, setUser, logout, demoLogin, adminDemoLogin, deliveryBoyDemoLogin, loading }}>
       {children}
     </AuthContext.Provider>
   );

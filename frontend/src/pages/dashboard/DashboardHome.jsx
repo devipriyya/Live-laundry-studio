@@ -35,6 +35,7 @@ import {
   NewspaperIcon,
   UserIcon,
   ChatBubbleLeftRightIcon,
+  BellIcon,
 } from '@heroicons/react/24/outline';
 import {
   StarIcon as StarIconSolid,
@@ -45,6 +46,8 @@ const DashboardHome = () => {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState(null);
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Dashboard functionality cards - all features from sidebar
   const functionalityCards = [
@@ -144,7 +147,7 @@ const DashboardHome = () => {
     },
     {
       id: 'products',
-      title: 'Jivika Labs Products',
+      title: 'WashLab Products',
       description: 'Premium laundry care products and accessories',
       icon: TagIcon,
       gradient: 'from-pink-500 to-rose-500',
@@ -174,14 +177,14 @@ const DashboardHome = () => {
       action: 'Read More'
     },
     {
-      id: 'about',
+      id: 'notifications',
       title: 'Notifications',
-      description: 'Learn more about our company and our commitment to quality',
-      icon: QuestionMarkCircleIcon,
+      description: 'Stay updated with your latest activities and important alerts',
+      icon: BellIcon,
       gradient: 'from-blue-600 to-indigo-600',
       bgColor: 'bg-gradient-to-br from-sky-100 to-indigo-200',
-      path: '/dashboard/about',
-      action: 'Learn More'
+      path: '/dashboard/notifications',
+      action: 'View Notifications'
     }
   ];
 
@@ -325,7 +328,24 @@ const DashboardHome = () => {
       excerpt: 'Discover the secrets to keeping your clothes fresh and clean with our expert laundry tips and techniques...',
       image: 'bg_image_2.png',
       category: 'Tips',
-      date: 'Oct 15, 2025'
+      date: 'Oct 15, 2025',
+      content: `Keeping your clothes fresh and clean doesn't have to be a chore. With the right techniques and a reliable laundry service like WashLab, you can ensure your wardrobe always looks and smells amazing.
+
+Our expert team has compiled these essential tips to help you maintain the quality of your garments:
+
+1. **Sort by Color and Fabric**: Always separate whites, darks, and colors. Delicate fabrics like silk and lace should be washed separately with gentle detergents.
+
+2. **Read Care Labels**: These provide crucial information about washing temperature, drying methods, and ironing instructions.
+
+3. **Pre-treat Stains**: Address stains immediately with appropriate stain removers before washing to prevent them from setting in.
+
+4. **Use the Right Water Temperature**: Hot water is best for whites and heavily soiled items, while cold water preserves colors and prevents shrinkage.
+
+5. **Don't Overload Your Machine**: Overcrowding reduces cleaning efficiency and can damage both your clothes and washer.
+
+6. **Choose Quality Detergents**: Invest in good detergents that match your fabric types and washing needs.
+
+For the best results, consider WashLab's professional laundry service. Our eco-friendly detergents and expert handling ensure your clothes receive the care they deserve.`
     },
     {
       id: 2,
@@ -333,7 +353,29 @@ const DashboardHome = () => {
       excerpt: 'Learn professional ironing techniques that will make your clothes look crisp and well-maintained...',
       image: 'bg_image_3.png',
       category: 'Guide',
-      date: 'Oct 12, 2025'
+      date: 'Oct 12, 2025',
+      content: `Professional ironing can transform the appearance of your clothes, making them look crisp, well-maintained, and ready to wear. Follow these expert techniques to achieve salon-quality results at home:
+
+**Essential Ironing Preparation:**
+- Check the care label for specific ironing instructions
+- Set your iron to the appropriate temperature for the fabric type
+- Use distilled water in your iron to prevent mineral buildup
+- Have a clean pressing cloth ready for delicate fabrics
+
+**Step-by-Step Ironing Process:**
+1. **Start with Clean Clothes**: Never iron dirty garments as it sets stains permanently
+2. **Iron in the Right Order**: Collars, then cuffs, followed by sleeves, and finally the body of the garment
+3. **Use Steam Wisely**: Steam helps remove wrinkles but avoid over-saturating delicate fabrics
+4. **Iron Along the Grain**: Follow the natural fiber direction to prevent damage
+5. **Work Quickly**: Don't leave the iron in one spot too long to avoid scorching
+
+**Fabric-Specific Tips:**
+- **Cotton**: Use high heat and plenty of steam
+- **Silk**: Use low heat and a pressing cloth
+- **Wool**: Use medium heat with steam, iron on the wrong side
+- **Polyester**: Use medium heat, avoid steam if possible
+
+For time-saving convenience and professional results, WashLab offers expert pressing services that ensure your garments look perfect every time.`
     },
     {
       id: 3,
@@ -341,7 +383,35 @@ const DashboardHome = () => {
       excerpt: 'Understanding the importance of proper fabric care and why professional cleaning makes a difference...',
       image: 'bg_image_4.png',
       category: 'Care',
-      date: 'Oct 10, 2025'
+      date: 'Oct 10, 2025',
+      content: `Proper fabric care is essential for maintaining the longevity, appearance, and value of your clothing. Understanding how different fabrics respond to various cleaning methods can save you money and keep your wardrobe looking its best.
+
+**Why Professional Cleaning Matters:**
+
+1. **Expert Knowledge**: Professional cleaners understand the unique requirements of different fabrics and can select the most appropriate cleaning methods.
+
+2. **Specialized Equipment**: Commercial-grade machines and eco-friendly detergents provide superior cleaning results that home washing often cannot match.
+
+3. **Stain Removal Expertise**: Professionals have access to specialized stain removal techniques and products for tough stains.
+
+4. **Fabric Preservation**: Proper handling prevents damage that can occur from incorrect washing or drying methods.
+
+**Common Fabric Care Mistakes to Avoid:**
+
+- **Over-washing**: This causes premature wear and tear
+- **Incorrect Detergents**: Harsh chemicals can damage delicate fibers
+- **Wrong Drying Methods**: High heat can shrink or damage certain fabrics
+- **Improper Storage**: Poor storage leads to wrinkles, pests, and moisture damage
+
+**Benefits of WashLab's Professional Service:**
+
+- Environmentally responsible cleaning processes
+- Specialized care for delicate and designer garments
+- Convenient pickup and delivery service
+- Insurance coverage for high-value items
+- Expert attention to detail and quality
+
+Investing in professional fabric care extends the life of your clothing and ensures you always look your best. With WashLab, you're not just getting clean clothes – you're getting expert care for your wardrobe investments.`
     }
   ];
 
@@ -397,6 +467,16 @@ const DashboardHome = () => {
     // Handle newsletter subscription
     alert('Thank you for subscribing to our newsletter!');
     setNewsletterEmail('');
+  };
+
+  const handleReadMore = (post) => {
+    setSelectedPost(post);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedPost(null);
   };
 
   return (
@@ -704,8 +784,7 @@ const DashboardHome = () => {
             {blogPosts.map((post) => (
               <div
                 key={post.id}
-                className="bg-white rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-gray-100 cursor-pointer"
-                onClick={() => handleQuickAction('orders')}
+                className="bg-white rounded-3xl overflow-hidden hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border-2 border-gray-100"
               >
                 {/* Blog Image */}
                 <div className="h-48 overflow-hidden">
@@ -722,7 +801,10 @@ const DashboardHome = () => {
                   </div>
                   <h3 className="font-bold text-xl text-gray-900 mb-3 leading-tight">{post.title}</h3>
                   <p className="text-gray-600 text-sm leading-relaxed mb-4">{post.excerpt}</p>
-                  <button className="text-cyan-600 font-semibold text-sm hover:text-cyan-700 transition-colors">
+                  <button 
+                    onClick={() => handleReadMore(post)}
+                    className="text-cyan-600 font-semibold text-sm hover:text-cyan-700 transition-colors"
+                  >
                     Read More →
                   </button>
                 </div>
@@ -808,6 +890,48 @@ const DashboardHome = () => {
             </button>
           </div>
         </div>
+
+        {/* Blog Post Modal */}
+        {isModalOpen && selectedPost && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{selectedPost.title}</h2>
+                  <div className="flex items-center space-x-4 mt-2">
+                    <span className="bg-cyan-100 text-cyan-700 text-xs font-semibold px-3 py-1 rounded-full">{selectedPost.category}</span>
+                    <span className="text-gray-500 text-sm">{selectedPost.date}</span>
+                  </div>
+                </div>
+                <button 
+                  onClick={closeModal}
+                  className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="overflow-y-auto p-6">
+                <div className="prose max-w-none">
+                  {selectedPost.content.split('\n\n').map((paragraph, index) => (
+                    <p key={index} className="text-gray-700 mb-4 leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={closeModal}
+                  className="px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,16 +1,47 @@
-# React + Vite
+# WashLab Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend application for WashLab, a dry cleaning service platform built with React and Vite.
 
-Currently, two official plugins are available:
+## Technologies Used
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 18
+- Vite
+- Tailwind CSS
+- Firebase Authentication
+- React Router
+- Axios for API calls
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Install dependencies:
+   ```
+   npm install
+   ```
 
-## Expanding the ESLint configuration
+2. Start the development server:
+   ```
+   npm run dev
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run test` - Run Playwright tests
+- `npm run lint` - Run ESLint
+
+## Testing
+
+This project includes:
+- Playwright end-to-end tests in the `tests` directory
+- Selenium tests in the root `selenium-tests` directory (see `SELENIUM_TESTING.md`)
+
+## Project Structure
+
+- `src/` - Main source code
+- `src/pages/` - Page components
+- `src/components/` - Reusable components
+- `src/services/` - API service files
+- `tests/` - Playwright test files
+- `public/` - Static assets

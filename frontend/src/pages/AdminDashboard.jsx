@@ -355,7 +355,7 @@ const AdminDashboard = () => {
               <SparklesIcon className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              FabricSpa Admin
+              WashLab Admin
             </h1>
           </div>
           <button
@@ -498,7 +498,7 @@ const AdminDashboard = () => {
                 {/* Header Section */}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
                   <div>
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">FabricSpa Admin Dashboard</h2>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">WashLab Admin Dashboard</h2>
                     <p className="text-gray-600">Comprehensive laundry management system with real-time analytics</p>
                   </div>
                   <div className="flex items-center space-x-3 mt-4 lg:mt-0">
@@ -950,7 +950,7 @@ const AdminDashboard = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
-                          <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" defaultValue="FabricSpa Laundry" />
+                          <input type="text" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" defaultValue="WashLab Laundry" />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
@@ -958,11 +958,11 @@ const AdminDashboard = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                          <input type="email" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" defaultValue="admin@fabricspa.com" />
+                          <input type="email" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" defaultValue="admin@washlab.com" />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
-                          <input type="url" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" defaultValue="https://fabricspa.com" />
+                          <input type="url" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" defaultValue="https://washlab.com" />
                         </div>
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-2">Business Address</label>

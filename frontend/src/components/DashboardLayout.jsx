@@ -45,7 +45,7 @@ const DashboardLayout = () => {
     if (path === '/dashboard/products') return 'products';
     if (path === '/dashboard/store') return 'store';
     if (path === '/dashboard/legal') return 'legal';
-    if (path === '/dashboard/about') return 'about';
+    if (path === '/dashboard/notifications') return 'notifications';
     return 'home';
   };
 
@@ -60,10 +60,10 @@ const DashboardLayout = () => {
     { id: 'orders', name: 'My Orders', icon: ShoppingBagIcon, path: '/dashboard/orders' },
     { id: 'quality', name: 'Quality Approval', icon: CheckCircleIcon, path: '/dashboard/quality' },
     { id: 'rate', name: 'Get Rate Card', icon: DocumentTextIcon, path: '/dashboard/rate' },
-    { id: 'products', name: 'Jivika Labs Products', icon: TagIcon, path: '/dashboard/products', badge: 'NEW' },
+    { id: 'products', name: 'WashLab Products', icon: TagIcon, path: '/dashboard/products', badge: 'NEW' },
     { id: 'store', name: 'Store Locator', icon: BuildingStorefrontIcon, path: '/dashboard/store' },
     { id: 'legal', name: 'Legal Info', icon: InformationCircleIcon, path: '/dashboard/legal', hasSubmenu: true },
-    { id: 'about', name: 'About Us', icon: QuestionMarkCircleIcon, path: '/dashboard/about' },
+    { id: 'notifications', name: 'Notifications', icon: BellIcon, path: '/dashboard/notifications' },
     { id: 'logout', name: 'Log Out', icon: ArrowRightOnRectangleIcon }
   ];
 
@@ -90,7 +90,7 @@ const DashboardLayout = () => {
               <SparklesIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent">fabricspa</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent">WashLab</h1>
               <p className="text-xs text-gray-500">Premium Laundry Service</p>
             </div>
           </div>
@@ -150,7 +150,7 @@ const DashboardLayout = () => {
       <footer className="bg-white border-t border-gray-200 px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
           <p className="text-sm text-gray-600 mb-2 md:mb-0">
-            © 2025 Fabricspa. All rights reserved.
+            © 2025 WashLab. All rights reserved.
           </p>
           <div className="flex items-center space-x-4">
             <button className="text-sm text-gray-600 hover:text-cyan-600 transition-colors">

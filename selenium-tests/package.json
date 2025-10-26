@@ -1,0 +1,25 @@
+{
+  "name": "washlab-selenium-tests",
+  "version": "1.0.0",
+  "description": "Selenium tests for WashLab application",
+  "main": "testRunner.js",
+  "scripts": {
+    "test": "node testRunner.js",
+    "test:login": "node loginTest.js",
+    "test:register": "node registerTest.js",
+    "test:dashboard": "node dashboardTest.js"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.25.0",
+    "chromedriver": "^130.0.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "selenium",
+    "testing",
+    "webdriver",
+    "washlab"
+  ],
+  "author": "WashLab QA Team",
+  "license": "MIT"
+}
