@@ -32,6 +32,7 @@ const UserSchema = new mongoose.Schema({
   profilePicture: { type: String },
   role: { type: String, enum: ['customer','admin','delivery'], default: 'customer' },
   isBlocked: { type: Boolean, default: false },
+  firebaseUid: { type: String, unique: true, sparse: true }, // Add firebaseUid field
   addresses: [{
     type: { type: String, enum: ['Home', 'Office', 'Other'], required: true },
     address: { type: String, required: true },

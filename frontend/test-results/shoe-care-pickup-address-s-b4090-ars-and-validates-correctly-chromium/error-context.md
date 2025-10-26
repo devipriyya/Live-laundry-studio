@@ -1,0 +1,255 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e5]:
+  - navigation [ref=e6]:
+    - generic [ref=e8]:
+      - generic [ref=e10]:
+        - img [ref=e12]
+        - text: FabricSpa
+      - generic [ref=e15]:
+        - link "HOME" [ref=e16] [cursor=pointer]:
+          - /url: "#home"
+          - text: HOME
+        - link "SERVICES" [ref=e17] [cursor=pointer]:
+          - /url: "#services"
+          - text: SERVICES
+        - link "ABOUT US" [ref=e18] [cursor=pointer]:
+          - /url: "#about"
+          - text: ABOUT US
+        - link "WHY US" [ref=e19] [cursor=pointer]:
+          - /url: "#whyus"
+          - text: WHY US
+        - link "GALLERY" [ref=e20] [cursor=pointer]:
+          - /url: "#gallery"
+          - text: GALLERY
+        - link "CONTACT" [ref=e21] [cursor=pointer]:
+          - /url: "#contact"
+          - text: CONTACT
+      - generic [ref=e22]:
+        - button "Log In" [ref=e23] [cursor=pointer]
+        - button "Get Started" [ref=e24] [cursor=pointer]:
+          - generic [ref=e25] [cursor=pointer]: Get Started
+  - generic [ref=e27]:
+    - img "Laundry service 1" [ref=e31]
+    - generic:
+      - generic: 🧺
+      - generic: 👕
+      - generic: 🧽
+      - generic: 🫧
+      - generic: ✨
+    - generic [ref=e33]:
+      - generic [ref=e35]:
+        - img [ref=e36]
+        - text: Premium Laundry Experience
+      - heading "Fresh. Clean. Delivered." [level=1] [ref=e38]:
+        - generic [ref=e39]: Fresh.
+        - generic [ref=e40]: Clean.
+        - generic [ref=e41]: Delivered.
+      - paragraph [ref=e42]:
+        - text: Transform your laundry experience with our premium care services.
+        - generic [ref=e43]: Professional • Convenient • Eco-Friendly
+      - generic [ref=e44]:
+        - button "Start Your Journey" [ref=e45] [cursor=pointer]:
+          - generic [ref=e46] [cursor=pointer]:
+            - text: Start Your Journey
+            - img [ref=e47] [cursor=pointer]
+        - button "Watch Demo" [ref=e50] [cursor=pointer]:
+          - img [ref=e51] [cursor=pointer]
+          - text: Watch Demo
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - generic [ref=e55]: 50K+
+          - generic [ref=e56]: Happy Customers
+        - generic [ref=e57]:
+          - generic [ref=e58]: 24/7
+          - generic [ref=e59]: Service Available
+        - generic [ref=e60]:
+          - generic [ref=e61]: 99%
+          - generic [ref=e62]: Satisfaction Rate
+        - generic [ref=e63]:
+          - generic [ref=e64]: 2Hr
+          - generic [ref=e65]: Express Service
+  - generic [ref=e70]:
+    - generic [ref=e71]:
+      - generic [ref=e72]: Our Services
+      - heading "Premium Care for Every Need" [level=2] [ref=e73]
+      - paragraph [ref=e74]: Discover our comprehensive range of professional laundry services designed to keep your clothes looking their absolute best.
+    - generic [ref=e75]:
+      - generic [ref=e76]:
+        - generic [ref=e78]: 🧽
+        - heading "Dry Cleaning" [level=3] [ref=e79]
+        - paragraph [ref=e80]: We offer convenient dry-cleaning services for your favorite garments including wedding dresses and other special-occasion pieces.
+        - button "Learn More" [ref=e81] [cursor=pointer]
+      - generic [ref=e82]:
+        - generic [ref=e84]: 👔
+        - heading "Wash & Iron" [level=3] [ref=e85]
+        - paragraph [ref=e86]: We wash your clothes and deliver them fresh from our commercial steam press folded and ready to hang in your closet.
+        - button "Learn More" [ref=e87] [cursor=pointer]
+      - generic [ref=e88]:
+        - generic [ref=e90]: 🔥
+        - heading "Steam Iron" [level=3] [ref=e91]
+        - paragraph [ref=e92]: Laundry Drop makes it easy. Let our pro's steam iron clothes, bedding, and household linens.
+        - button "Learn More" [ref=e93] [cursor=pointer]
+      - generic [ref=e94]:
+        - generic [ref=e96]: 🛏️
+        - heading "Bed Sheet Cleaning" [level=3] [ref=e97]
+        - paragraph [ref=e98]: "For your bedsheets: we can multiple schedule delivery options, including same day delivery for complete fast fit."
+        - button "Learn More" [ref=e99] [cursor=pointer]
+  - generic [ref=e101]:
+    - heading "ABOUT US" [level=2] [ref=e103]
+    - generic [ref=e105]:
+      - img "Professional laundry service" [ref=e107]
+      - generic [ref=e108]:
+        - paragraph [ref=e109]: WashLab brings together cutting-edge technology and traditional craftsmanship to deliver unparalleled garment care. Our expert team is dedicated to preserving the quality and extending the life of your favorite clothing items.
+        - paragraph [ref=e110]: From delicate fabrics to everyday essentials, we provide comprehensive services including dry cleaning, alterations, and specialized treatments. Our state-of-the-art facility ensures every piece receives the attention it deserves.
+        - paragraph [ref=e111]: Experience the difference that professional care makes – because your clothes truly deserve it.
+  - generic [ref=e113]:
+    - generic [ref=e114]:
+      - generic [ref=e115]: Why Choose WashLab
+      - heading "Experience the Difference" [level=2] [ref=e116]
+      - paragraph [ref=e117]: Discover what makes WashLab the preferred choice for premium garment care.
+    - generic [ref=e118]:
+      - generic [ref=e119]:
+        - generic [ref=e120]: "1"
+        - heading "We pickup and drop off from your office" [level=3] [ref=e121]
+        - paragraph [ref=e122]: Some additional text here
+      - generic [ref=e123]:
+        - generic [ref=e124]: "2"
+        - heading "We use products that never harm your clothing and give it back to you." [level=3] [ref=e125]
+        - paragraph [ref=e126]: Some additional text here
+      - generic [ref=e127]:
+        - generic [ref=e128]: "3"
+        - heading "Your orders are delivered at your doorstep back to you." [level=3] [ref=e129]
+        - paragraph [ref=e130]: Some additional text here
+      - generic [ref=e131]:
+        - generic [ref=e132]: "4"
+        - heading "We deliver and charge very competively priced service" [level=3] [ref=e133]
+        - paragraph [ref=e134]: Some additional text here
+  - generic [ref=e136]:
+    - heading "GALLERY" [level=2] [ref=e138]
+    - generic [ref=e140]:
+      - img "Gallery image 1" [ref=e142]
+      - img "Gallery image 2" [ref=e144]
+      - img "Gallery image 3" [ref=e146]
+      - img "Gallery image 4" [ref=e148]
+      - img "Gallery image 5" [ref=e150]
+      - img "Gallery image 6" [ref=e152]
+  - generic [ref=e154]:
+    - heading "VIDEOS" [level=2] [ref=e156]
+    - generic [ref=e158]:
+      - generic [ref=e159] [cursor=pointer]:
+        - generic [ref=e160] [cursor=pointer]:
+          - img "How to Keep White Clothes White is the Laundry" [ref=e161] [cursor=pointer]
+          - img [ref=e164] [cursor=pointer]
+          - generic [ref=e166] [cursor=pointer]: 2:45
+        - heading "How to Keep White Clothes White is the Laundry" [level=3] [ref=e167] [cursor=pointer]
+      - generic [ref=e168] [cursor=pointer]:
+        - generic [ref=e169] [cursor=pointer]:
+          - img "Trichloroethane" [ref=e170] [cursor=pointer]
+          - img [ref=e173] [cursor=pointer]
+          - generic [ref=e175] [cursor=pointer]: 1:30
+        - heading "Trichloroethane" [level=3] [ref=e176] [cursor=pointer]
+      - generic [ref=e177] [cursor=pointer]:
+        - generic [ref=e178] [cursor=pointer]:
+          - img "What to do Laundry" [ref=e179] [cursor=pointer]
+          - img [ref=e182] [cursor=pointer]
+          - generic [ref=e184] [cursor=pointer]: 3:15
+        - heading "What to do Laundry" [level=3] [ref=e185] [cursor=pointer]
+      - generic [ref=e186] [cursor=pointer]:
+        - generic [ref=e187] [cursor=pointer]:
+          - img "How to Care for your Clothes" [ref=e188] [cursor=pointer]
+          - img [ref=e191] [cursor=pointer]
+          - generic [ref=e193] [cursor=pointer]: 4:20
+        - heading "How to Care for your Clothes" [level=3] [ref=e194] [cursor=pointer]
+  - generic [ref=e197]:
+    - img "Customer testimonial" [ref=e199]
+    - generic [ref=e200]:
+      - generic [ref=e201]:
+        - generic [ref=e202]:
+          - generic [ref=e203]: "\""
+          - heading "Angeles Paul" [level=3] [ref=e204]
+        - paragraph [ref=e205]: "\"Service was very quick delivery and Pricing was perfect. I would definitely recommend to anyone needing laundry done.\""
+        - generic [ref=e206]:
+          - img [ref=e207]
+          - img [ref=e209]
+          - img [ref=e211]
+          - img [ref=e213]
+          - img [ref=e215]
+      - generic [ref=e217]:
+        - generic [ref=e218]:
+          - generic [ref=e219]: "\""
+          - heading "Billy David" [level=3] [ref=e220]
+        - paragraph [ref=e221]: "\"I tried out your service! I appreciate how efficient your guys were and how well-priced the service was, good work. Would recommend to my friends and will definitely be using your services again.\""
+        - generic [ref=e222]:
+          - img [ref=e223]
+          - img [ref=e225]
+          - img [ref=e227]
+          - img [ref=e229]
+          - img [ref=e231]
+  - generic [ref=e234]:
+    - heading "CONTACT US" [level=2] [ref=e236]
+    - generic [ref=e238]:
+      - generic [ref=e241]: Map Location
+      - generic [ref=e242]:
+        - generic [ref=e243]:
+          - heading "Our Office Address" [level=3] [ref=e244]
+          - generic [ref=e245]:
+            - generic [ref=e246]:
+              - img [ref=e247]
+              - generic [ref=e250]:
+                - paragraph [ref=e251]: New York City, Manhattan, New York
+                - paragraph [ref=e252]: "Street: Broadway Greenwich Street Complex, Above"
+                - paragraph [ref=e253]: Whole Foods Market, New York 10007
+            - generic [ref=e254]:
+              - img [ref=e255]
+              - generic [ref=e257]:
+                - paragraph [ref=e258]: General Inquiries
+                - paragraph [ref=e259]: (212) 227-3500
+            - generic [ref=e260]:
+              - img [ref=e261]
+              - generic [ref=e263]:
+                - paragraph [ref=e264]: Call Us
+                - paragraph [ref=e265]: (212) 227-3500
+            - generic [ref=e266]:
+              - img [ref=e267]
+              - generic [ref=e269]:
+                - paragraph [ref=e270]: Our Timings
+                - paragraph [ref=e271]: "Mon - Sun: 9:00 AM - 10:00 PM"
+        - generic [ref=e273]:
+          - textbox "Full Name" [ref=e275]
+          - textbox "Email Address" [ref=e277]
+          - textbox "Your Message" [ref=e279]
+          - button "Send Message" [ref=e280] [cursor=pointer]
+  - contentinfo [ref=e281]:
+    - generic [ref=e282]:
+      - generic [ref=e283]:
+        - generic [ref=e284]:
+          - heading "ABOUT WASHLAB" [level=3] [ref=e285]
+          - paragraph [ref=e286]: Premium laundry services with cutting-edge technology and expert care for your garments.
+        - generic [ref=e287]:
+          - heading "QUICK" [level=3] [ref=e288]
+          - list [ref=e289]:
+            - listitem [ref=e290]:
+              - link "Home" [ref=e291] [cursor=pointer]:
+                - /url: "#home"
+            - listitem [ref=e292]:
+              - link "Services" [ref=e293] [cursor=pointer]:
+                - /url: "#services"
+            - listitem [ref=e294]:
+              - link "About" [ref=e295] [cursor=pointer]:
+                - /url: "#about"
+            - listitem [ref=e296]:
+              - link "Contact" [ref=e297] [cursor=pointer]:
+                - /url: "#contact"
+        - generic [ref=e298]:
+          - heading "CONNECT" [level=3] [ref=e299]
+          - paragraph [ref=e300]: Follow Us for updates
+        - generic [ref=e301]:
+          - heading "NEWSLETTER" [level=3] [ref=e302]
+          - paragraph [ref=e303]: Stay updated with our latest offers
+          - generic [ref=e304]:
+            - textbox "Email" [ref=e305]
+            - button "→" [ref=e306] [cursor=pointer]
+      - paragraph [ref=e308]: © 2024 WashLab. All Rights Reserved.
+```

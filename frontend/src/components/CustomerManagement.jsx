@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 import {
   MagnifyingGlassIcon,
@@ -26,7 +27,8 @@ import {
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
-const CustomerManagement = () => {
+const CustomerManagement = ({ isAdminView = false }) => {
+  const { user } = useContext(AuthContext);
   const [customers, setCustomers] = useState([]);
   const [filteredCustomers, setFilteredCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,7 +46,18 @@ const CustomerManagement = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showExportModal, setShowExportModal] = useState(false);
 
-  // Fetch all customers from API
+  // Fetch data based on user role
+  const fetchData = async () => {
+    if (isAdminView && user?.role === 'admin') {
+      // Admin view - fetch all users
+      await fetchCustomers();
+    } else {
+      // Regular user view - fetch only current user
+      await fetchCurrentUser();
+    }
+  };
+
+  // Fetch all customers from API (admin only)
   const fetchCustomers = async () => {
     try {
       setLoading(true);
@@ -81,160 +94,38 @@ const CustomerManagement = () => {
     }
   };
 
-  // Load sample data for demonstration
-  const loadSampleData = () => {
-    const sampleCustomers = [
-      {
-        _id: '1',
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '+1 234 567 8901',
-        role: 'customer',
-        isBlocked: false,
-        addresses: [
-          {
-            type: 'Home',
-            address: '123 Main St',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10001',
-            isDefault: true
-          }
-        ],
-        stats: {
-          totalOrders: 12,
-          totalSpent: 245.50,
-          loyaltyPoints: 120,
-          memberSince: new Date('2023-01-15')
+  // Fetch current user's profile from API
+  const fetchCurrentUser = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/profile');
+      console.log('Current user data fetched successfully:', response.data);
+      // Set the current user as the only customer in the list
+      const currentUser = response.data;
+      setCustomers([currentUser]);
+      setFilteredCustomers([currentUser]);
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+      let errorMessage = 'Failed to load profile information. Please try again.';
+      
+      // More detailed error message
+      if (err.response) {
+        console.error('Error response:', err.response);
+        if (err.response.status === 401) {
+          errorMessage = 'Failed to load profile: Not authorized. Please log in to access your profile.';
+        } else {
+          errorMessage = `Failed to load profile: ${err.response.data.message || err.response.statusText || 'Unknown error'}.`;
         }
-      },
-      {
-        _id: '2',
-        name: 'Jane Smith',
-        email: 'jane.smith@example.com',
-        phone: '+1 234 567 8902',
-        role: 'customer',
-        isBlocked: true,
-        addresses: [
-          {
-            type: 'Office',
-            address: '456 Business Ave',
-            city: 'New York',
-            state: 'NY',
-            zipCode: '10002',
-            isDefault: true
-          }
-        ],
-        stats: {
-          totalOrders: 8,
-          totalSpent: 189.75,
-          loyaltyPoints: 85,
-          memberSince: new Date('2023-03-22')
-        }
-      },
-      {
-        _id: '3',
-        name: 'Robert Johnson',
-        email: 'robert.j@example.com',
-        phone: '+1 234 567 8903',
-        role: 'delivery',
-        isBlocked: false,
-        addresses: [],
-        stats: {
-          totalOrders: 0,
-          totalSpent: 0,
-          loyaltyPoints: 0,
-          memberSince: new Date('2023-05-10')
-        }
-      },
-      {
-        _id: '4',
-        name: 'Sarah Williams',
-        email: 'sarah.w@example.com',
-        phone: '+1 234 567 8904',
-        role: 'customer',
-        isBlocked: false,
-        addresses: [
-          {
-            type: 'Home',
-            address: '789 Park Ave',
-            city: 'Boston',
-            state: 'MA',
-            zipCode: '02101',
-            isDefault: true
-          }
-        ],
-        stats: {
-          totalOrders: 15,
-          totalSpent: 320.25,
-          loyaltyPoints: 150,
-          memberSince: new Date('2022-11-05')
-        }
-      },
-      {
-        _id: '5',
-        name: 'Michael Brown',
-        email: 'michael.b@example.com',
-        phone: '+1 234 567 8905',
-        role: 'admin',
-        isBlocked: false,
-        addresses: [],
-        stats: {
-          totalOrders: 0,
-          totalSpent: 0,
-          loyaltyPoints: 0,
-          memberSince: new Date('2023-01-10')
-        }
+      } else if (err.request) {
+        errorMessage = 'Failed to load profile: Server not responding. Please check your connection.';
       }
-    ];
-    setCustomers(sampleCustomers);
-    setFilteredCustomers(sampleCustomers);
-    // Ensure loading is set to false when loading sample data
-    setLoading(false);
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // Load sample data immediately if API fails
-  useEffect(() => {
-    // Try to fetch customers, but if it fails, load sample data after 3 seconds
-    fetchCustomers();
-    
-    // Fallback to sample data if API doesn't respond quickly
-    const fallbackTimer = setTimeout(() => {
-      if (loading && customers.length === 0) {
-        console.log('Loading sample data as fallback');
-        loadSampleData();
-      }
-    }, 3000);
-    
-    return () => clearTimeout(fallbackTimer);
-  }, []);
-
-  // Filter customers
-  useEffect(() => {
-    let filtered = customers;
-
-    if (searchTerm) {
-      filtered = filtered.filter(customer =>
-        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (customer.phone && customer.phone.includes(searchTerm))
-      );
-    }
-
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter(customer => customer.role === roleFilter);
-    }
-
-    if (statusFilter !== 'all') {
-      if (statusFilter === 'blocked') {
-        filtered = filtered.filter(customer => customer.isBlocked);
-      } else if (statusFilter === 'active') {
-        filtered = filtered.filter(customer => !customer.isBlocked);
-      }
-    }
-
-    setFilteredCustomers(filtered);
-  }, [searchTerm, statusFilter, roleFilter, customers]);
 
   // Fetch customer orders
   const fetchCustomerOrders = async (customerId) => {
@@ -257,33 +148,53 @@ const CustomerManagement = () => {
     await fetchCustomerOrders(customer._id);
   };
 
-  // Handle edit customer
-  const handleEditCustomer = (customer) => {
-    setSelectedCustomer(customer);
-    setShowEditModal(true);
-  };
-
-  // Handle update customer
-  const handleUpdateCustomer = async (e) => {
-    e.preventDefault();
+  // Handle edit user (modified for regular users)
+  const handleEditUser = async (userId, userData) => {
     try {
-      const response = await api.put(`/auth/users/${selectedCustomer._id}`, selectedCustomer);
-      setCustomers(customers.map(c => 
-        c._id === selectedCustomer._id ? response.data.user : c
+      // Regular users should only be able to edit their own profile
+      // We'll use the profile endpoint for this
+      const response = await api.put('/profile', userData);
+      console.log('Profile updated successfully:', response.data);
+      
+      // Update the current user in the state
+      setCustomers(prev => prev.map(user => 
+        user._id === userId ? { ...user, ...response.data.user } : user
       ));
+      setFilteredCustomers(prev => prev.map(user => 
+        user._id === userId ? { ...user, ...response.data.user } : user
+      ));
+      
       setShowEditModal(false);
       setSelectedCustomer(null);
-      alert('Customer updated successfully!');
     } catch (err) {
-      console.error('Error updating customer:', err);
-      alert('Failed to update customer. Please try again.');
+      console.error('Error updating profile:', err);
+      setError('Failed to update profile. Please try again.');
     }
   };
 
-  // Handle delete customer
-  const handleDeleteCustomer = (customer) => {
-    setSelectedCustomer(customer);
-    setShowDeleteModal(true);
+  // Handle block/unblock user (modified for regular users)
+  const handleBlockUser = async (userId, isBlocked) => {
+    try {
+      // Regular users should not be able to block other users
+      // This functionality should only be available for admins
+      setError('User blocking is only available for administrators.');
+    } catch (err) {
+      console.error('Error updating user status:', err);
+      setError('Failed to update user status. Please try again.');
+    }
+  };
+
+  // Handle delete user (modified for regular users)
+  const handleDeleteUser = async () => {
+    try {
+      // Regular users should not be able to delete other users
+      // This functionality should only be available for admins
+      setError('User deletion is only available for administrators.');
+      setShowDeleteModal(false);
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError('Failed to delete user. Please try again.');
+    }
   };
 
   // Confirm delete
@@ -770,61 +681,183 @@ const CustomerManagement = () => {
     );
   };
 
+  // Load sample data for demonstration
+  const loadSampleData = () => {
+    if (isAdminView && user?.role === 'admin') {
+      // Admin sample data
+      const sampleCustomers = [
+        {
+          _id: '1',
+          name: 'John Doe',
+          email: 'john.doe@example.com',
+          phone: '+1 234 567 8901',
+          role: 'customer',
+          isBlocked: false,
+          addresses: [
+            {
+              type: 'Home',
+              address: '456 Elm St',
+              city: 'Los Angeles',
+              state: 'CA',
+              zipCode: '90001',
+              isDefault: true
+            }
+          ],
+          stats: {
+            totalOrders: 3,
+            totalSpent: 75.25,
+            loyaltyPoints: 30,
+            memberSince: new Date('2023-02-20')
+          }
+        },
+        {
+          _id: '2',
+          name: 'Jane Smith',
+          email: 'jane.smith@example.com',
+          phone: '+1 234 567 8902',
+          role: 'admin',
+          isBlocked: true,
+          addresses: [
+            {
+              type: 'Home',
+              address: '789 Oak St',
+              city: 'Chicago',
+              state: 'IL',
+              zipCode: '60601',
+              isDefault: true
+            }
+          ],
+          stats: {
+            totalOrders: 0,
+            totalSpent: 0,
+            loyaltyPoints: 0,
+            memberSince: new Date('2023-03-15')
+          }
+        },
+        {
+          _id: '3',
+          name: 'Alice Johnson',
+          email: 'alice.johnson@example.com',
+          phone: '+1 234 567 8903',
+          role: 'delivery',
+          isBlocked: false,
+          addresses: [
+            {
+              type: 'Home',
+              address: '101 Pine St',
+              city: 'Houston',
+              state: 'TX',
+              zipCode: '77001',
+              isDefault: true
+            }
+          ],
+          stats: {
+            totalOrders: 10,
+            totalSpent: 250.00,
+            loyaltyPoints: 100,
+            memberSince: new Date('2023-04-10')
+          }
+        }
+      ];
+      setCustomers(sampleCustomers);
+      setFilteredCustomers(sampleCustomers);
+    } else {
+      // Regular user sample data
+      const sampleCustomers = [
+        {
+          _id: 'current-user',
+          name: user?.name || 'Current User',
+          email: user?.email || 'current.user@example.com',
+          phone: '+1 234 567 8900',
+          role: user?.role || 'customer',
+          isBlocked: false,
+          addresses: [
+            {
+              type: 'Home',
+              address: '123 Main St',
+              city: 'New York',
+              state: 'NY',
+              zipCode: '10001',
+              isDefault: true
+            }
+          ],
+          stats: {
+            totalOrders: 5,
+            totalSpent: 120.50,
+            loyaltyPoints: 50,
+            memberSince: new Date('2023-01-15')
+          }
+        }
+      ];
+      setCustomers(sampleCustomers);
+      setFilteredCustomers(sampleCustomers);
+    }
+    setLoading(false);
+  };
+
+  // Load data based on user role
+  useEffect(() => {
+    fetchData();
+  }, [isAdminView, user]);
+
+  // Filter customers
+  useEffect(() => {
+    let filtered = customers;
+
+    if (searchTerm) {
+      filtered = filtered.filter(customer =>
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (customer.phone && customer.phone.includes(searchTerm))
+      );
+    }
+
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter(customer => customer.role === roleFilter);
+    }
+
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'blocked') {
+        filtered = filtered.filter(customer => customer.isBlocked);
+      } else if (statusFilter === 'active') {
+        filtered = filtered.filter(customer => !customer.isBlocked);
+      }
+    }
+
+    setFilteredCustomers(filtered);
+  }, [searchTerm, statusFilter, roleFilter, customers]);
+
   return (
     <div className="p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Customer Management</h1>
-          <p className="text-gray-600">Manage customer relationships and track customer data</p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isAdminView && user?.role === 'admin' ? 'Customer Management' : 'My Profile'}
+          </h1>
+          <p className="mt-1 text-sm text-gray-600">
+            {isAdminView && user?.role === 'admin' 
+              ? 'Manage customer relationships and track customer data' 
+              : 'View and manage your account information'}
+          </p>
         </div>
-
-        {/* Authentication Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center space-x-2">
-            <ExclamationTriangleIcon className="h-5 w-5" />
-            <span>{error}</span>
-            <button 
-              onClick={fetchCustomers}
-              className="ml-auto text-red-800 hover:text-red-900 font-medium flex items-center space-x-1"
+        
+        {isAdminView && user?.role === 'admin' && (
+          <div className="mt-4 md:mt-0">
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <span>Retry</span>
-              <ArrowPathIcon className="h-4 w-4" />
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Customer
             </button>
           </div>
         )}
+      </div>
 
-        {/* Admin Access Guidance */}
-        {error && (error.includes('Not authorized') || error.includes('Access denied')) && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
-            <div className="flex items-start space-x-2">
-              <InformationCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium mb-1">Admin Access Required</p>
-                <p className="text-sm mb-3">Customer management is only available to administrators. Please log in with an admin account to access this feature.</p>
-                <div className="flex space-x-2">
-                  <a 
-                    href="/admin-login-debug" 
-                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    <ShieldCheckIcon className="h-4 w-4 mr-1" />
-                    Go to Admin Login
-                  </a>
-                  <button
-                    onClick={fetchCustomers}
-                    className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    <ArrowPathIcon className="h-4 w-4 mr-1" />
-                    Retry
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      {/* Stats Cards - Only show for admin view */}
+      {isAdminView && user?.role === 'admin' && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
@@ -879,265 +912,240 @@ const CustomerManagement = () => {
             </div>
           </div>
         </div>
+      )}
 
-        {/* Filters and Search */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-          <div className="flex flex-col space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-              <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 flex-1">
-                <div className="relative flex-1">
-                  <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, email, or phone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Roles</option>
-                  <option value="customer">Customers</option>
-                  <option value="admin">Admins</option>
-                  <option value="delivery">Delivery Staff</option>
-                </select>
-
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="blocked">Blocked</option>
-                </select>
-
-                <select
-                  value={`${sortBy}-${sortOrder}`}
-                  onChange={(e) => {
-                    const [field, order] = e.target.value.split('-');
-                    setSortBy(field);
-                    setSortOrder(order);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="createdAt-desc">Newest First</option>
-                  <option value="createdAt-asc">Oldest First</option>
-                  <option value="name-asc">Name (A-Z)</option>
-                  <option value="name-desc">Name (Z-A)</option>
-                  <option value="email-asc">Email (A-Z)</option>
-                  <option value="email-desc">Email (Z-A)</option>
-                  <option value="orders-desc">Most Orders</option>
-                  <option value="spent-desc">Highest Spent</option>
-                </select>
-              </div>
-
-              <div className="flex space-x-2">
-                <button 
-                  onClick={() => setShowExportModal(true)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <ArrowDownTrayIcon className="h-5 w-5" />
-                  <span>Export</span>
-                </button>
-                <button 
-                  onClick={fetchCustomers}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <CheckCircleIcon className="h-5 w-5" />
-                  <span>Refresh</span>
-                </button>
-              </div>
+      {/* Search and Filters - Only show for admin view */}
+      {isAdminView && user?.role === 'admin' && (
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 space-y-4 md:space-y-0">
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 flex-1">
+            <div className="relative flex-1">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by name, email, or phone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
 
-            {/* Results count */}
-            <div className="text-sm text-gray-600">
-              Showing <span className="font-semibold">{filteredCustomers.length}</span> of <span className="font-semibold">{customers.length}</span> users
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Roles</option>
+              <option value="customer">Customers</option>
+              <option value="admin">Admins</option>
+              <option value="delivery">Delivery Staff</option>
+            </select>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="blocked">Blocked</option>
+            </select>
+
+            <select
+              value={`${sortBy}-${sortOrder}`}
+              onChange={(e) => {
+                const [field, order] = e.target.value.split('-');
+                setSortBy(field);
+                setSortOrder(order);
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="createdAt-desc">Newest First</option>
+              <option value="createdAt-asc">Oldest First</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              <option value="email-asc">Email (A-Z)</option>
+              <option value="email-desc">Email (Z-A)</option>
+              <option value="orders-desc">Most Orders</option>
+              <option value="spent-desc">Highest Spent</option>
+            </select>
+          </div>
+
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <ArrowDownTrayIcon className="h-5 w-5" />
+              <span>Export</span>
+            </button>
+            <button 
+              onClick={fetchCustomers}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <CheckCircleIcon className="h-5 w-5" />
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Customers Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-600">Loading customers...</p>
-            </div>
-          ) : sortedCustomers.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <UserIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p>No customers found</p>
-              <button 
-                onClick={fetchCustomers}
-                className="mt-4 flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto"
-              >
-                <ArrowPathIcon className="h-5 w-5" />
-                <span>Refresh Data</span>
-              </button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Contact
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      {/* Customer Table */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact
+                </th>
+                {isAdminView && user?.role === 'admin' && (
+                  <>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Orders
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Spent
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Spent
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedCustomers.map((customer) => (
-                    <tr key={customer._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            <span className="text-white font-semibold text-sm">
-                              {customer.name.charAt(0)}
-                            </span>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                            <div className="text-sm text-gray-500">ID: {customer._id.slice(-8)}</div>
-                          </div>
+                  </>
+                )}
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                {(isAdminView && user?.role === 'admin') && (
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredCustomers.map((customer) => (
+                <tr key={customer._id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <UserIcon className="h-6 w-6 text-blue-600" />
                         </div>
-                      </td>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{customer.name}</div>
+                        <div className="text-sm text-gray-500">ID: {customer._id}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{customer.email}</div>
+                    <div className="text-sm text-gray-500">{customer.phone || 'No phone'}</div>
+                  </td>
+                  {isAdminView && user?.role === 'admin' && (
+                    <>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{customer.email}</div>
-                        <div className="text-sm text-gray-500">{customer.phone || 'No phone'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(customer.role)}`}>
-                          {getRoleDisplayName(customer.role)}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          customer.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                          customer.role === 'delivery' ? 'bg-green-100 text-green-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {customer.role === 'admin' ? 'Admin' : 
+                           customer.role === 'delivery' ? 'Delivery' : 'Customer'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {customer.stats?.totalOrders || 0}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        ${customer.stats?.totalSpent?.toFixed(2) || '0.00'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ₹{(customer.stats?.totalSpent || 0).toFixed(2)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
-                          customer.isBlocked 
-                            ? 'bg-red-100 text-red-800 border-red-200' 
-                            : 'bg-green-100 text-green-800 border-green-200'
-                        }`}>
-                          {customer.isBlocked ? 'Blocked' : 'Active'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                    </>
+                  )}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      customer.isBlocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                    }`}>
+                      {customer.isBlocked ? 'Blocked' : 'Active'}
+                    </span>
+                  </td>
+                  {(isAdminView && user?.role === 'admin') && (
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-2">
+                        <button
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setShowModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setShowEditModal(true);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                        {!customer.isBlocked ? (
                           <button
-                            onClick={() => handleViewCustomer(customer)}
-                            className="text-blue-600 hover:text-blue-900 p-1 rounded transition-colors"
-                            title="View Details"
+                            onClick={() => handleBlockUser(customer._id, true)}
+                            className="text-yellow-600 hover:text-yellow-900"
                           >
-                            <EyeIcon className="h-4 w-4" />
+                            <NoSymbolIcon className="h-5 w-5" />
                           </button>
+                        ) : (
                           <button
-                            onClick={() => handleEditCustomer(customer)}
-                            className="text-green-600 hover:text-green-900 p-1 rounded transition-colors"
-                            title="Edit User"
+                            onClick={() => handleBlockUser(customer._id, false)}
+                            className="text-green-600 hover:text-green-900"
                           >
-                            <PencilIcon className="h-4 w-4" />
+                            <CheckIcon className="h-5 w-5" />
                           </button>
-                          <button
-                            onClick={() => handleToggleBlock(customer)}
-                            className={`${customer.isBlocked ? 'text-green-600 hover:text-green-900' : 'text-orange-600 hover:text-orange-900'} p-1 rounded transition-colors`}
-                            title={customer.isBlocked ? 'Unblock User' : 'Block User'}
-                          >
-                            {customer.isBlocked ? (
-                              <CheckIcon className="h-4 w-4" />
-                            ) : (
-                              <NoSymbolIcon className="h-4 w-4" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteCustomer(customer)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
-                            title="Delete User"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setShowDeleteModal(true);
+                          }}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        {/* Modals */}
-        {showModal && (
-          <CustomerDetailModal
-            customer={selectedCustomer}
-            onClose={() => {
-              setShowModal(false);
-              setSelectedCustomer(null);
-              setCustomerOrders([]);
-            }}
-          />
-        )}
-
-        {showEditModal && (
-          <EditCustomerModal
-            customer={selectedCustomer}
-            onClose={() => {
-              setShowEditModal(false);
-              setSelectedCustomer(null);
-            }}
-            onSave={handleUpdateCustomer}
-          />
-        )}
-
-        {showDeleteModal && (
-          <DeleteConfirmationModal
-            customer={selectedCustomer}
-            onClose={() => {
-              setShowDeleteModal(false);
-              setSelectedCustomer(null);
-            }}
-            onConfirm={confirmDelete}
-          />
-        )}
-
-        {showExportModal && (
-          <ExportModal
-            onClose={() => setShowExportModal(false)}
-            onExport={(format) => {
-              if (format === 'csv') {
-                exportToCSV();
-              } else {
-                alert(`${format.toUpperCase()} export is not implemented yet.`);
-              }
-            }}
-          />
+        
+        {filteredCustomers.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No customers found</h3>
+            <p className="mt-1 text-sm text-gray-500">Get started by adding a new customer.</p>
+          </div>
         )}
       </div>
     </div>

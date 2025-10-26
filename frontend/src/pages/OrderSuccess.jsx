@@ -29,6 +29,7 @@ const OrderSuccess = () => {
   const orderData = location.state?.orderData || {};
   const cartItems = location.state?.cartItems || [];
   const totalPrice = location.state?.totalPrice || 0;
+  const successMessage = location.state?.message || 'Order placed successfully! We\'ll send you a confirmation shortly.';
   
   const [showConfetti, setShowConfetti] = useState(true);
   const orderNumber = orderData.orderNumber || `ORD-${Date.now()}`;
@@ -120,7 +121,7 @@ const OrderSuccess = () => {
           </p>
           
           <p className="text-lg text-gray-500">
-            Your laundry is in good hands. We'll take great care of your items.
+            {successMessage}
           </p>
         </div>
 

@@ -28,7 +28,6 @@ import {
   BuildingStorefrontIcon,
   InformationCircleIcon,
   ShoppingCartIcon,
-  ArchiveBoxIcon,
   BanknotesIcon,
   ScissorsIcon,
   HandRaisedIcon,
@@ -81,6 +80,17 @@ const DashboardHome = () => {
       action: 'Schedule Now'
     },
     {
+      id: 'dry-cleaning',
+      title: 'Dry Cleaning',
+      description: 'Professional dry cleaning for delicate fabrics and formal wear',
+      icon: SparklesIcon,
+      gradient: 'from-purple-500 to-indigo-500',
+      bgColor: 'bg-gradient-to-br from-purple-100 to-indigo-200',
+      path: '/dashboard/dry-cleaning',
+      action: 'Book Service',
+      badge: 'PREMIUM'
+    },
+    {
       id: 'stain-removal',
       title: 'Stain Removal',
       description: 'Professional stain removal service for your clothes',
@@ -89,6 +99,17 @@ const DashboardHome = () => {
       bgColor: 'bg-gradient-to-br from-purple-100 to-indigo-200',
       path: '/dashboard/stain-removal',
       action: 'Remove Stains',
+      badge: 'NEW'
+    },
+    {
+      id: 'steam-ironing',
+      title: 'Steam Ironing',
+      description: 'Professional steam ironing for crisp, wrinkle-free clothes',
+      icon: HandRaisedIcon,
+      gradient: 'from-cyan-500 to-teal-500',
+      bgColor: 'bg-gradient-to-br from-cyan-100 to-teal-200',
+      path: '/dashboard/steam-ironing',
+      action: 'Book Service',
       badge: 'NEW'
     },
     {
@@ -248,7 +269,7 @@ const DashboardHome = () => {
     {
       id: 2,
       name: 'Wash And Fold',
-      icon: ArchiveBoxIcon,
+      icon: CubeIcon,
       price: '₹49',
       time: '24 hours',
       popular: true,

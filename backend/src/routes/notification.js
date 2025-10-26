@@ -3,8 +3,11 @@ const router = express.Router();
 const Notification = require('../models/Notification');
 
 // Get notifications for a user (by email)
+// Temporarily remove auth middleware for testing
 router.get('/user/:email', async (req, res) => {
   try {
+    console.log('Notification API called with email:', req.params.email);
+    
     const { 
       read, 
       type, 
@@ -14,6 +17,7 @@ router.get('/user/:email', async (req, res) => {
     } = req.query;
 
     let query = { recipientEmail: req.params.email };
+    console.log('Query object:', query);
     
     if (read !== undefined) {
       query.read = read === 'true';
@@ -36,6 +40,10 @@ router.get('/user/:email', async (req, res) => {
       read: false 
     });
 
+    console.log('Found notifications:', notifications.length);
+    console.log('Total:', total);
+    console.log('Unread count:', unreadCount);
+
     res.json({
       notifications,
       totalPages: Math.ceil(total / limit),
@@ -44,6 +52,7 @@ router.get('/user/:email', async (req, res) => {
       unreadCount
     });
   } catch (error) {
+    console.error('Error in notification API:', error);
     res.status(500).json({ message: error.message });
   }
 });

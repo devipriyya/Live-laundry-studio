@@ -527,10 +527,15 @@ const SchedulePickup = () => {
       }
 
       console.log('Order saved successfully:', savedOrder);
-      
+
+      // Dispatch custom event to refresh orders in other components
+      window.dispatchEvent(new CustomEvent('orderPlaced', {
+        detail: { order: savedOrder }
+      }));
+
       // Navigate to order success page
-      navigate('/order-success', { 
-        state: { 
+      navigate('/order-success', {
+        state: {
           cartItems: cartItems,
           totalPrice: totalPrice,
           orderData: {

@@ -11,57 +11,172 @@ import {
   PrinterIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
+import api from '../api';
+import { isAdmin } from '../utils/authHelpers';
 
 const ReportsAnalytics = () => {
   const [dateRange, setDateRange] = useState('7days');
   const [selectedMetric, setSelectedMetric] = useState('revenue');
   const [analyticsData, setAnalyticsData] = useState({});
-
-  const mockAnalyticsData = {
-    overview: {
-      totalRevenue: 45680.50,
-      revenueGrowth: 12.5,
-      totalOrders: 1247,
-      ordersGrowth: 8.3,
-      totalCustomers: 456,
-      customersGrowth: 15.2,
-      avgOrderValue: 36.65,
-      avgOrderGrowth: 4.1
-    },
-    revenueChart: [
-      { date: '2024-01-01', revenue: 1250, orders: 34 },
-      { date: '2024-01-02', revenue: 1450, orders: 42 },
-      { date: '2024-01-03', revenue: 1320, orders: 38 },
-      { date: '2024-01-04', revenue: 1680, orders: 45 },
-      { date: '2024-01-05', revenue: 1890, orders: 52 },
-      { date: '2024-01-06', revenue: 1560, orders: 41 },
-      { date: '2024-01-07', revenue: 1720, orders: 47 }
-    ],
-    serviceBreakdown: [
-      { service: 'Wash & Fold', revenue: 18500, orders: 620, percentage: 40.5 },
-      { service: 'Dry Cleaning', revenue: 15200, orders: 380, percentage: 33.3 },
-      { service: 'Steam Press', revenue: 8900, orders: 290, percentage: 19.5 },
-      { service: 'Premium Service', revenue: 3080, orders: 77, percentage: 6.7 }
-    ],
-    topCustomers: [
-      { name: 'John Doe', email: 'john@example.com', orders: 24, revenue: 890.50 },
-      { name: 'Jane Smith', email: 'jane@example.com', orders: 18, revenue: 675.25 },
-      { name: 'Mike Johnson', email: 'mike@example.com', orders: 15, revenue: 542.75 },
-      { name: 'Sarah Wilson', email: 'sarah@example.com', orders: 12, revenue: 445.80 }
-    ],
-    monthlyTrends: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-      revenue: [35000, 38500, 42000, 39500, 45000, 48500],
-      orders: [950, 1050, 1150, 1080, 1200, 1300],
-      customers: [320, 345, 380, 365, 410, 456]
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setAnalyticsData(mockAnalyticsData);
+    const fetchAnalyticsData = async () => {
+      // Check if user is admin before making API calls
+      if (!isAdmin()) {
+        setError('Access denied. Admin privileges required to view analytics.');
+        // Fallback to static data
+        const fallbackData = {
+          overview: {
+            totalRevenue: 0,
+            revenueGrowth: 0,
+            totalOrders: 0,
+            ordersGrowth: 0,
+            totalCustomers: 0,
+            customersGrowth: 0,
+            avgOrderValue: 0,
+            avgOrderGrowth: 0
+          },
+          revenueChart: [
+            { date: '2024-01-01', revenue: 0, orders: 0 },
+            { date: '2024-01-02', revenue: 0, orders: 0 },
+            { date: '2024-01-03', revenue: 0, orders: 0 },
+            { date: '2024-01-04', revenue: 0, orders: 0 },
+            { date: '2024-01-05', revenue: 0, orders: 0 },
+            { date: '2024-01-06', revenue: 0, orders: 0 },
+            { date: '2024-01-07', revenue: 0, orders: 0 }
+          ],
+          serviceBreakdown: [
+            { service: 'Wash & Fold', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Dry Cleaning', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Steam Press', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Premium Service', revenue: 0, orders: 0, percentage: 0 }
+          ],
+          topCustomers: [
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 }
+          ],
+          monthlyTrends: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            revenue: [0, 0, 0, 0, 0, 0],
+            orders: [0, 0, 0, 0, 0, 0],
+            customers: [0, 0, 0, 0, 0, 0]
+          }
+        };
+        setAnalyticsData(fallbackData);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        // Fetch data from backend API endpoints
+        // Corrected the API paths to remove the duplicate /api prefix
+        const [orderTrendsRes, monthlyIncomeRes] = await Promise.all([
+          api.get('/orders/analytics/orders'),
+          api.get('/orders/analytics/income')
+        ]);
+
+        const orderTrends = orderTrendsRes.data;
+        const monthlyIncome = monthlyIncomeRes.data;
+
+        // Process the data to match the expected format
+        const processedData = {
+          overview: {
+            totalRevenue: monthlyIncome.reduce((sum, month) => sum + month.income, 0),
+            revenueGrowth: 0, // Would need to calculate based on previous period
+            totalOrders: orderTrends.reduce((sum, day) => sum + day.orders, 0),
+            ordersGrowth: 0, // Would need to calculate based on previous period
+            totalCustomers: 0, // Would need to fetch from a customers endpoint
+            customersGrowth: 0, // Would need to calculate based on previous period
+            avgOrderValue: orderTrends.reduce((sum, day) => sum + day.orders, 0) > 0 
+              ? monthlyIncome.reduce((sum, month) => sum + month.income, 0) / 
+                orderTrends.reduce((sum, day) => sum + day.orders, 0)
+              : 0,
+            avgOrderGrowth: 0 // Would need to calculate based on previous period
+          },
+          revenueChart: orderTrends.map(day => ({
+            date: day.date || day._id, // Handle both date and _id fields
+            revenue: day.revenue || 0,
+            orders: day.orders || 0
+          })),
+          serviceBreakdown: [
+            { service: 'Wash & Fold', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Dry Cleaning', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Steam Press', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Premium Service', revenue: 0, orders: 0, percentage: 0 }
+          ],
+          topCustomers: [
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 }
+          ],
+          monthlyTrends: {
+            labels: monthlyIncome.map(month => month.month),
+            revenue: monthlyIncome.map(month => month.income),
+            orders: monthlyIncome.map(() => 0), // Placeholder
+            customers: monthlyIncome.map(() => 0) // Placeholder
+          }
+        };
+
+        setAnalyticsData(processedData);
+      } catch (err) {
+        console.error('Error fetching analytics data:', err);
+        setError(`Failed to load analytics data: ${err.response?.data?.message || err.message}`);
+        // Fallback to static data
+        const fallbackData = {
+          overview: {
+            totalRevenue: 0,
+            revenueGrowth: 0,
+            totalOrders: 0,
+            ordersGrowth: 0,
+            totalCustomers: 0,
+            customersGrowth: 0,
+            avgOrderValue: 0,
+            avgOrderGrowth: 0
+          },
+          revenueChart: [
+            { date: '2024-01-01', revenue: 0, orders: 0 },
+            { date: '2024-01-02', revenue: 0, orders: 0 },
+            { date: '2024-01-03', revenue: 0, orders: 0 },
+            { date: '2024-01-04', revenue: 0, orders: 0 },
+            { date: '2024-01-05', revenue: 0, orders: 0 },
+            { date: '2024-01-06', revenue: 0, orders: 0 },
+            { date: '2024-01-07', revenue: 0, orders: 0 }
+          ],
+          serviceBreakdown: [
+            { service: 'Wash & Fold', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Dry Cleaning', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Steam Press', revenue: 0, orders: 0, percentage: 0 },
+            { service: 'Premium Service', revenue: 0, orders: 0, percentage: 0 }
+          ],
+          topCustomers: [
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 },
+            { name: '', email: '', orders: 0, revenue: 0 }
+          ],
+          monthlyTrends: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            revenue: [0, 0, 0, 0, 0, 0],
+            orders: [0, 0, 0, 0, 0, 0],
+            customers: [0, 0, 0, 0, 0, 0]
+          }
+        };
+        setAnalyticsData(fallbackData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalyticsData();
   }, []);
 
-  const MetricCard = ({ title, value, growth, icon: Icon, color }) => (
+  const MetricCard = ({ title, value, growth, icon, color }) => (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between">
         <div>
@@ -80,13 +195,24 @@ const ReportsAnalytics = () => {
           </div>
         </div>
         <div className={`p-3 rounded-full ${color}`}>
-          <Icon className="w-6 h-6 text-white" />
+          {icon && React.createElement(icon, { className: "w-6 h-6 text-white" })}
         </div>
       </div>
     </div>
   );
 
-  const SimpleChart = ({ data, type = 'bar' }) => {
+  const SimpleChart = ({ data }) => {
+    // Check if all data values are 0
+    const hasData = data.some(item => item.revenue > 0 || item.orders > 0);
+    
+    if (!hasData) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">No data available</p>
+        </div>
+      );
+    }
+    
     const maxValue = Math.max(...data.map(d => d.revenue));
     
     return (
@@ -99,7 +225,7 @@ const ReportsAnalytics = () => {
             <div className="flex-1 bg-gray-200 rounded-full h-4 relative">
               <div
                 className="bg-blue-600 h-4 rounded-full transition-all duration-500"
-                style={{ width: `${(item.revenue / maxValue) * 100}%` }}
+                style={{ width: `${maxValue > 0 ? (item.revenue / maxValue) * 100 : 0}%` }}
               ></div>
             </div>
             <div className="w-20 text-sm font-medium text-gray-900 text-right">
@@ -111,30 +237,70 @@ const ReportsAnalytics = () => {
     );
   };
 
-  const ServiceBreakdownChart = ({ data }) => (
-    <div className="space-y-4">
-      {data.map((service, index) => (
-        <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium text-gray-900">{service.service}</h4>
-              <span className="text-sm text-gray-600">{service.percentage}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${service.percentage}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between mt-2 text-sm text-gray-600">
-              <span>{service.orders} orders</span>
-              <span>${service.revenue.toLocaleString()}</span>
+  const ServiceBreakdownChart = ({ data }) => {
+    // Check if all data values are 0
+    const hasData = data.some(service => service.revenue > 0 || service.orders > 0 || service.percentage > 0);
+    
+    if (!hasData) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">No data available</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-4">
+        {data.map((service, index) => (
+          <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-gray-900">{service.service}</h4>
+                <span className="text-sm text-gray-600">{service.percentage}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${service.percentage}%` }}
+                ></div>
+              </div>
+              <div className="flex justify-between mt-2 text-sm text-gray-600">
+                <span>{service.orders} orders</span>
+                <span>${service.revenue.toLocaleString()}</span>
+              </div>
             </div>
           </div>
+        ))}
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">Loading analytics data...</p>
         </div>
-      ))}
-    </div>
-  );
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-red-800 mb-2">Error Loading Data</h3>
+          <p className="text-red-700 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -192,7 +358,7 @@ const ReportsAnalytics = () => {
         />
         <MetricCard
           title="Avg Order Value"
-          value={`$${analyticsData.overview?.avgOrderValue}`}
+          value={`$${analyticsData.overview?.avgOrderValue.toFixed(2)}`}
           growth={analyticsData.overview?.avgOrderGrowth}
           icon={ClockIcon}
           color="bg-orange-500"

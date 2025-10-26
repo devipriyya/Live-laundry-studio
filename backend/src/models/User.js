@@ -4,11 +4,12 @@ const bcrypt = require('bcryptjs');
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: function() { return !this.firebaseUid; } }, // Password required only if no Firebase UID
   phone: { type: String },
   profilePicture: { type: String },
   role: { type: String, enum: ['customer','admin','delivery'], default: 'customer' },
   isBlocked: { type: Boolean, default: false },
+  firebaseUid: { type: String, unique: true, sparse: true }, // Add firebaseUid field
   addresses: [{
     type: { type: String, enum: ['Home', 'Office', 'Other'], required: true },
     address: { type: String, required: true },
@@ -36,13 +37,14 @@ const UserSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 UserSchema.pre('save', async function(next){
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
 UserSchema.methods.matchPassword = function(password) {
+  if (!this.password) return false; // Firebase users don't have passwords
   return bcrypt.compare(password, this.password);
 };
 

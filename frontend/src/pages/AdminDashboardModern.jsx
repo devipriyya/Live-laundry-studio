@@ -1,6 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AdminOrderManagement from '../components/AdminOrderManagement';
 import CustomerManagement from '../components/CustomerManagement';
 import StaffManagement from '../components/StaffManagement';
@@ -9,6 +9,8 @@ import PaymentManagement from '../components/PaymentManagement';
 import ReportsAnalytics from '../components/ReportsAnalytics';
 import Settings from '../components/Settings';
 import DeliveryManagement from './DeliveryManagement';
+import api from '../api';
+import { dashboardService } from '../services/dashboardService';
 import {
   LineChart, Line, AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -26,8 +28,9 @@ import {
 } from '@heroicons/react/24/outline';
 
 const AdminDashboardModern = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, adminDemoLogin } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Debug logging
   console.log('AdminDashboardModern: Component rendering');
@@ -59,8 +62,8 @@ const AdminDashboardModern = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   
-  // Static Dashboard Statistics
-  const [stats] = useState({
+  // Dashboard Statistics
+  const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
     completedToday: 0,
@@ -78,8 +81,8 @@ const AdminDashboardModern = () => {
     pendingOrders: 0
   });
 
-  // Static chart data for order trends (last 7 days)
-  const orderTrendData = [
+  // Chart data for order trends (last 7 days)
+  const [orderTrendData, setOrderTrendData] = useState([
     { day: 'Mon', orders: 0, revenue: 0 },
     { day: 'Tue', orders: 0, revenue: 0 },
     { day: 'Wed', orders: 0, revenue: 0 },
@@ -87,35 +90,34 @@ const AdminDashboardModern = () => {
     { day: 'Fri', orders: 0, revenue: 0 },
     { day: 'Sat', orders: 0, revenue: 0 },
     { day: 'Sun', orders: 0, revenue: 0 }
-  ];
+  ]);
 
-  // Static monthly income trend data
-  const monthlyIncomeData = [
+  // Monthly income trend data
+  const [monthlyIncomeData, setMonthlyIncomeData] = useState([
     { month: 'Jan', income: 0 },
     { month: 'Feb', income: 0 },
     { month: 'Mar', income: 0 },
     { month: 'Apr', income: 0 },
     { month: 'May', income: 0 },
     { month: 'Jun', income: 0 }
-  ];
+  ]);
 
   const menuItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: HomeIcon, color: 'blue', description: 'Overview & Analytics' },
-    { id: 'orders', name: 'Orders', icon: ClipboardDocumentListIcon, color: 'green', badge: stats.activeOrders, description: 'Manage Orders' },
-    { id: 'customers', name: 'Customers', icon: UsersIcon, color: 'purple', description: 'Customer Management' },
-    { id: 'staff', name: 'Staff', icon: UserGroupIcon, color: 'pink', description: 'Team Management' },
-    { id: 'inventory', name: 'Inventory', icon: CubeIcon, color: 'indigo', description: 'Stock & Supplies' },
-    { id: 'payments', name: 'Payments', icon: CreditCardIcon, color: 'emerald', badge: stats.pendingPayments, description: 'Financial Management' },
-    { id: 'delivery', name: 'Delivery', icon: TruckIcon, color: 'orange', description: 'Logistics & Routes' },
-    { id: 'reports', name: 'Analytics', icon: ChartPieIcon, color: 'teal', description: 'Reports & Insights' },
-    { id: 'settings', name: 'Settings', icon: Cog6ToothIcon, color: 'gray', description: 'System Configuration' }
+    { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
+    { id: 'orders', label: 'Orders', icon: ShoppingBagIcon },
+    { id: 'customers', label: 'Customers', icon: UsersIcon },
+    { id: 'staff', label: 'Staff', icon: UserGroupIcon },
+    { id: 'inventory', label: 'Inventory', icon: CubeIcon },
+    { id: 'payments', label: 'Payments', icon: CreditCardIcon },
+    { id: 'reports', label: 'Reports', icon: ChartBarIcon }, // This will link to enhanced analytics
+    { id: 'settings', label: 'Settings', icon: Cog6ToothIcon },
   ];
 
-  // Static notifications data
-  const [notifications] = useState([]);
+  // Notifications data
+  const [notifications, setNotifications] = useState([]);
 
-  // Static recent activities data
-  const [recentActivities] = useState([]);
+  // Recent activities data
+  const [recentActivities, setRecentActivities] = useState([]);
 
   const quickActions = [
     { id: 1, title: 'New Order', description: 'Create a new order', icon: PlusIcon, color: 'blue', action: () => setActiveSection('orders') },
@@ -125,16 +127,99 @@ const AdminDashboardModern = () => {
     { id: 5, title: 'Customer Management', description: 'Manage all customers', icon: UsersIcon, color: 'indigo', action: () => navigate('/customer-management') }
   ];
 
-  // Static recent orders data
-  const [recentOrders] = useState([]);
+  // Recent orders data
+  const [recentOrders, setRecentOrders] = useState([]);
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      console.log('Fetching dashboard data...');
+      
+      // Check if we have a valid token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, attempting to re-authenticate...');
+        // Try to get a new token
+        if (typeof adminDemoLogin === 'function') {
+          await adminDemoLogin();
+          // Check again
+          const newToken = localStorage.getItem('token');
+          if (!newToken) {
+            console.error('Failed to obtain token for dashboard data fetch');
+            return;
+          }
+        } else {
+          console.error('adminDemoLogin function not available');
+          return;
+        }
+      }
+      
+      // Fetch all dashboard data in parallel
+      const [dashboardStats, recentOrdersData, orderTrendsData, monthlyIncomeData] = await Promise.all([
+        dashboardService.getDashboardStats(),
+        dashboardService.getRecentOrders(5),
+        dashboardService.getOrderTrends(7),
+        dashboardService.getMonthlyIncome(6)
+      ]);
+      
+      console.log('Dashboard stats response:', dashboardStats);
+      console.log('Recent orders response:', recentOrdersData);
+      console.log('Order trends response:', orderTrendsData);
+      console.log('Monthly income response:', monthlyIncomeData);
+      
+      // Update state with fetched data
+      setStats({
+        totalOrders: dashboardStats.totalOrders || 0,
+        activeOrders: dashboardStats.activeOrders || 0,
+        completedToday: dashboardStats.completedToday || 0,
+        totalRevenue: dashboardStats.totalRevenue || 0,
+        todayRevenue: dashboardStats.todayRevenue || 0,
+        totalCustomers: dashboardStats.totalCustomers || 0,
+        newCustomers: dashboardStats.newCustomers || 0,
+        activeStaff: 0, // We'll need to implement this
+        avgRating: 0, // We'll need to implement this
+        orderGrowth: dashboardStats.orderGrowth || 0,
+        revenueGrowth: dashboardStats.revenueGrowth || 0,
+        customerGrowth: dashboardStats.customerGrowth || 0,
+        pendingPayments: 0, // We'll need to implement this
+        todayOrders: dashboardStats.todayOrders || 0,
+        pendingOrders: dashboardStats.pendingOrders || 0
+      });
+      
+      setRecentOrders(recentOrdersData);
+      setOrderTrendData(orderTrendsData);
+      setMonthlyIncomeData(monthlyIncomeData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+    }
+  };
+
+  // Fetch data when dashboard section is active
+  useEffect(() => {
+    if (activeSection === 'dashboard') {
+      fetchDashboardData();
+    }
+  }, [activeSection]);
 
   const handleMenuClick = (sectionId) => {
     setActiveSection(sectionId);
     setSidebarOpen(false);
   };
 
+  // Add navigation to enhanced analytics
+  const navigateToEnhancedAnalytics = () => {
+    navigate('/enhanced-analytics');
+  };
+
   const handleRefresh = () => {
     setRefreshing(true);
+    if (activeSection === 'dashboard') {
+      fetchDashboardData();
+    }
     setTimeout(() => setRefreshing(false), 1500);
   };
 
@@ -182,37 +267,31 @@ const AdminDashboardModern = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav className="mt-5 flex-1 px-2 space-y-1">
           {menuItems.map((item) => (
-            <button key={item.id} onClick={() => handleMenuClick(item.id)}
-              className={`w-full group relative flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all duration-200 ${
-                activeSection === item.id
-                  ? darkMode ? 'bg-gradient-to-r from-blue-600 to-purple-700 text-white shadow-lg'
-                    : 'bg-gradient-to-r from-blue-50 to-purple-100 text-blue-700 shadow-md border-l-4 border-blue-500'
-                  : darkMode ? 'text-gray-300 hover:bg-gray-700/50' : 'text-gray-600 hover:bg-gray-50 hover:shadow-sm'
-              }`}>
-              <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg transition-colors ${
-                  activeSection === item.id
-                    ? darkMode ? 'bg-white/20' : 'bg-blue-200/50'
-                    : darkMode ? 'bg-gray-700' : 'bg-gray-100 group-hover:bg-gray-200'
-                }`}>
-                  <item.icon className={`h-5 w-5 ${
-                    activeSection === item.id
-                      ? darkMode ? 'text-white' : 'text-blue-600'
-                      : darkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`} />
-                </div>
-                <div>
-                  <span className="font-medium text-sm block">{item.name}</span>
-                  <span className={`text-xs ${activeSection === item.id ? 'opacity-90' : 'opacity-60'}`}>{item.description}</span>
-                </div>
-              </div>
-              {item.badge && (
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500 text-white shadow-lg">
-                  {item.badge}
-                </span>
-              )}
+            <button
+              key={item.id}
+              onClick={() => {
+                if (item.id === 'reports') {
+                  navigateToEnhancedAnalytics();
+                } else {
+                  handleMenuClick(item.id);
+                }
+              }}
+              className={`${
+                (activeSection === item.id || (item.id === 'reports' && location.pathname === '/enhanced-analytics'))
+                  ? (darkMode ? 'bg-gray-700 text-white' : 'bg-blue-50 text-blue-700')
+                  : (darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100')
+              } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full text-left transition-colors duration-200`}
+            >
+              <item.icon
+                className={`${
+                  (activeSection === item.id || (item.id === 'reports' && location.pathname === '/enhanced-analytics'))
+                    ? (darkMode ? 'text-white' : 'text-blue-700')
+                    : (darkMode ? 'text-gray-400' : 'text-gray-500')
+                } mr-3 flex-shrink-0 h-6 w-6`}
+              />
+              {item.label}
             </button>
           ))}
         </nav>
@@ -416,10 +495,10 @@ const AdminDashboardModern = () => {
                     </div>
                   </div>
                   <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Total Revenue</h3>
-                  <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>${stats.totalRevenue.toLocaleString()}</p>
+                  <p className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>₹{stats.totalRevenue.toLocaleString()}</p>
                   <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} flex items-center space-x-1`}>
                     <FireIcon className="h-4 w-4 text-orange-500" />
-                    <span>${stats.todayRevenue.toFixed(2)} today</span>
+                    <span>₹{stats.todayRevenue.toFixed(2)} today</span>
                   </p>
                 </div>
 
@@ -457,15 +536,25 @@ const AdminDashboardModern = () => {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
                         <XAxis dataKey="day" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
-                        <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                        <YAxis yAxisId="left" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                        <YAxis yAxisId="right" orientation="right" stroke={darkMode ? '#9ca3af' : '#6b7280'} 
+                          tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                        />
                         <Tooltip 
                           contentStyle={{
                             backgroundColor: darkMode ? '#1f2937' : '#ffffff',
                             border: '1px solid ' + (darkMode ? '#374151' : '#e5e7eb'),
                             borderRadius: '8px'
                           }}
+                          formatter={(value, name, props) => {
+                            if (name === 'revenue') {
+                              return [`₹${parseFloat(value).toFixed(2)}`, 'Revenue'];
+                            }
+                            return [value, name === 'orders' ? 'Orders' : name];
+                          }}
                         />
-                        <Area type="monotone" dataKey="orders" stroke="#3b82f6" fillOpacity={1} fill="url(#colorOrders)" />
+                        <Area yAxisId="left" type="monotone" dataKey="orders" stroke="#3b82f6" fillOpacity={1} fill="url(#colorOrders)" name="Orders" />
+                        <Area yAxisId="right" type="monotone" dataKey="revenue" stroke="#10b981" fillOpacity={0.3} fill="#10b981" name="Revenue" />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -481,15 +570,18 @@ const AdminDashboardModern = () => {
                       <BarChart data={orderTrendData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
                         <XAxis dataKey="day" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
-                        <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                        <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} 
+                          tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                        />
                         <Tooltip 
                           contentStyle={{
                             backgroundColor: darkMode ? '#1f2937' : '#ffffff',
                             border: '1px solid ' + (darkMode ? '#374151' : '#e5e7eb'),
                             borderRadius: '8px'
                           }}
+                          formatter={(value) => [`₹${parseFloat(value).toFixed(2)}`, 'Revenue']}
                         />
-                        <Bar dataKey="revenue" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+                        <Bar dataKey="revenue" fill="#8b5cf6" radius={[8, 8, 0, 0]} name="Revenue" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -506,36 +598,48 @@ const AdminDashboardModern = () => {
                     <LineChart data={monthlyIncomeData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
                       <XAxis dataKey="month" stroke={darkMode ? '#9ca3af' : '#6b7280'} />
-                      <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} />
+                      <YAxis stroke={darkMode ? '#9ca3af' : '#6b7280'} 
+                        tickFormatter={(value) => `₹${value.toLocaleString()}`}
+                      />
                       <Tooltip 
                         contentStyle={{
                           backgroundColor: darkMode ? '#1f2937' : '#ffffff',
                           border: '1px solid ' + (darkMode ? '#374151' : '#e5e7eb'),
                           borderRadius: '8px'
                         }}
+                        formatter={(value) => [`₹${parseFloat(value).toFixed(2)}`, 'Income']}
                       />
                       <Legend />
-                      <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} />
+                      <Line type="monotone" dataKey="income" stroke="#10b981" strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} name="Income" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Quick Actions */}
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Quick Actions</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {quickActions.map((action) => (
-                    <button key={action.id} onClick={action.action}
-                      className={`group p-6 rounded-xl border-2 border-dashed ${darkMode ? 'border-gray-600 hover:border-blue-500 hover:bg-gray-700/50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'} transition-all duration-200`}>
-                      <div className={`p-3 ${darkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-blue-50 to-purple-50'} rounded-xl mx-auto w-fit mb-3 group-hover:scale-110 transition-transform`}>
-                        <action.icon className={`h-8 w-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                      </div>
-                      <p className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} text-center mb-1`}>{action.title}</p>
-                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-center`}>{action.description}</p>
-                    </button>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                {quickActions.map((action) => (
+                  <button key={action.id} onClick={action.action}
+                    className={`group p-6 rounded-xl border-2 border-dashed ${darkMode ? 'border-gray-600 hover:border-blue-500 hover:bg-gray-700/50' : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'} transition-all duration-200`}>
+                    <div className={`p-3 ${darkMode ? 'bg-gray-700' : 'bg-gradient-to-br from-blue-50 to-purple-50'} rounded-xl mx-auto w-fit mb-3 group-hover:scale-110 transition-transform`}>
+                      <action.icon className={`h-8 w-8 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                    </div>
+                    <p className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} text-center mb-1`}>{action.title}</p>
+                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} text-center`}>{action.description}</p>
+                  </button>
+                ))}
+                <button
+                  onClick={navigateToEnhancedAnalytics}
+                  className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                >
+                  <div className="flex items-center">
+                    <ChartBarIcon className="h-8 w-8 mr-3" />
+                    <div className="text-left">
+                      <h3 className="font-bold text-lg">Enhanced Analytics</h3>
+                      <p className="text-purple-100 text-sm">Advanced reporting</p>
+                    </div>
+                  </div>
+                </button>
               </div>
 
               {/* Recent Activity & Orders Grid */}

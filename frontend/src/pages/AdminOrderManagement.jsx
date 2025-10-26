@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   EyeIcon,
@@ -15,9 +16,12 @@ import {
   MapPinIcon,
   TruckIcon
 } from '@heroicons/react/24/outline';
+import { AuthContext } from '../context/AuthContext';
 import api from '../api';
 
 const AdminOrderManagement = () => {
+  const { user, adminDemoLogin } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,6 +32,9 @@ const AdminOrderManagement = () => {
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [staffMembers, setStaffMembers] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState('');
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authRetryAttempted, setAuthRetryAttempted] = useState(false);
 
   // Enhanced order workflow statuses
   const workflowStatuses = [
@@ -155,7 +162,87 @@ const AdminOrderManagement = () => {
     ];
   };
 
+  useEffect(() => {
+    const ensureAdminAccess = async () => {
+      if (isAuthorized) {
+        setCheckingAuth(false);
+        return;
+      }
+      setCheckingAuth(true);
+      if (!user) {
+        setCheckingAuth(false);
+        navigate('/admin-login-test');
+        return;
+      }
+      if (user.role !== 'admin') {
+        setCheckingAuth(false);
+        navigate('/');
+        return;
+      }
+      let token = localStorage.getItem('token');
+      console.log('AdminOrderManagement: Current token status:', token ? 'Present' : 'Missing');
+      if (!token && typeof adminDemoLogin === 'function') {
+        console.log('AdminOrderManagement: No token found, calling adminDemoLogin');
+        try {
+          await adminDemoLogin();
+          token = localStorage.getItem('token');
+          console.log('AdminOrderManagement: Token after adminDemoLogin:', token ? 'Present' : 'Missing');
+        } catch (err) {
+          console.error('AdminOrderManagement: Error in adminDemoLogin:', err);
+          setCheckingAuth(false);
+          navigate('/admin-login-test');
+          return;
+        }
+      }
+      if (!token) {
+        console.log('AdminOrderManagement: Still no token after adminDemoLogin, redirecting to login');
+        setCheckingAuth(false);
+        navigate('/admin-login-test');
+        return;
+      }
+      console.log('AdminOrderManagement: Token found, setting authorized');
+      setIsAuthorized(true);
+      setAuthRetryAttempted(false);
+      setCheckingAuth(false);
+    };
+    ensureAdminAccess();
+  }, [user, adminDemoLogin, navigate, isAuthorized]);
+
+  const handleUnauthorized = async () => {
+    console.log('AdminOrderManagement: Handling unauthorized access');
+    if (authRetryAttempted) {
+      console.log('AdminOrderManagement: Auth retry already attempted, redirecting to login');
+      setIsAuthorized(false);
+      navigate('/admin-login-test');
+      return false;
+    }
+    if (typeof adminDemoLogin === 'function') {
+      try {
+        console.log('AdminOrderManagement: Calling adminDemoLogin for reauthorization');
+        setAuthRetryAttempted(true);
+        await adminDemoLogin();
+        const token = localStorage.getItem('token');
+        console.log('AdminOrderManagement: Token after reauthorization:', token ? 'Present' : 'Missing');
+        if (token) {
+          setIsAuthorized(true);
+          return true;
+        }
+      } catch (error) {
+        console.error('AdminOrderManagement: Error in reauthorization:', error);
+        setIsAuthorized(false);
+        navigate('/admin-login-test');
+        return false;
+      }
+    }
+    setIsAuthorized(false);
+    navigate('/admin-login-test');
+    return false;
+  };
+
   const fetchOrders = async () => {
+    if (!isAuthorized) {
+      return;
+    }
     try {
       setLoading(true);
       const response = await api.get('/orders', {
@@ -164,29 +251,58 @@ const AdminOrderManagement = () => {
           search: searchTerm || undefined
         }
       });
-      const ordersData = response.data.orders || response.data;
-      setOrders(ordersData);
-      setFilteredOrders(ordersData);
+      
+      // Correctly extract orders from the paginated response
+      const ordersData = response.data.orders || [];
+      
+      // Ensure ordersData is an array
+      if (Array.isArray(ordersData)) {
+        setOrders(ordersData);
+        setFilteredOrders(ordersData);
+      } else {
+        // Fallback to empty array if no orders
+        setOrders([]);
+        setFilteredOrders([]);
+      }
     } catch (error) {
+      if (error.response?.status === 401) {
+        const reauthorized = await handleUnauthorized();
+        if (reauthorized) {
+          await fetchOrders();
+        }
+        return;
+      }
       console.error('Error fetching orders:', error);
-      // Use sample data when API fails
-      const sampleData = generateSampleOrders();
-      setOrders(sampleData);
-      setFilteredOrders(sampleData);
+      // Fallback to empty array on error
+      setOrders([]);
+      setFilteredOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchStaff = async () => {
+    if (!isAuthorized) {
+      return;
+    }
     try {
       const response = await api.get('/auth/users', {
         params: { role: 'deliveryBoy' }
       });
-      setStaffMembers(response.data.users || []);
+      if (Array.isArray(response.data.users)) {
+        setStaffMembers(response.data.users);
+      } else {
+        setStaffMembers([]);
+      }
     } catch (error) {
+      if (error.response?.status === 401) {
+        const reauthorized = await handleUnauthorized();
+        if (reauthorized) {
+          await fetchStaff();
+        }
+        return;
+      }
       console.error('Error fetching staff:', error);
-      // Use mock data for demo
       setStaffMembers([
         { _id: '1', name: 'Mike Johnson', email: 'mike@fabrico.com' },
         { _id: '2', name: 'Sarah Wilson', email: 'sarah@fabrico.com' },
@@ -196,11 +312,17 @@ const AdminOrderManagement = () => {
   };
 
   useEffect(() => {
+    if (!isAuthorized) {
+      return;
+    }
     fetchOrders();
     fetchStaff();
-  }, [statusFilter]);
+  }, [statusFilter, isAuthorized]);
 
   useEffect(() => {
+    if (!isAuthorized) {
+      return;
+    }
     const timeoutId = setTimeout(() => {
       if (searchTerm) {
         const filtered = orders.filter(order =>
@@ -214,7 +336,7 @@ const AdminOrderManagement = () => {
       }
     }, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, orders]);
+  }, [searchTerm, orders, isAuthorized]);
 
   const getStatusInfo = (status) => {
     return workflowStatuses.find(s => s.value === status) || workflowStatuses[0];
@@ -239,6 +361,13 @@ const AdminOrderManagement = () => {
         setSelectedOrder(updated.data);
       }
     } catch (error) {
+      if (error.response?.status === 401) {
+        const reauthorized = await handleUnauthorized();
+        if (reauthorized) {
+          await updateOrderStatus(orderId, newStatus, note);
+        }
+        return;
+      }
       console.error('Error updating order status:', error);
       alert('Failed to update order status');
     } finally {
@@ -608,6 +737,21 @@ const AdminOrderManagement = () => {
       </div>
     </div>
   );
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-violet-50 via-sky-50 to-emerald-50">
+        <div className="text-center">
+          <ArrowPathIcon className="h-8 w-8 animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-gray-600">Checking admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-sky-50 to-emerald-50">

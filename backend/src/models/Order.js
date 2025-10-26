@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const OrderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false }, // Changed to false to allow null values during migration
   serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
   deliveryBoyId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   orderNumber: { type: String, unique: true, required: true },
@@ -114,6 +114,19 @@ OrderSchema.pre('save', function(next) {
       timestamp: new Date(),
       note: `Status updated to ${this.status}`
     });
+  }
+  next();
+});
+
+// Ensure shoe care items have proper validation
+OrderSchema.pre('save', function(next) {
+  // If this order contains shoe care items, ensure address is complete
+  const hasShoeCare = this.items.some(item => item.service === 'shoe-care');
+  if (hasShoeCare) {
+    const address = this.customerInfo?.address;
+    if (!address || !address.street || !address.city || !address.state || !address.zipCode) {
+      return next(new Error('Complete pickup address is required for shoe care orders'));
+    }
   }
   next();
 });

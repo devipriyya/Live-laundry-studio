@@ -284,7 +284,7 @@ const AdminDashboardNew = () => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-orange-700 font-medium text-sm">Total Revenue</p>
-            <p className="text-3xl font-bold text-orange-900">${dashboardData.stats.totalRevenue.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-orange-900">₹{dashboardData.stats.totalRevenue.toLocaleString()}</p>
             <p className="text-orange-600 text-sm mt-1">+15% this month</p>
           </div>
           <div className="bg-orange-200 p-3 rounded-xl">

@@ -1,22 +1,61 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 
-// Get user profile
+// Get user profile with order statistics
 router.get('/', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    res.json(user);
+
+    // Calculate order statistics
+    const orderStats = await Order.aggregate([
+      {
+        $match: {
+          userId: req.user.id,
+          status: { $ne: 'cancelled' } // Exclude cancelled orders
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          totalSpent: { $sum: '$totalAmount' }
+        }
+      }
+    ]);
+
+    // Add statistics to user object
+    const userData = user.toObject();
+    userData.stats = {
+      totalOrders: orderStats[0]?.totalOrders || 0,
+      totalSpent: orderStats[0]?.totalSpent || 0,
+      memberSince: user.createdAt || new Date(),
+      loyaltyPoints: Math.floor((orderStats[0]?.totalSpent || 0) / 10), // 1 point per ₹10 spent
+      co2Saved: ((orderStats[0]?.totalOrders || 0) * 2.5).toFixed(1), // Estimate 2.5kg CO2 saved per order
+      favoriteService: 'Not Available', // Would need additional logic to determine this
+      currentTier: getOrderTier(orderStats[0]?.totalSpent || 0)
+    };
+
+    res.json(userData);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Helper function to determine user tier based on total spent
+function getOrderTier(totalSpent) {
+  if (totalSpent >= 5000) return 'Platinum';
+  if (totalSpent >= 2000) return 'Gold';
+  if (totalSpent >= 500) return 'Silver';
+  return 'New Member';
+}
 
 // Update user profile
 router.put('/', protect, async (req, res) => {

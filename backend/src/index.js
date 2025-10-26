@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/../.env' });
 const express = require('express');
 const connectDB = require('./config/db');
 const cors = require('cors');
@@ -15,7 +15,13 @@ const notificationRoutes = require('./routes/notification');
 
 connectDB();
 const app = express();
-app.use(cors());
+
+// Configure CORS to allow requests from the frontend
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(morgan('dev'));
 

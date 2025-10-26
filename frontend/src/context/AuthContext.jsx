@@ -1,25 +1,48 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import api from '../api';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
 
+  // Function to verify user exists in backend database
+  const verifyUserInDatabase = async (userData) => {
+    try {
+      console.log('AuthContext: Verifying user in database:', userData);
+      // Try to get user details from backend
+      const response = await api.get(`/auth/users/${userData.uid}`);
+      console.log('AuthContext: User verification response:', response.data);
+      if (response.data) {
+        return {
+          ...userData,
+          ...response.data,
+          id: response.data._id || response.data.id
+        };
+      }
+      return userData;
+    } catch (error) {
+      console.warn('AuthContext: User not found in backend database:', error);
+      return userData;
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log('AuthContext: Firebase user state changed:', firebaseUser);
       if (firebaseUser) {
-        // Determine user role based on email or other criteria
-        let userRole = 'customer'; // default role
+        let userRole = 'customer';
+        let needsToken = false;
         
-        // Check if user is admin (you can modify this logic as needed)
         if (firebaseUser.email === 'admin@gmail.com') {
           userRole = 'admin';
+          needsToken = true;
           console.log('AuthContext: Admin user detected');
         } else if (firebaseUser.email && firebaseUser.email.includes('delivery')) {
           userRole = 'deliveryBoy';
+          needsToken = true;
           console.log('AuthContext: Delivery boy detected');
         }
         
@@ -29,13 +52,37 @@ export const AuthProvider = ({ children }) => {
           name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
           role: userRole,
         };
-        console.log('AuthContext: Setting user data:', userData);
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+        
+        // If this is an admin or delivery user, ensure we have a valid token
+        if (needsToken) {
+          const currentToken = localStorage.getItem('token');
+          if (!currentToken) {
+            console.log('AuthContext: No token found for privileged user, calling demo login');
+            // Call the appropriate demo login function based on role
+            if (userRole === 'admin') {
+              await adminDemoLogin();
+            } else if (userRole === 'deliveryBoy') {
+              await deliveryBoyDemoLogin();
+            }
+          }
+        }
+        
+        const verifiedUser = await verifyUserInDatabase(userData);
+        console.log('AuthContext: Setting user data:', verifiedUser);
+        setUser(verifiedUser);
+        localStorage.setItem('user', JSON.stringify(verifiedUser));
       } else {
-        console.log('AuthContext: No user, clearing state');
-        setUser(null);
-        localStorage.removeItem('user');
+        const storedToken = localStorage.getItem('token');
+        const storedUser = localStorage.getItem('user');
+        console.log('AuthContext: No Firebase user, checking stored session', { storedToken, storedUser });
+        if (storedToken && storedUser) {
+          console.log('AuthContext: Preserving stored user session');
+          setUser(JSON.parse(storedUser));
+        } else {
+          console.log('AuthContext: No user, clearing state');
+          setUser(null);
+          localStorage.removeItem('user');
+        }
       }
     });
     return () => unsubscribe();
@@ -66,55 +113,105 @@ export const AuthProvider = ({ children }) => {
 
   const adminDemoLogin = async () => {
     console.log("AuthContext: adminDemoLogin called");
-    
-    try {
-      // Try to login with real credentials first
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'admin@gmail.com',
-          password: 'admin123'
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log("AuthContext: Real admin login successful", data);
-        localStorage.setItem('token', data.token);
-        
-        const adminUser = {
-          uid: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-          role: data.user.role,
-        };
-        console.log("AuthContext: Setting admin user:", adminUser);
-        setUser(adminUser);
-        localStorage.setItem('user', JSON.stringify(adminUser));
-        console.log("AuthContext: Admin user set successfully");
-        return;
+
+    const adminCredentials = {
+      email: 'admin@gmail.com',
+      password: 'admin123',
+      name: 'Admin User',
+      role: 'admin'
+    };
+
+    const applyAdminSession = (token, backendUser = {}, fallbackCredentials = adminCredentials) => {
+      console.log("AuthContext: Applying admin session with token:", token);
+      localStorage.setItem('token', token);
+      const adminUser = {
+        uid: backendUser.id || backendUser._id || fallbackCredentials.uid || 'admin-demo-user',
+        email: backendUser.email || fallbackCredentials.email,
+        name: backendUser.name || fallbackCredentials.name,
+        role: backendUser.role || fallbackCredentials.role || 'admin'
+      };
+      console.log("AuthContext: Setting admin user:", adminUser);
+      setUser(adminUser);
+      localStorage.setItem('user', JSON.stringify(adminUser));
+      console.log("AuthContext: Admin user set successfully");
+    };
+
+    const tryAdminLogin = async (credentials, label) => {
+      try {
+        console.log(`AuthContext: Attempting ${label} login with credentials:`, credentials);
+        const response = await api.post('/auth/login', {
+          email: credentials.email,
+          password: credentials.password
+        });
+        console.log(`AuthContext: ${label} login successful`, response.data);
+        applyAdminSession(response.data.token, response.data.user, credentials);
+        return true;
+      } catch (error) {
+        if (error.response) {
+          console.log(`AuthContext: ${label} login failed with status`, error.response.status, error.response.data);
+        } else {
+          console.log(`AuthContext: ${label} login failed`, error);
+        }
+        return false;
       }
-    } catch (error) {
-      console.log('Real login failed, using demo mode:', error);
+    };
+
+    const tryAdminRegister = async (credentials, label) => {
+      try {
+        console.log(`AuthContext: Attempting ${label} registration with credentials:`, credentials);
+        const response = await api.post('/auth/register', credentials);
+        console.log(`AuthContext: ${label} registration successful`, response.data);
+        applyAdminSession(response.data.token, response.data.user, credentials);
+        return true;
+      } catch (error) {
+        if (error.response) {
+          console.log(`AuthContext: ${label} registration failed with status`, error.response.status, error.response.data);
+        } else {
+          console.log(`AuthContext: ${label} registration failed`, error);
+        }
+        return false;
+      }
+    };
+
+    const attemptWithCredentials = async (credentials, labelPrefix) => {
+      if (await tryAdminLogin(credentials, `${labelPrefix} admin`)) return true;
+      if (await tryAdminRegister(credentials, `${labelPrefix} admin`)) return true;
+      if (await tryAdminLogin(credentials, `${labelPrefix} admin retry`)) return true;
+      return false;
+    };
+
+    // Try with primary credentials first
+    if (await attemptWithCredentials(adminCredentials, 'primary')) {
+      console.log("AuthContext: Admin login successful with primary credentials");
+      return;
     }
-    
-    // Fallback to demo mode if real login fails
+
+    // Try with unique credentials if primary fails
+    const uniqueCredentials = {
+      email: `admin${Date.now()}@fabrico.com`,
+      password: 'admin123',
+      name: 'Admin Demo',
+      role: 'admin'
+    };
+
+    if (await attemptWithCredentials(uniqueCredentials, 'unique')) {
+      console.log("AuthContext: Admin login successful with unique credentials");
+      return;
+    }
+
+    // Fallback to demo mode if all else fails
+    console.log("AuthContext: Falling back to demo admin user");
     const adminUser = {
       uid: 'admin-demo-user',
-      email: 'admin@gmail.com',
-      name: 'Admin User',
-      role: 'admin',
+      email: adminCredentials.email,
+      name: adminCredentials.name,
+      role: 'admin'
     };
-    console.log("AuthContext: Setting admin user (demo):", adminUser);
-    
-    // Generate a demo JWT token for backend compatibility
     const demoToken = 'demo-jwt-token-' + Date.now();
     localStorage.setItem('token', demoToken);
-    
     setUser(adminUser);
     localStorage.setItem('user', JSON.stringify(adminUser));
-    console.log("AuthContext: Admin user set successfully (demo)");
+    console.log("AuthContext: Demo admin user set successfully");
   };
 
   const deliveryBoyDemoLogin = async () => {

@@ -1,0 +1,22 @@
+Testing backend connection...
+✅ Backend is running, got response:
+401
+Response data:
+{
+  "message": "Token failed"
+}
+
+Testing registration endpoint...
+✅ Registration successful!
+Status:
+200
+Response:
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZjkyMjc4MjA5MjdmMDI2MzM3NDkyZCIsImlhdCI6MTc2MTE1Nzc1MiwiZXhwIjoxNzYxNzYyNTUyfQ.ByF3hQNmIo-lRsuzBhuzGwbLv-gwoEc48h41VABLwiE",
+  "user": {
+    "id": "68f9227820927f026337492d",
+    "name": "Test User",
+    "email": "test1761157752403@example.com",
+    "role": "customer"
+  }
+}

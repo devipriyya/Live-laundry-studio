@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import './styles/analytics.css';
 
 // Lazy load components to catch import errors
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
@@ -10,6 +11,7 @@ const DashboardHome = React.lazy(() => import('./pages/dashboard/DashboardHome')
 const DashboardProfile = React.lazy(() => import('./pages/dashboard/DashboardProfile'));
 const DashboardLaundry = React.lazy(() => import('./pages/dashboard/DashboardLaundry'));
 const DashboardSchedule = React.lazy(() => import('./pages/dashboard/DashboardSchedule'));
+const TestSchedule = React.lazy(() => import('./pages/dashboard/TestSchedule'));
 const DashboardOrders = React.lazy(() => import('./pages/dashboard/DashboardOrders'));
 const DashboardPayment = React.lazy(() => import('./pages/dashboard/DashboardPayment'));
 const DashboardQuality = React.lazy(() => import('./pages/dashboard/DashboardQuality'));
@@ -20,9 +22,13 @@ const DashboardLegal = React.lazy(() => import('./pages/dashboard/DashboardLegal
 const DashboardAbout = React.lazy(() => import('./pages/dashboard/DashboardAbout'));
 const DashboardShoeCleaning = React.lazy(() => import('./pages/dashboard/DashboardShoeCleaning'));
 const DashboardStainRemoval = React.lazy(() => import('./pages/dashboard/DashboardStainRemoval'));
+const DashboardSteamIroning = React.lazy(() => import('./pages/dashboard/DashboardSteamIroning'));
+const DashboardDryCleaning = React.lazy(() => import('./pages/dashboard/DashboardDryCleaning'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const AdminDashboardModern = React.lazy(() => import('./pages/AdminDashboardModern'));
 const AdminOrderManagement = React.lazy(() => import('./pages/AdminOrderManagement'));
+const AdminOrderManagementTest = React.lazy(() => import('./components/AdminOrderManagementTest'));
+const TestConnection = React.lazy(() => import('./test-connection'));
 const DeliveryBoyDashboard = React.lazy(() => import('./pages/DeliveryBoyDashboard'));
 const AdminLoginDebug = React.lazy(() => import('./pages/AdminLoginDebug'));
 const AdminDashboardTest = React.lazy(() => import('./pages/AdminDashboardTest'));
@@ -44,6 +50,18 @@ const CustomerManagementDirect = React.lazy(() => import('./pages/CustomerManage
 const ProtectedRoute = React.lazy(() => import('./components/ProtectedRoute'));
 const ChatSupport = React.lazy(() => import('./components/ChatSupport'));
 const ErrorBoundary = React.lazy(() => import('./components/ErrorBoundary'));
+const UserProfilePage = React.lazy(() => import('./pages/UserProfilePage'));
+const DebugRegistrationPage = React.lazy(() => import('./pages/DebugRegistrationPage'));
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
+const TestNotifications = React.lazy(() => import('./TestNotifications'));
+const TestNotificationService = React.lazy(() => import('./TestNotificationService'));
+const NotificationTest = React.lazy(() => import('./NotificationTest'));
+const NotificationAPITest = React.lazy(() => import('./NotificationAPITest'));
+const TestAnalytics = React.lazy(() => import('./TestAnalytics'));
+const AuthTest = React.lazy(() => import('./AuthTest'));
+const EnhancedReportsAnalytics = React.lazy(() => import('./pages/EnhancedReportsAnalytics'));
+const PaymentManagementPage = React.lazy(() => import('./pages/PaymentManagementPage'));
+const Register = React.lazy(() => import('./pages/Register'));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -66,6 +84,31 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/admin-login-test" element={<AdminLoginTest />} />
             <Route path="/admin-login-debug" element={<AdminLoginDebug />} />
+            <Route path="/debug-registration" element={<DebugRegistrationPage />} />
+            <Route path="/test-connection" element={<TestConnection />} />
+            <Route path="/test-notifications" element={<TestNotifications />} />
+            <Route path="/test-notification-service" element={<TestNotificationService />} />
+            <Route path="/notification-test" element={<NotificationTest />} />
+            <Route path="/notification-api-test" element={<NotificationAPITest />} />
+            <Route path="/test-analytics" element={<TestAnalytics />} />
+            <Route path="/auth-test" element={<AuthTest />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* Enhanced Reports & Analytics */}
+            <Route 
+              path="/enhanced-analytics" 
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <EnhancedReportsAnalytics />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Redirect old reports route to enhanced version */}
+            <Route 
+              path="/reports" 
+              element={<Navigate to="/enhanced-analytics" replace />} 
+            />
 
             {/* Protected Dashboard with nested routes */}
             <Route 
@@ -82,7 +125,10 @@ function App() {
               <Route path="laundry" element={<DashboardLaundry />} />
               <Route path="shoe-cleaning" element={<DashboardShoeCleaning />} />
               <Route path="stain-removal" element={<DashboardStainRemoval />} />
+              <Route path="steam-ironing" element={<DashboardSteamIroning />} />
+              <Route path="dry-cleaning" element={<DashboardDryCleaning />} />
               <Route path="schedule" element={<DashboardSchedule />} />
+              <Route path="test-schedule" element={<TestSchedule />} />
               <Route path="orders" element={<DashboardOrders />} />
               <Route path="payment" element={<DashboardPayment />} />
               <Route path="quality" element={<DashboardQuality />} />
@@ -92,6 +138,16 @@ function App() {
               <Route path="legal" element={<DashboardLegal />} />
               <Route path="about" element={<DashboardAbout />} />
             </Route>
+
+            {/* User Profile Page - accessible to all authenticated users */}
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <UserProfilePage />
+                </ProtectedRoute>
+              } 
+            />
 
             {/* Legacy Dashboard Route (for backward compatibility) */}
             <Route 
@@ -133,7 +189,7 @@ function App() {
               } 
             />
 
-            {/* Customer Management */}
+            {/* Customer Management - only for admin */}
             <Route 
               path="/customer-management" 
               element={
@@ -159,6 +215,16 @@ function App() {
               element={
                 <ProtectedRoute roles={['admin']}>
                   <CustomerManagementDirect />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* Admin Payment Management */}
+            <Route 
+              path="/admin-payments" 
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <PaymentManagementPage />
                 </ProtectedRoute>
               } 
             />
@@ -203,16 +269,6 @@ function App() {
               } 
             />
 
-            {/* Profile - accessible without authentication */}
-            <Route 
-              path="/profile" 
-              element={
-                <ErrorBoundary>
-                  <Profile />
-                </ErrorBoundary>
-              } 
-            />
-            
             {/* Profile Test Route */}
             <Route 
               path="/profile-test" 
@@ -259,12 +315,25 @@ function App() {
               } 
             />
 
+            {/* Test Admin Order Management - for debugging */}
+            <Route 
+              path="/admin-orders-test" 
+              element={<AdminOrderManagementTest />} 
+            />
+
+            {/* Protected Notifications Page */}
+            <Route 
+              path="/notifications" 
+              element={
+                <ProtectedRoute>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              } 
+            />
+
             {/* Catch-all redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          
-          {/* Global Chat Support */}
-          <ChatSupport />
         </Suspense>
         </BrowserRouter>
       </div>

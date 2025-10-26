@@ -1,13 +1,13 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import api from '../../api';
 import { 
   SparklesIcon, 
   CalendarDaysIcon, 
   ClockIcon,
   CurrencyRupeeIcon,
   CheckCircleIcon,
-  XMarkIcon,
   MinusIcon,
   PlusIcon,
   ArrowLeftIcon,
@@ -35,16 +35,6 @@ const startOfDay = (date) => {
 const DashboardSchedule = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  
-  // Log Razorpay configuration on mount (for debugging)
-  React.useEffect(() => {
-    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
-    if (!razorpayKey || razorpayKey === 'rzp_test_YOUR_KEY_ID') {
-      console.warn('⚠️ Razorpay API key not configured. Please add VITE_RAZORPAY_KEY_ID to your frontend/.env file');
-    } else {
-      console.log('✅ Razorpay configured');
-    }
-  }, []);
   
   // Form state
   const [selectedItems, setSelectedItems] = useState({});
@@ -117,6 +107,16 @@ const DashboardSchedule = () => {
   maxAllowedDate.setMonth(maxAllowedDate.getMonth() + 3);
   const minPickupDate = formatDateForInput(today);
   const maxPickupDate = formatDateForInput(maxAllowedDate);
+
+  // Log Razorpay configuration on mount (for debugging)
+  useEffect(() => {
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    if (!razorpayKey || razorpayKey === 'rzp_test_YOUR_KEY_ID') {
+      console.warn('⚠️ Razorpay API key not configured. Please add VITE_RAZORPAY_KEY_ID to your frontend/.env file');
+    } else {
+      console.log('✅ Razorpay configured');
+    }
+  }, []);
 
   const sanitizePhoneNumber = (value) => value.replace(/\D/g, '').slice(0, 10);
 
@@ -273,8 +273,87 @@ const DashboardSchedule = () => {
     setShowSummary(true);
   };
 
+  // Create order in backend after successful payment
+  const createOrderAfterPayment = async (paymentId, amount) => {
+    try {
+      // Prepare items array for the order
+      const items = [];
+      Object.entries(selectedItems).forEach(([itemName, quantity]) => {
+        Object.values(laundryPricing).forEach(category => {
+          const item = category.find(i => i.name === itemName);
+          if (item) {
+            items.push({
+              name: itemName,
+              quantity: quantity,
+              price: item.price,
+              service: 'wash-and-press'
+            });
+          }
+        });
+      });
+
+      // Validate that we have items
+      if (items.length === 0) {
+        throw new Error('No items selected for the order');
+      }
+
+      // Prepare order data
+      const orderData = {
+        items: items,
+        pickupDate: pickupDate,
+        pickupTime: pickupTime,
+        pickupAddress: address,
+        contactInfo: contactInfo,
+        totalAmount: amount
+      };
+
+      console.log('Creating order with data:', orderData);
+
+      // Send order to backend
+      const response = await api.post('/orders/dry-cleaning-clothes', orderData);
+      
+      if (response.data) {
+        console.log('Order created successfully:', response.data);
+        // Dispatch event to refresh orders in other components
+        window.dispatchEvent(new CustomEvent('orderPlaced'));
+        // Reset form
+        resetForm();
+        // Navigate to My Orders page
+        alert('Order placed successfully! Redirecting to My Orders page.');
+        navigate('/my-orders');
+      } else {
+        throw new Error('Failed to create order');
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        stack: error.stack
+      });
+      
+      let errorMessage = 'Order was paid but there was an issue saving your order. Please contact support with your payment ID: ' + paymentId;
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = `Order creation failed: ${error.response.data.message}`;
+      } else if (error.message) {
+        errorMessage = `Order creation failed: ${error.message}`;
+      }
+      
+      alert(errorMessage);
+    }
+  };
+
   // Initialize Razorpay payment
   const handlePayment = async () => {
+    // Check if user is authenticated
+    if (!user || !user.email) {
+      alert('Please log in to place an order. You will be redirected to the login page.');
+      navigate('/login');
+      return;
+    }
+
     const amount = calculateTotal();
     
     const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
@@ -325,7 +404,9 @@ const DashboardSchedule = () => {
             amount,
             paymentId: response.razorpay_payment_id
           });
-          resetForm();
+          
+          // Create order in backend after successful payment
+          createOrderAfterPayment(response.razorpay_payment_id, amount);
         },
         modal: {
           ondismiss: function() {
@@ -440,6 +521,7 @@ const DashboardSchedule = () => {
                                   type="button"
                                   onClick={() => updateItemQuantity(item.name, -1)}
                                   className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                  disabled={!selectedItems[item.name] || selectedItems[item.name] <= 0}
                                 >
                                   <MinusIcon className="h-4 w-4 text-gray-700" />
                                 </button>

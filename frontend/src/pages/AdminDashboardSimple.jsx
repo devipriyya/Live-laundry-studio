@@ -228,7 +228,7 @@ const AdminDashboardSimple = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-orange-700 font-medium text-sm">Total Revenue</p>
-                        <p className="text-3xl font-bold text-orange-900">${stats.totalRevenue.toFixed(2)}</p>
+                        <p className="text-3xl font-bold text-orange-900">₹{stats.totalRevenue.toFixed(2)}</p>
                       </div>
                       <div className="bg-orange-200 p-3 rounded-xl">
                         <CurrencyDollarIcon className="h-8 w-8 text-orange-600" />

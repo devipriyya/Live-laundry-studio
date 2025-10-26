@@ -26,6 +26,7 @@ const AdminOrderManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,27 +41,57 @@ const AdminOrderManagement = () => {
     { value: 'wash-in-progress', label: 'Wash in Progress', color: 'bg-cyan-100 text-cyan-800' },
     { value: 'wash-completed', label: 'Wash Completed', color: 'bg-teal-100 text-teal-800' },
     { value: 'out-for-delivery', label: 'Out for Delivery', color: 'bg-orange-100 text-orange-800' },
-    { value: 'delivery-completed', label: 'Delivery Completed', color: 'bg-green-100 text-green-800' }
+    { value: 'delivery-completed', label: 'Delivery Completed', color: 'bg-green-100 text-green-800' },
+    { value: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-800' }
+  ];
+
+  // Payment statuses
+  const paymentStatuses = [
+    { value: 'pending', label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'paid', label: 'Paid', color: 'bg-green-100 text-green-800' },
+    { value: 'failed', label: 'Failed', color: 'bg-red-100 text-red-800' },
+    { value: 'refunded', label: 'Refunded', color: 'bg-blue-100 text-blue-800' },
+    { value: 'refund-pending', label: 'Refund Pending', color: 'bg-purple-100 text-purple-800' }
   ];
 
   // Fetch orders from backend API
   const fetchOrders = async () => {
     try {
       setLoading(true);
+      console.log('Fetching orders with params:', {
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+        paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
+        search: searchTerm || undefined
+      });
+      
       const response = await api.get('/orders', {
         params: {
-          paymentStatus: 'paid', // Only fetch orders with completed payment
           status: statusFilter !== 'all' ? statusFilter : undefined,
           priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+          paymentStatus: paymentStatusFilter !== 'all' ? paymentStatusFilter : undefined,
           search: searchTerm || undefined
         }
       });
       
-      const ordersData = response.data.orders || response.data;
-      setOrders(ordersData);
-      setFilteredOrders(ordersData);
+      console.log('Orders API response:', response.data);
+      
+      // Correctly extract orders from the paginated response
+      const ordersData = response.data.orders || [];
+      console.log('Processed orders data:', ordersData);
+      
+      // Ensure ordersData is an array
+      const validOrders = Array.isArray(ordersData) ? ordersData : [];
+      console.log('Valid orders count:', validOrders.length);
+      
+      setOrders(validOrders);
+      setFilteredOrders(validOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
       // Show empty state if API fails
       setOrders([]);
       setFilteredOrders([]);
@@ -71,7 +102,7 @@ const AdminOrderManagement = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, [statusFilter, priorityFilter]);
+  }, [statusFilter, priorityFilter, paymentStatusFilter]);
 
   // Debounced search effect
   useEffect(() => {
@@ -101,12 +132,21 @@ const AdminOrderManagement = () => {
       filtered = filtered.filter(order => order.priority === priorityFilter);
     }
 
+    if (paymentStatusFilter !== 'all') {
+      filtered = filtered.filter(order => order.paymentStatus === paymentStatusFilter);
+    }
+
     setFilteredOrders(filtered);
-  }, [searchTerm, statusFilter, priorityFilter, orders]);
+  }, [searchTerm, statusFilter, priorityFilter, paymentStatusFilter, orders]);
 
   const getStatusInfo = (status) => {
     return orderStatuses.find(s => s.value === status) || 
            { label: status, color: 'bg-gray-100 text-gray-800' };
+  };
+
+  const getPaymentStatusInfo = (paymentStatus) => {
+    return paymentStatuses.find(s => s.value === paymentStatus) || 
+           { label: paymentStatus, color: 'bg-gray-100 text-gray-800' };
   };
 
   const getPriorityColor = (priority) => {
@@ -195,6 +235,9 @@ const AdminOrderManagement = () => {
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusInfo(order.status).color}`}>
                   {getStatusInfo(order.status).label}
                 </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusInfo(order.paymentStatus).color}`}>
+                  {getPaymentStatusInfo(order.paymentStatus).label}
+                </span>
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(order.priority)}`}>
                   {order.priority.charAt(0).toUpperCase() + order.priority.slice(1)} Priority
                 </span>
@@ -264,6 +307,19 @@ const AdminOrderManagement = () => {
                   <div>
                     <p className="text-sm text-green-700">Total Amount</p>
                     <p className="font-bold text-2xl">₹{order.totalAmount.toFixed(2)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 text-green-800">
+                  <div className="w-5 h-5">
+                    <CurrencyDollarIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-700">Payment Status</p>
+                    <p className="font-bold">
+                      <span className={`px-2 py-1 rounded-full text-xs ${getPaymentStatusInfo(order.paymentStatus).color}`}>
+                        {getPaymentStatusInfo(order.paymentStatus).label}
+                      </span>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -380,7 +436,7 @@ const AdminOrderManagement = () => {
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
@@ -400,6 +456,16 @@ const AdminOrderManagement = () => {
                   <option value="high">High Priority</option>
                   <option value="normal">Normal Priority</option>
                   <option value="low">Low Priority</option>
+                </select>
+                <select
+                  value={paymentStatusFilter}
+                  onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                  className="px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="all">All Payment Status</option>
+                  {paymentStatuses.map(status => (
+                    <option key={status.value} value={status.value}>{status.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -424,6 +490,7 @@ const AdminOrderManagement = () => {
                     <th className="px-6 py-4 text-left text-sm font-bold">Customer</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Items</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Status</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold">Payment</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Priority</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Amount</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Date</th>
@@ -450,6 +517,11 @@ const AdminOrderManagement = () => {
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusInfo(order.status).color}`}>
                           {getStatusInfo(order.status).label}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentStatusInfo(order.paymentStatus).color}`}>
+                          {getPaymentStatusInfo(order.paymentStatus).label}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -491,11 +563,11 @@ const AdminOrderManagement = () => {
             <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
               <ExclamationTriangleIcon className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No Paid Orders Found</h3>
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">No Orders Found</h3>
             <p className="text-gray-500">
-              {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
+              {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all' || paymentStatusFilter !== 'all'
                 ? 'Try adjusting your search or filter criteria.'
-                : 'No orders with completed payment have been placed yet.'}
+                : 'No orders have been placed yet.'}
             </p>
           </div>
         )}

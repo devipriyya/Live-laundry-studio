@@ -11,6 +11,7 @@ import {
   EyeSlashIcon,
   EnvelopeIcon,
   LockClosedIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 
 const initialErrors = {
@@ -84,6 +85,9 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       } else {
         navigate("/dashboard");
       }
+      if (onClose) {
+        onClose();
+      }
     } catch (error) {
       let errorMessage = "Login failed. Please try again.";
 
@@ -126,6 +130,9 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       } else {
         navigate("/dashboard");
       }
+      if (onClose) {
+        onClose();
+      }
     } catch (error) {
       setErrors((prev) => ({ ...prev, general: "Google sign-in failed. Please try again." }));
     } finally {
@@ -161,190 +168,195 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
     }
   };
 
+  const handleResetEmailChange = (event) => {
+    setResetEmail(event.target.value);
+    if (errors.reset) {
+      setErrors((prev) => ({ ...prev, reset: "" }));
+    }
+  };
+
+  const closeForgotPassword = () => {
+    setForgotPasswordModal(false);
+    setResetEmail("");
+    setErrors((prev) => ({ ...prev, reset: "" }));
+  };
+
   return (
     <>
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Login to Laundrokart</h2>
-      </div>
-
-      {/* Error Messages */}
-      {errors.general && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
-          {errors.general}
+      <div className="space-y-6 rounded-3xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 p-6 text-white shadow-2xl">
+        <div className="space-y-3 text-center">
+          <span className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">
+            <SparklesIcon className="h-4 w-4" />
+            WashLab Access
+          </span>
+          <h2 className="text-3xl font-bold">Welcome back</h2>
+          <p className="text-sm text-emerald-100/80">
+            Sign in to pick up where you left off with eco-friendly scheduling and garment tracking.
+          </p>
         </div>
-      )}
-
-      {errors.success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-600 text-sm">
-          {errors.success}
-        </div>
-      )}
-
-      {/* Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Email Field */}
-        <div>
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className="w-full px-4 py-4 bg-gray-100 border-0 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all duration-300"
-          />
-          {errors.email && (
-            <p className="mt-2 text-sm text-red-500">{errors.email}</p>
-          )}
-        </div>
-
-        {/* Password Field */}
-        <div>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              className="w-full px-4 py-4 pr-12 bg-gray-100 border-0 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all duration-300"
-            />
+        {errors.general && (
+          <div className="rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {errors.general}
+          </div>
+        )}
+        {errors.success && (
+          <div className="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+            {errors.success}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <div className="relative">
+              <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email address"
+                value={form.email}
+                onChange={handleChange}
+                className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/60 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+              />
+            </div>
+            {errors.email && (
+              <p className="mt-2 text-xs text-red-200">{errors.email}</p>
+            )}
+          </div>
+          <div>
+            <div className="relative">
+              <LockClosedIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 pr-14 text-white placeholder:text-emerald-100/60 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-100/70 transition hover:text-white"
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+            {errors.password && (
+              <p className="mt-2 text-xs text-red-200">{errors.password}</p>
+            )}
+          </div>
+          <div className="flex items-center justify-between text-sm text-emerald-100/80">
+            <label className="flex items-center gap-3">
+              <span className="relative">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  className="sr-only"
+                />
+                <span
+                  className={`flex h-5 w-5 items-center justify-center rounded border transition ${rememberMe ? "border-emerald-400 bg-emerald-500" : "border-white/30 bg-white/5"}`}
+                >
+                  {rememberMe && (
+                    <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </span>
+              </span>
+              Remember me
+            </label>
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              onClick={() => setForgotPasswordModal(true)}
+              className="font-semibold text-emerald-200 transition hover:text-white"
             >
-              {showPassword ? (
-                <EyeSlashIcon className="w-5 h-5" />
-              ) : (
-                <EyeIcon className="w-5 h-5" />
-              )}
+              Forgot password?
             </button>
           </div>
-          {errors.password && (
-            <p className="mt-2 text-sm text-red-500">{errors.password}</p>
-          )}
-        </div>
-
-        {/* Forgot Password */}
-        <div className="text-right">
           <button
-            type="button"
-            onClick={() => setForgotPasswordModal(true)}
-            className="text-sm text-pink-500 hover:text-pink-600 transition-colors"
+            type="submit"
+            disabled={loading}
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-4 text-sm font-semibold text-white shadow-xl transition hover:from-emerald-400 hover:to-teal-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/60 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Forgot password?
+            {loading ? (
+              <>
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                Signing in...
+              </>
+            ) : (
+              "Sign in"
+            )}
           </button>
+        </form>
+        <div className="my-6 flex items-center gap-4">
+          <div className="h-px flex-1 bg-white/10"></div>
+          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-100/60">or</span>
+          <div className="h-px flex-1 bg-white/10"></div>
         </div>
-
-        {/* Login Button */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold text-lg rounded-full hover:from-pink-600 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
-        >
-          {loading ? (
-            <div className="flex items-center justify-center gap-3">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              LOGGING IN...
-            </div>
-          ) : (
-            "LOGIN"
-          )}
-        </button>
-      </form>
-
-      {/* Switch to Register */}
-      <div className="mt-6 text-center">
-        <button 
-          onClick={onSwitchToRegister}
-          className="text-pink-500 hover:text-pink-600 font-medium transition-colors"
-        >
-          Want to Register?
-        </button>
-      </div>
-
-      {/* Divider */}
-      <div className="my-6 text-center">
-        <p className="text-gray-500 text-sm">Login with your social media account</p>
-      </div>
-
-      {/* Social Login Buttons */}
-      <div className="flex justify-center gap-4">
-        {/* Facebook Button */}
-        <button
-          onClick={() => {/* Add Facebook login logic */}}
-          disabled={loading}
-          className="w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
-        >
-          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-          </svg>
-        </button>
-
-        {/* Google Button */}
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
+          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/10 py-4 text-sm font-semibold text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <svg className="w-6 h-6 text-white" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          <svg className="h-5 w-5" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
+          Continue with Google
         </button>
+        <div className="text-center text-sm text-emerald-100/80">
+          Need an account?{" "}
+          <button
+            type="button"
+            onClick={onSwitchToRegister}
+            className="font-semibold text-white transition hover:text-emerald-200"
+          >
+            Create one
+          </button>
+        </div>
       </div>
-
-      {/* Forgot Password Modal */}
       {forgotPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4 py-6">
-          <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl">
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">Reset Password</h3>
-            <p className="text-gray-600 mb-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 px-4 py-6">
+          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-8 text-white shadow-2xl backdrop-blur-xl">
+            <h3 className="text-2xl font-semibold">Reset password</h3>
+            <p className="mt-2 text-sm text-emerald-100/80">
               Enter your email address and we'll send you a secure reset link.
             </p>
-
             {errors.reset && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+              <div className="mt-6 rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {errors.reset}
               </div>
             )}
-
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
+            <form onSubmit={handleForgotPassword} className="mt-6 space-y-6">
+              <div className="relative">
+                <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
                 <input
                   type="email"
-                  placeholder="Email address"
                   value={resetEmail}
-                  onChange={(event) => {
-                    setResetEmail(event.target.value);
-                    if (errors.reset) {
-                      setErrors((prev) => ({ ...prev, reset: "" }));
-                    }
-                  }}
-                  className="w-full px-4 py-4 bg-gray-100 border-0 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all duration-300"
+                  onChange={handleResetEmailChange}
+                  placeholder="Your email address"
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/60 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
                 />
               </div>
-              
-              <div className="flex gap-3 pt-2">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    setForgotPasswordModal(false);
-                    setResetEmail("");
-                    setErrors((prev) => ({ ...prev, reset: "" }));
-                  }}
-                  className="flex-1 py-3 bg-gray-100 text-gray-600 font-medium rounded-xl hover:bg-gray-200 transition-all duration-300"
+                  onClick={closeForgotPassword}
+                  className="flex-1 rounded-2xl border border-white/15 bg-white/10 py-3 text-sm font-semibold text-emerald-100/80 transition hover:bg-white/15"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-semibold rounded-xl hover:from-pink-600 hover:to-pink-700 transition-all duration-300"
+                  className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3 text-sm font-semibold text-white transition hover:from-emerald-400 hover:to-teal-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
                 >
-                  Send Reset Link
+                  Send email
                 </button>
               </div>
             </form>

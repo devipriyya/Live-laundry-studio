@@ -1,18 +1,17 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
+import api from '../../api';
 import { 
   BeakerIcon, 
   CalendarDaysIcon, 
   ClockIcon,
   CurrencyRupeeIcon,
   CheckCircleIcon,
-  XMarkIcon,
   MinusIcon,
   PlusIcon,
   ArrowLeftIcon,
-  ShoppingBagIcon,
-  SparklesIcon
+  ShoppingBagIcon
 } from '@heroicons/react/24/outline';
 
 const formatDateForInput = (date) => {
@@ -260,6 +259,12 @@ const DashboardStainRemoval = () => {
       return;
     }
     
+    // Check if user is authenticated and has required contact info
+    if (!user || !user.email) {
+      alert('Please log in to place an order.');
+      return;
+    }
+    
     if (!contactInfo.name || !contactInfo.phone || !contactInfo.email) {
       alert('Please fill all contact information');
       return;
@@ -273,8 +278,34 @@ const DashboardStainRemoval = () => {
     setShowSummary(true);
   };
 
+  const resetForm = () => {
+    setSelectedItems({});
+    setPickupDate('');
+    setPickupTime('');
+    setAddress({
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      instructions: ''
+    });
+    setContactInfo({
+      name: user?.displayName || user?.name || '',
+      phone: '',
+      email: user?.email || ''
+    });
+    setShowSummary(false);
+  };
+
   // Initialize Razorpay payment
   const handlePayment = async () => {
+    // Check if user is authenticated
+    if (!user || !user.email) {
+      alert('Please log in to place an order. You will be redirected to the login page.');
+      navigate('/login');
+      return;
+    }
+
     const amount = calculateTotal();
     
     const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
@@ -325,7 +356,9 @@ const DashboardStainRemoval = () => {
             amount,
             paymentId: response.razorpay_payment_id
           });
-          resetForm();
+          
+          // Create order in backend after successful payment
+          createOrderAfterPayment(response.razorpay_payment_id, amount);
         },
         modal: {
           ondismiss: function() {
@@ -356,23 +389,76 @@ const DashboardStainRemoval = () => {
     }
   };
 
-  const resetForm = () => {
-    setSelectedItems({});
-    setPickupDate('');
-    setPickupTime('');
-    setAddress({
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      instructions: ''
-    });
-    setContactInfo({
-      name: user?.displayName || user?.name || '',
-      phone: '',
-      email: user?.email || ''
-    });
-    setShowSummary(false);
+  // Create order in backend after successful payment
+  const createOrderAfterPayment = async (paymentId, amount) => {
+    try {
+      // Prepare items array for the order
+      const items = [];
+      Object.entries(selectedItems).forEach(([itemName, quantity]) => {
+        Object.values(stainRemovalPricing).forEach(category => {
+          const item = category.find(i => i.name === itemName);
+          if (item) {
+            items.push({
+              name: itemName,
+              quantity: quantity,
+              price: item.price,
+              service: 'stain-removal'
+            });
+          }
+        });
+      });
+
+      // Validate that we have items
+      if (items.length === 0) {
+        throw new Error('No items selected for the order');
+      }
+
+      // Prepare order data
+      const orderData = {
+        items: items,
+        pickupDate: pickupDate,
+        pickupTime: pickupTime,
+        pickupAddress: address,
+        contactInfo: contactInfo,
+        totalAmount: amount
+      };
+
+      console.log('Creating order with data:', orderData);
+
+      // Send order to backend
+      const response = await api.post('/orders/dry-cleaning-clothes', orderData);
+      
+      if (response.data) {
+        console.log('Order created successfully:', response.data);
+        // Dispatch event to refresh orders in other components
+        window.dispatchEvent(new CustomEvent('orderPlaced'));
+        // Reset form
+        resetForm();
+        // Navigate to My Orders page
+        alert('Order placed successfully! Redirecting to My Orders page.');
+        navigate('/my-orders');
+      } else {
+        throw new Error('Failed to create order');
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        stack: error.stack
+      });
+      
+      let errorMessage = 'Order was paid but there was an issue saving your order. Please contact support with your payment ID: ' + paymentId;
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = `Order creation failed: ${error.response.data.message}`;
+      } else if (error.message) {
+        errorMessage = `Order creation failed: ${error.message}`;
+      }
+      
+      alert(errorMessage);
+    }
   };
 
   return (

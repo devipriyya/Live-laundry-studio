@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../api';
 import {
   ArrowLeftIcon,
   PlusIcon,
@@ -251,6 +252,14 @@ const NewOrder = () => {
         if (!orderData.pickupTime) newErrors['pickupTime'] = 'Pickup time is required';
         if (!orderData.deliveryDate) newErrors['deliveryDate'] = 'Delivery date is required';
         if (!orderData.deliveryTime) newErrors['deliveryTime'] = 'Delivery time is required';
+        
+        // Validate pickup address fields for dry cleaning services (shoe care and clothes)
+        if (orderData.services.includes('shoe-care') || orderData.services.includes('dry-clean')) {
+          if (!orderData.address.street) newErrors['address.street'] = 'Street address is required for dry cleaning service';
+          if (!orderData.address.city) newErrors['address.city'] = 'City is required for dry cleaning service';
+          if (!orderData.address.state) newErrors['address.state'] = 'State is required for dry cleaning service';
+          if (!orderData.address.zipCode) newErrors['address.zipCode'] = 'ZIP code is required for dry cleaning service';
+        }
         break;
         
       case 3:
@@ -281,16 +290,117 @@ const NewOrder = () => {
     
     setLoading(true);
     try {
-      // Here you would submit to your API
-      console.log('Order submitted:', orderData);
+      // Prepare order data for submission
+      const orderItems = orderData.services.map(serviceId => {
+        const service = services.find(s => s.id === serviceId);
+        const itemCount = orderData.items[serviceId] || 0;
+        return {
+          name: service.name,
+          quantity: itemCount,
+          price: service.price,
+          service: serviceId
+        };
+      }).filter(item => item.quantity > 0);
+
+      // Prepare the order object to match the backend Order model
+      const orderPayload = {
+        serviceId: null, // Will be set by backend if needed
+        orderNumber: `ORD-${Date.now()}`,
+        customerInfo: {
+          name: orderData.contact.name,
+          email: orderData.contact.email,
+          phone: orderData.contact.phone,
+          address: {
+            street: orderData.address.street,
+            city: orderData.address.city,
+            state: orderData.address.state,
+            zipCode: orderData.address.zipCode,
+            instructions: orderData.address.instructions
+          }
+        },
+        items: orderItems,
+        totalAmount: orderData.total,
+        totalItems: orderData.totalItems,
+        pickupDate: orderData.pickupDate,
+        timeSlot: orderData.pickupTime,
+        deliveryDate: orderData.deliveryDate,
+        specialInstructions: orderData.preferences.specialInstructions,
+        paymentMethod: orderData.paymentMethod,
+        status: 'order-placed',
+        paymentStatus: 'pending'
+      };
+
+      // Check if this is a dry cleaning order (shoe care or clothes)
+      const isDryCleaningOrder = orderData.services.includes('shoe-care');
+      const isClothesDryCleaningOrder = orderData.services.includes('dry-clean');
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Redirect to confirmation page or dashboard
-      navigate('/dashboard', { 
-        state: { 
-          message: 'Order placed successfully! We\'ll send you a confirmation shortly.' 
+      // Submit to backend API
+      let endpoint = '/orders';
+      let requestData = orderPayload;
+
+      if (isDryCleaningOrder) {
+        // Shoe care dry cleaning
+        endpoint = '/orders/dry-cleaning';
+        requestData = {
+          shoeType: 'Shoes',
+          serviceType: 'shoe-care',
+          numberOfPairs: orderData.items['shoe-care'] || 1,
+          pickupDate: orderData.pickupDate,
+          pickupTime: orderData.pickupTime,
+          pickupAddress: {
+            street: orderData.address.street,
+            city: orderData.address.city,
+            state: orderData.address.state,
+            zipCode: orderData.address.zipCode,
+            instructions: orderData.address.instructions
+          },
+          contactInfo: {
+            name: orderData.contact.name,
+            phone: orderData.contact.phone,
+            email: orderData.contact.email
+          }
+        };
+      } else if (isClothesDryCleaningOrder) {
+        // Clothes dry cleaning
+        endpoint = '/orders/dry-cleaning-clothes';
+        requestData = {
+          items: orderItems,
+          pickupDate: orderData.pickupDate,
+          pickupTime: orderData.pickupTime,
+          pickupAddress: {
+            street: orderData.address.street,
+            city: orderData.address.city,
+            state: orderData.address.state,
+            zipCode: orderData.address.zipCode,
+            instructions: orderData.address.instructions
+          },
+          contactInfo: {
+            name: orderData.contact.name,
+            phone: orderData.contact.phone,
+            email: orderData.contact.email
+          },
+          totalAmount: orderData.total
+        };
+      }
+
+      const response = await api.post(endpoint, requestData);
+
+      const createdOrder = response.data;
+      console.log('Order created successfully:', createdOrder);
+
+      // Store the user's email in localStorage for MyOrders to use
+      if (orderData.contact.email) {
+        localStorage.setItem('userEmail', orderData.contact.email);
+      }
+
+      // Dispatch event to refresh orders in MyOrders component
+      window.dispatchEvent(new CustomEvent('orderPlaced'));
+
+      // Redirect to order success page with order details
+      navigate('/order-success', {
+        state: {
+          orderData: createdOrder.order,
+          message: 'Order placed successfully! We\'ll send you a confirmation shortly.'
         }
       });
     } catch (error) {
@@ -476,6 +586,90 @@ const NewOrder = () => {
               </select>
               {errors.pickupTime && <p className="text-red-500 text-sm mt-1">{errors.pickupTime}</p>}
             </div>
+            
+            {/* Pickup Address Section for Shoe Care Service */}
+            {orderData.services.includes('shoe-care') && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Pickup Address</h4>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Street Address *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="123 Main Street"
+                      value={orderData.address.street}
+                      onChange={(e) => handleInputChange('address', 'street', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {errors['address.street'] && <p className="text-red-500 text-sm mt-1">{errors['address.street']}</p>}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        City *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="City"
+                        value={orderData.address.city}
+                        onChange={(e) => handleInputChange('address', 'city', e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      {errors['address.city'] && <p className="text-red-500 text-sm mt-1">{errors['address.city']}</p>}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        State *
+                      </label>
+                      <select
+                        value={orderData.address.state}
+                        onChange={(e) => handleInputChange('address', 'state', e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select State</option>
+                        <option value="CA">California</option>
+                        <option value="NY">New York</option>
+                        <option value="TX">Texas</option>
+                        <option value="FL">Florida</option>
+                        {/* Add more states as needed */}
+                      </select>
+                      {errors['address.state'] && <p className="text-red-500 text-sm mt-1">{errors['address.state']}</p>}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ZIP Code *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="12345"
+                      value={orderData.address.zipCode}
+                      onChange={(e) => handleInputChange('address', 'zipCode', e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {errors['address.zipCode'] && <p className="text-red-500 text-sm mt-1">{errors['address.zipCode']}</p>}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Special Instructions (Optional)
+                    </label>
+                    <textarea
+                      placeholder="Apartment number, gate code, special pickup instructions..."
+                      value={orderData.address.instructions}
+                      onChange={(e) => handleInputChange('address', 'instructions', e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

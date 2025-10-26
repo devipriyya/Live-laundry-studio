@@ -4,12 +4,169 @@ const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
 const { isAdmin, isDeliveryBoy, isAdminOrDeliveryBoy } = require('../middleware/role');
 
-// create order (customer)
-router.post('/', async (req, res) => {
+// Admin: Get order trends (last 7 days)
+router.get('/analytics/orders', protect, isAdmin, async (req, res) => {
   try {
-    // For now, create a temporary user ID if not authenticated
-    const mongoose = require('mongoose');
-    const userId = req.user?._id || new mongoose.Types.ObjectId();
+    const { days = 7 } = req.query;
+    
+    // Calculate the date range
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days + 1);
+    startDate.setHours(0, 0, 0, 0);
+    
+    // Aggregate orders by day
+    const orderTrends = await Order.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startDate,
+            $lte: endDate
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt"
+            }
+          },
+          orders: { $sum: 1 },
+          revenue: { $sum: "$totalAmount" }
+        }
+      },
+      {
+        $sort: { "_id": 1 }
+      }
+    ]);
+    
+    // Create an array of all days in the range
+    const dates = [];
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      dates.push(new Date(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    // Format the response data
+    const formattedData = dates.map(date => {
+      const dateString = date.toISOString().split('T')[0];
+      const dayData = orderTrends.find(item => item._id === dateString);
+      
+      // Get day name (e.g., "Mon", "Tue")
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayName = dayNames[date.getDay()];
+      
+      return {
+        day: dayName,
+        date: dateString,
+        orders: dayData ? dayData.orders : 0,
+        revenue: dayData ? parseFloat(dayData.revenue.toFixed(2)) : 0
+      };
+    });
+    
+    res.json(formattedData);
+  } catch (error) {
+    console.error('Error fetching order trends:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Get monthly income trends
+router.get('/analytics/income', protect, isAdmin, async (req, res) => {
+  try {
+    const { months = 6 } = req.query;
+    
+    // Calculate the date range
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months + 1);
+    startDate.setDate(1);
+    startDate.setHours(0, 0, 0, 0);
+    
+    // Aggregate income by month
+    const monthlyIncome = await Order.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: startDate,
+            $lte: endDate
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m",
+              date: "$createdAt"
+            }
+          },
+          income: { $sum: "$totalAmount" }
+        }
+      },
+      {
+        $sort: { "_id": 1 }
+      }
+    ]);
+    
+    // Create an array of all months in the range
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthsData = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const monthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      const monthData = monthlyIncome.find(item => item._id === monthString);
+      
+      monthsData.push({
+        month: monthNames[currentDate.getMonth()],
+        income: monthData ? parseFloat(monthData.income.toFixed(2)) : 0
+      });
+      
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+    
+    res.json(monthsData);
+  } catch (error) {
+    console.error('Error fetching monthly income:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// create order (customer)
+router.post('/', protect, async (req, res) => {
+  try {
+    // Use authenticated user ID
+    const userId = req.user._id;
+    
+    // Validate required fields for dry cleaning orders
+    const { customerInfo, items, totalAmount, pickupDate, timeSlot } = req.body;
+    
+    if (!customerInfo || !items || !totalAmount || !pickupDate || !timeSlot) {
+      return res.status(400).json({ 
+        message: 'Missing required fields for order creation' 
+      });
+    }
+    
+    // Validate customer info
+    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
+      return res.status(400).json({ 
+        message: 'Customer name, email, and phone are required' 
+      });
+    }
+    
+    // Validate address for shoe care service
+    if (items.some(item => item.service === 'shoe-care')) {
+      const { address } = customerInfo;
+      if (!address || !address.street || !address.city || !address.state || !address.zipCode) {
+        return res.status(400).json({ 
+          message: 'Complete pickup address is required for shoe care orders' 
+        });
+      }
+    }
     
     const orderData = {
       ...req.body,
@@ -25,7 +182,182 @@ router.post('/', async (req, res) => {
     
     const order = new Order(orderData);
     await order.save();
-    res.json(order);
+    
+    // Send confirmation response
+    res.status(201).json({
+      message: 'Order created successfully',
+      order: order
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Create dry cleaning order with specific validation
+router.post('/dry-cleaning', protect, async (req, res) => {
+  try {
+    // Use authenticated user ID
+    const userId = req.user._id;
+    
+    // Extract and validate required fields
+    const {
+      shoeType,
+      serviceType,
+      numberOfPairs,
+      pickupDate,
+      pickupTime,
+      pickupAddress,
+      contactInfo
+    } = req.body;
+    
+    // Validate required fields
+    if (!shoeType || !serviceType || !numberOfPairs || !pickupDate || !pickupTime || !pickupAddress || !contactInfo) {
+      return res.status(400).json({ 
+        message: 'All fields are required for dry cleaning order' 
+      });
+    }
+    
+    // Validate contact information
+    if (!contactInfo.name || !contactInfo.phone || !contactInfo.email) {
+      return res.status(400).json({ 
+        message: 'Contact name, phone, and email are required' 
+      });
+    }
+    
+    // Validate pickup address
+    if (!pickupAddress.street || !pickupAddress.city || !pickupAddress.state || !pickupAddress.zipCode) {
+      return res.status(400).json({ 
+        message: 'Complete pickup address is required' 
+      });
+    }
+    
+    // Create order data structure that matches our Order model
+    const orderData = {
+      userId: userId,
+      orderNumber: `ORD-${Date.now()}`,
+      customerInfo: {
+        name: contactInfo.name,
+        email: contactInfo.email,
+        phone: contactInfo.phone,
+        address: {
+          street: pickupAddress.street,
+          city: pickupAddress.city,
+          state: pickupAddress.state,
+          zipCode: pickupAddress.zipCode,
+          instructions: pickupAddress.instructions || ''
+        }
+      },
+      items: [{
+        name: shoeType,
+        quantity: numberOfPairs,
+        price: 15.99, // Default price for shoe care, can be adjusted
+        service: 'shoe-care'
+      }],
+      totalAmount: 15.99 * numberOfPairs,
+      totalItems: numberOfPairs,
+      pickupDate: pickupDate,
+      timeSlot: pickupTime,
+      specialInstructions: pickupAddress.instructions || '',
+      status: 'order-placed',
+      paymentStatus: 'pending',
+      statusHistory: [{
+        status: 'order-placed',
+        timestamp: new Date(),
+        updatedBy: userId,
+        note: 'Dry cleaning order placed by customer'
+      }]
+    };
+    
+    const order = new Order(orderData);
+    await order.save();
+    
+    // Send confirmation response
+    res.status(201).json({
+      message: 'Dry cleaning order created successfully',
+      order: order
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Create dry cleaning order for clothes
+router.post('/dry-cleaning-clothes', protect, async (req, res) => {
+  try {
+    // Use authenticated user ID
+    const userId = req.user._id;
+
+    // Extract and validate required fields
+    const {
+      items,
+      pickupDate,
+      pickupTime,
+      pickupAddress,
+      contactInfo,
+      totalAmount
+    } = req.body;
+
+    // Validate required fields
+    if (!items || !pickupDate || !pickupTime || !pickupAddress || !contactInfo || !totalAmount) {
+      return res.status(400).json({
+        message: 'All fields are required for dry cleaning order'
+      });
+    }
+
+    // Validate contact information
+    if (!contactInfo.name || !contactInfo.phone || !contactInfo.email) {
+      return res.status(400).json({
+        message: 'Contact name, phone, and email are required'
+      });
+    }
+
+    // Validate pickup address
+    if (!pickupAddress.street || !pickupAddress.city || !pickupAddress.state || !pickupAddress.zipCode) {
+      return res.status(400).json({
+        message: 'Complete pickup address is required'
+      });
+    }
+
+    // Create order data structure that matches our Order model
+    const orderData = {
+      userId: userId,
+      orderNumber: `ORD-${Date.now()}`,
+      customerInfo: {
+        name: contactInfo.name,
+        email: contactInfo.email,
+        phone: contactInfo.phone,
+        address: {
+          street: pickupAddress.street,
+          city: pickupAddress.city,
+          state: pickupAddress.state,
+          zipCode: pickupAddress.zipCode,
+          instructions: pickupAddress.instructions || ''
+        }
+      },
+      items: items,
+      totalAmount: totalAmount,
+      totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+      pickupDate: pickupDate,
+      timeSlot: pickupTime,
+      specialInstructions: pickupAddress.instructions || '',
+      status: 'order-placed',
+      paymentStatus: 'pending',
+      statusHistory: [{
+        status: 'order-placed',
+        timestamp: new Date(),
+        updatedBy: userId,
+        note: 'Dry cleaning order placed by customer'
+      }]
+    };
+
+    const order = new Order(orderData);
+    await order.save();
+
+    // Send confirmation response
+    res.status(201).json({
+      message: 'Dry cleaning order created successfully',
+      order: order
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -40,12 +372,29 @@ router.get('/my', async (req, res) => {
       return res.status(400).json({ message: 'Email is required' });
     }
     
+    console.log(`Fetching orders for email: ${email}`);
+    
+    // Find orders with the specified email
     const orders = await Order.find({ 'customerInfo.email': email })
       .populate('serviceId')
       .populate('deliveryBoyId', 'name email')
       .sort({ createdAt: -1 });
-    res.json(orders);
+      
+    console.log(`Found ${orders.length} orders for email: ${email}`);
+      
+    // Filter out orders with missing critical data
+    const validOrders = orders.filter(order => {
+      return order._id && 
+             order.orderNumber && 
+             order.customerInfo && 
+             order.customerInfo.email === email;
+    });
+    
+    console.log(`Returning ${validOrders.length} valid orders for email: ${email}`);
+    
+    res.json(validOrders);
   } catch (error) {
+    console.error('Error fetching orders:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -111,6 +460,13 @@ router.get('/', protect, isAdmin, async (req, res) => {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
     
+    // Log query for debugging
+    console.log('Order query:', JSON.stringify(query, null, 2));
+    
+    // Count orders with null userId for debugging
+    const nullUserIdCount = await Order.countDocuments({ userId: null });
+    console.log(`Found ${nullUserIdCount} orders with null userId`);
+    
     const orders = await Order.find(query)
       .populate('userId', 'name email')
       .populate('serviceId')
@@ -119,6 +475,12 @@ router.get('/', protect, isAdmin, async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
+      
+    // Log first order for debugging
+    if (orders.length > 0) {
+      console.log('First order userId:', orders[0].userId);
+      console.log('First order userId type:', typeof orders[0].userId);
+    }
       
     const total = await Order.countDocuments(query);
     
@@ -129,6 +491,7 @@ router.get('/', protect, isAdmin, async (req, res) => {
       total
     });
   } catch (error) {
+    console.error('Error in orders endpoint:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -539,6 +902,141 @@ router.patch('/:id/delivery-status', protect, isDeliveryBoy, async (req, res) =>
     res.json({ message: 'Status updated successfully', order });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin: Fix order user associations
+router.post('/fix-user-associations', protect, isAdmin, async (req, res) => {
+  try {
+    console.log('Admin requested to fix order user associations');
+    
+    // Get all orders to check
+    console.log('Finding all orders...');
+    const allOrders = await Order.find({});
+    console.log(`Total orders in database: ${allOrders.length}`);
+    
+    // Get orders without userId
+    console.log('Finding orders without userId...');
+    const ordersWithoutUser = await Order.find({ userId: { $exists: false } });
+    console.log(`Found ${ordersWithoutUser.length} orders without userId field`);
+    
+    // Also check for orders with explicit null userId
+    const ordersWithNullUserId = await Order.find({ userId: null });
+    console.log(`Found ${ordersWithNullUserId.length} orders with null userId`);
+    
+    const allOrdersWithoutUser = [...ordersWithoutUser, ...ordersWithNullUserId];
+    console.log(`Total orders to process: ${allOrdersWithoutUser.length}`);
+    
+    if (allOrdersWithoutUser.length === 0) {
+      return res.json({ 
+        message: 'No orders need fixing', 
+        fixedCount: 0,
+        totalOrders: 0,
+        databaseTotal: allOrders.length
+      });
+    }
+    
+    let fixedCount = 0;
+    const User = require('../models/User');
+    
+    // For each order, try to find and associate the user
+    console.log('Processing orders...');
+    for (const order of allOrdersWithoutUser) {
+      try {
+        // Find user by email
+        const user = await User.findOne({ email: order.customerInfo.email });
+        if (user) {
+          console.log(`Associating order ${order.orderNumber} with user ${user.email} (${user._id})`);
+          order.userId = user._id;
+          await order.save();
+          fixedCount++;
+        } else {
+          console.log(`No user found for order ${order.orderNumber} with email ${order.customerInfo.email}`);
+        }
+      } catch (error) {
+        console.error(`Error fixing order ${order.orderNumber}:`, error.message);
+      }
+    }
+    
+    res.json({ 
+      message: `Successfully fixed ${fixedCount} orders`, 
+      fixedCount,
+      totalOrders: allOrdersWithoutUser.length,
+      databaseTotal: allOrders.length
+    });
+  } catch (error) {
+    console.error('Error fixing order user associations:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Admin: Fix order user associations (improved version)
+router.post('/fix-user-associations-improved', protect, isAdmin, async (req, res) => {
+  try {
+    console.log('Admin requested to fix order user associations (improved version)');
+    
+    // Get all orders
+    console.log('Finding all orders...');
+    const allOrders = await Order.find({});
+    console.log(`Total orders in database: ${allOrders.length}`);
+    
+    // Get orders with null or missing userId
+    console.log('Finding orders with null or missing userId...');
+    const ordersWithNullUserId = await Order.find({ userId: null });
+    console.log(`Found ${ordersWithNullUserId.length} orders with null userId`);
+    
+    const ordersWithMissingUserId = await Order.find({ userId: { $exists: false } });
+    console.log(`Found ${ordersWithMissingUserId.length} orders with missing userId field`);
+    
+    const allOrdersWithoutUser = [...ordersWithNullUserId, ...ordersWithMissingUserId];
+    console.log(`Total orders to process: ${allOrdersWithoutUser.length}`);
+    
+    if (allOrdersWithoutUser.length === 0) {
+      return res.json({ 
+        message: 'No orders need fixing', 
+        fixedCount: 0,
+        totalOrders: 0,
+        databaseTotal: allOrders.length
+      });
+    }
+    
+    let fixedCount = 0;
+    const User = require('../models/User');
+    
+    // For each order, try to find and associate the user
+    console.log('Processing orders...');
+    for (const order of allOrdersWithoutUser) {
+      try {
+        // Skip if customer info is missing
+        if (!order.customerInfo || !order.customerInfo.email) {
+          console.log(`Skipping order ${order.orderNumber} - missing customer info`);
+          continue;
+        }
+        
+        // Find user by email
+        const user = await User.findOne({ email: order.customerInfo.email });
+        if (user) {
+          console.log(`Associating order ${order.orderNumber} with user ${user.email} (${user._id})`);
+          order.userId = user._id;
+          await order.save();
+          fixedCount++;
+        } else {
+          console.log(`No user found for order ${order.orderNumber} with email ${order.customerInfo.email}`);
+        }
+      } catch (error) {
+        console.error(`Error fixing order ${order.orderNumber}:`, error.message);
+      }
+    }
+    
+    res.json({ 
+      message: `Successfully fixed ${fixedCount} orders`, 
+      fixedCount,
+      totalOrders: allOrdersWithoutUser.length,
+      databaseTotal: allOrders.length
+    });
+  } catch (error) {
+    console.error('Error fixing order user associations:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

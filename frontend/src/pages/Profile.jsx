@@ -2,6 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import api from '../api';
 import '../styles/ProfileAnimations.css';
 import {
   UserCircleIcon,
@@ -48,47 +49,27 @@ const Profile = () => {
   const [editingAddress, setEditingAddress] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [error, setError] = useState(null);
   
   // Profile data state with safe defaults
   const [profileData, setProfileData] = useState({
-    name: 'Demo User',
-    email: 'demo@fabrico.com',
-    phone: '+1 (555) 123-4567',
-    dateOfBirth: '1990-01-01',
+    name: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
     gender: 'prefer-not-to-say',
-    bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
+    bio: '',
     profileImageUrl: null
   });
 
   // Laundry-specific data
-  const [addresses, setAddresses] = useState([
-    {
-      id: 1,
-      type: 'Home',
-      name: 'Home Address',
-      street: '123 Main Street',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      isDefault: true
-    },
-    {
-      id: 2,
-      type: 'Office',
-      name: 'Work Address',
-      street: '456 Business Ave',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10002',
-      isDefault: false
-    }
-  ]);
+  const [addresses, setAddresses] = useState([]);
 
   const [preferences, setPreferences] = useState({
     fabricCare: 'gentle',
     detergentType: 'eco-friendly',
     starchLevel: 'light',
-    specialInstructions: 'Please handle delicate items with extra care',
+    specialInstructions: '',
     notifications: {
       email: true,
       sms: true,
@@ -107,53 +88,100 @@ const Profile = () => {
     isDefault: false
   });
 
+  // Stats with default values
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalSpent: 0.00,
+    memberSince: new Date().toISOString().split('T')[0],
+    loyaltyPoints: 0,
+    co2Saved: 0.0,
+    favoriteService: 'Not Available',
+    currentTier: 'New Member'
+  });
+
   // Load profile data on mount with better error handling
   useEffect(() => {
-    try {
-      const savedProfile = localStorage.getItem('fabricspa_profile');
-      let profileToSet = {
-        name: 'Demo User',
-        email: 'demo@fabrico.com',
-        phone: '+1 (555) 123-4567',
-        dateOfBirth: '1990-01-01',
-        gender: 'prefer-not-to-say',
-        bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
-        profileImageUrl: null
-      };
-
-      if (savedProfile) {
-        try {
-          const parsed = JSON.parse(savedProfile);
-          profileToSet = {
-            name: parsed.name || user?.name || 'Demo User',
-            email: parsed.email || user?.email || 'demo@fabrico.com',
-            phone: parsed.phone || '+1 (555) 123-4567',
-            dateOfBirth: parsed.dateOfBirth || '1990-01-01',
-            gender: parsed.gender || 'prefer-not-to-say',
-            bio: parsed.bio || 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
-            profileImageUrl: parsed.profileImageUrl || null
-          };
-        } catch (parseError) {
-          console.warn('Error parsing saved profile:', parseError);
+    const fetchProfileData = async () => {
+      if (!user) {
+        // If no user, redirect to login
+        navigate('/');
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch user profile from backend
+        const response = await api.get('/profile');
+        const userData = response.data;
+        
+        console.log('Fetched user profile:', userData);
+        
+        // Set profile data
+        setProfileData({
+          name: userData.name || user?.name || '',
+          email: userData.email || user?.email || '',
+          phone: userData.phone || '',
+          dateOfBirth: userData.dateOfBirth || '',
+          gender: userData.gender || 'prefer-not-to-say',
+          bio: userData.bio || 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
+          profileImageUrl: userData.profilePicture || null
+        });
+        
+        // Set addresses
+        setAddresses(userData.addresses || [
+          {
+            id: 1,
+            type: 'Home',
+            name: 'Home Address',
+            street: '123 Main Street',
+            city: 'New York',
+            state: 'NY',
+            zipCode: '10001',
+            isDefault: true
+          }
+        ]);
+        
+        // Set preferences
+        setPreferences({
+          fabricCare: userData.preferences?.fabricCare || 'gentle',
+          detergentType: userData.preferences?.detergentType || 'eco-friendly',
+          starchLevel: userData.preferences?.starchLevel || 'light',
+          specialInstructions: userData.preferences?.specialInstructions || 'Please handle delicate items with extra care',
+          notifications: {
+            email: userData.preferences?.notifications?.email ?? true,
+            sms: userData.preferences?.notifications?.sms ?? true,
+            orderUpdates: userData.preferences?.notifications?.orderUpdates ?? true,
+            promotions: userData.preferences?.notifications?.promotions ?? false
+          }
+        });
+        
+        // Set stats from backend response
+        if (userData.stats) {
+          setStats(userData.stats);
         }
-      } else if (user) {
-        profileToSet = {
-          name: user.name || 'Demo User',
-          email: user.email || 'demo@fabrico.com',
+      } catch (err) {
+        console.error('Error fetching profile data:', err);
+        setError('Failed to load profile data. Please try again.');
+        
+        // Fallback to user context data
+        setProfileData({
+          name: user?.name || 'Demo User',
+          email: user?.email || 'demo@fabrico.com',
           phone: '+1 (555) 123-4567',
           dateOfBirth: '1990-01-01',
           gender: 'prefer-not-to-say',
           bio: 'Loyal FabricSpa customer who loves eco-friendly cleaning services.',
           profileImageUrl: null
-        };
+        });
+      } finally {
+        setLoading(false);
       }
-
-      setProfileData(profileToSet);
-    } catch (error) {
-      console.error('Error loading profile data:', error);
-      // Keep default values if there's any error
-    }
-  }, [user]);
+    };
+    
+    fetchProfileData();
+  }, [user, navigate]);
 
   const loyaltyRewards = [
     {
@@ -211,16 +239,6 @@ const Profile = () => {
   const [errors, setErrors] = useState({});
   const [addressErrors, setAddressErrors] = useState({});
   const [passwordErrors, setPasswordErrors] = useState({});
-
-  const stats = {
-    totalOrders: 0,
-    totalSpent: 0.00,
-    memberSince: new Date().toISOString().split('T')[0],
-    loyaltyPoints: 0,
-    co2Saved: 0.0,
-    favoriteService: 'Not Available',
-    currentTier: 'New Member'
-  };
 
   // Validation functions
   const validateProfileData = (data) => {
@@ -390,15 +408,28 @@ const Profile = () => {
     setLoading(true);
     
     try {
-      localStorage.setItem('fabricspa_profile', JSON.stringify(profileData));
+      // Save profile data to backend instead of localStorage
+      const profilePayload = {
+        name: profileData.name,
+        email: profileData.email,
+        phone: profileData.phone,
+        dateOfBirth: profileData.dateOfBirth,
+        gender: profileData.gender,
+        bio: profileData.bio,
+        profilePicture: profileData.profileImageUrl,
+        addresses: addresses,
+        preferences: preferences
+      };
       
+      const response = await api.put('/profile', profilePayload);
+      
+      // Update user context with new data
       if (user && setUser) {
         const updatedUser = { ...user, name: profileData.name, email: profileData.email };
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
       setIsEditing(false);
       alert('Profile updated successfully!');
     } catch (error) {
@@ -497,7 +528,7 @@ const Profile = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR'
     }).format(amount);
@@ -509,7 +540,7 @@ const Profile = () => {
       const dateObj = new Date(date);
       if (isNaN(dateObj.getTime())) return 'Invalid date';
       
-      return new Intl.DateTimeFormat('en-US', {
+      return new Intl.DateTimeFormat('en-IN', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -808,56 +839,7 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Simple Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg border border-yellow-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Total Orders</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <ShoppingBagIcon className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg border border-yellow-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Total Spent</p>
-                <p className="text-3xl font-bold text-gray-900">{formatCurrency(stats.totalSpent)}</p>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                <span className="text-amber-600 font-bold text-xl">$</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg border border-yellow-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">Loyalty Points</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.loyaltyPoints}</p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <StarIcon className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg border border-yellow-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 mb-1">CO₂ Saved</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.co2Saved}<span className="text-lg">kg</span></p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <GlobeAltIcon className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Statistics cards removed as per user request */}
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Simple Sidebar Navigation */}

@@ -1,0 +1,175 @@
+/* Enhanced Analytics Dashboard Styles */
+
+.analytics-dashboard {
+  background-color: #f9fafb;
+  min-height: 100vh;
+}
+
+.analytics-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem 0;
+  margin-bottom: 2rem;
+}
+
+.analytics-card {
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-metric-positive {
+  color: #10b981;
+}
+
+.analytics-metric-negative {
+  color: #ef4444;
+}
+
+.analytics-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  z-index: 1000;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.analytics-tab-active {
+  border-bottom: 3px solid #3b82f6;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.analytics-tab-inactive {
+  color: #6b7280;
+  border-bottom: 3px solid transparent;
+}
+
+.analytics-tab-inactive:hover {
+  color: #1f2937;
+  border-bottom: 3px solid #d1d5db;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .analytics-header {
+    padding: 1rem 0;
+  }
+  
+  .analytics-card {
+    margin-bottom: 1rem;
+  }
+  
+  .analytics-chart-container {
+    padding: 1rem;
+  }
+}
+
+/* Loading spinner */
+.analytics-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.analytics-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid rgba(59, 130, 246, 0.3);
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error state */
+.analytics-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+
+.analytics-error-title {
+  color: #b91c1c;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.analytics-error-message {
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+/* Key insights */
+.analytics-insight-card {
+  transition: all 0.2s ease;
+}
+
+.analytics-insight-card:hover {
+  transform: scale(1.02);
+}
+
+/* Fullscreen button */
+.analytics-fullscreen-btn {
+  transition: all 0.2s ease;
+}
+
+.analytics-fullscreen-btn:hover {
+  background-color: #f3f4f6;
+  transform: scale(1.05);
+}
+
+/* Back button */
+.analytics-back-btn {
+  transition: all 0.2s ease;
+}
+
+.analytics-back-btn:hover {
+  color: #1f2937;
+  transform: translateX(-2px);
+}
+
+/* Export button */
+.analytics-export-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.analytics-export-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Refresh button */
+.analytics-refresh-btn {
+  transition: all 0.3s ease;
+}
+
+.analytics-refresh-btn:hover {
+  background-color: #f3f4f6;
+  transform: rotate(90deg);
+}

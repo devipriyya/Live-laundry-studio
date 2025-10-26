@@ -38,6 +38,7 @@ const MyOrders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState('');
+  const [activeTab, setActiveTab] = useState('all'); // New state for tabs
 
   // Load orders from the backend API
   const loadOrders = async (email) => {
@@ -46,8 +47,19 @@ const MyOrders = () => {
         console.log('No email provided, cannot fetch orders');
         return [];
       }
+      console.log('Fetching orders for email:', email);
       const response = await api.get(`/orders/my?email=${encodeURIComponent(email)}`);
-      return response.data;
+      console.log('Orders fetched:', response.data);
+      
+      // Filter out orders without proper customer info
+      const validOrders = response.data.filter(order => 
+        order.customerInfo && 
+        order.customerInfo.email && 
+        order.customerInfo.email === email
+      );
+      
+      console.log('Valid orders for this user:', validOrders);
+      return validOrders;
     } catch (error) {
       console.error('Error loading orders:', error);
       return [];
@@ -57,20 +69,45 @@ const MyOrders = () => {
   useEffect(() => {
     // Get user email from context or localStorage
     let email = user?.email;
+    console.log('User from context:', user);
     if (!email) {
-      // Try to get from localStorage as fallback
+      // Try to get from localStorage user object as fallback
       const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      console.log('Stored user from localStorage:', storedUser);
       email = storedUser.email;
     }
-    
+    if (!email) {
+      // Try to get from userEmail localStorage key (set after order placement)
+      email = localStorage.getItem('userEmail');
+      console.log('Email from userEmail localStorage:', email);
+    }
+
+    console.log('Final email used for fetching orders:', email);
     setUserEmail(email || '');
-    
+
+    // If we still don't have an email, try to get it from existing orders in localStorage
+    if (!email) {
+      const storedOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+      if (storedOrders.length > 0) {
+        // Try to get email from the first order with valid customer info
+        const orderWithEmail = storedOrders.find(order =>
+          order.customerInfo && order.customerInfo.email
+        );
+        if (orderWithEmail) {
+          email = orderWithEmail.customerInfo.email;
+          console.log('Email extracted from stored orders:', email);
+          setUserEmail(email);
+        }
+      }
+    }
+
     // Load real orders from backend API
     const fetchOrders = async () => {
       setLoading(true);
       try {
         if (email) {
           const realOrders = await loadOrders(email);
+          console.log('Setting orders state:', realOrders);
           setOrders(realOrders);
           setFilteredOrders(realOrders);
         } else {
@@ -84,17 +121,64 @@ const MyOrders = () => {
         setLoading(false);
       }
     };
-    
+
     fetchOrders();
   }, [user]);
+
+  // Listen for order placement events to refresh orders
+  useEffect(() => {
+    const handleOrderPlaced = () => {
+      console.log('Order placed event received, refreshing orders');
+      if (userEmail) {
+        loadOrders(userEmail).then(updatedOrders => {
+          console.log('Refreshed orders after new order:', updatedOrders);
+          setOrders(updatedOrders);
+          setFilteredOrders(updatedOrders);
+        }).catch(error => {
+          console.error('Error refreshing orders:', error);
+        });
+      }
+    };
+
+    window.addEventListener('orderPlaced', handleOrderPlaced);
+
+    return () => {
+      window.removeEventListener('orderPlaced', handleOrderPlaced);
+    };
+  }, [userEmail]);
 
   // Refresh orders when component becomes visible
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (!document.hidden && userEmail) {
-        const updatedOrders = await loadOrders(userEmail);
-        setOrders(updatedOrders);
-        setFilteredOrders(updatedOrders);
+      if (!document.hidden) {
+        // Get current user email
+        let currentEmail = userEmail;
+        if (!currentEmail) {
+          // Try to get email from context
+          const contextUser = user?.email;
+          if (contextUser) {
+            currentEmail = contextUser;
+            setUserEmail(currentEmail);
+          } else {
+            // Try to get from localStorage
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            currentEmail = storedUser.email;
+            if (currentEmail) {
+              setUserEmail(currentEmail);
+            }
+          }
+        }
+        
+        if (currentEmail) {
+          console.log('Refreshing orders for:', currentEmail);
+          const updatedOrders = await loadOrders(currentEmail);
+          console.log('Refreshed orders:', updatedOrders);
+          setOrders(updatedOrders);
+          setFilteredOrders(updatedOrders);
+          
+          // Store orders in localStorage for offline access
+          localStorage.setItem('orders', JSON.stringify(updatedOrders));
+        }
       }
     };
     
@@ -103,12 +187,13 @@ const MyOrders = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [userEmail]);
+  }, [userEmail, user]);
 
+  // Filter orders based on search term, status, and service type
   useEffect(() => {
-    // Filter orders based on search term and status
     let filtered = orders;
 
+    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(order =>
         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,12 +202,45 @@ const MyOrders = () => {
       );
     }
 
+    // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
+    // Apply service type filter (tabs)
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(order => {
+        // Check if any item in the order matches the service type
+        // For customer orders, treat all as 'schedule-wash' since they don't have service field
+        const hasServiceField = order.items.some(item => item.service);
+        if (!hasServiceField) {
+          // All customer orders are treated as schedule-wash
+          return activeTab === 'schedule-wash';
+        }
+
+        // For orders with service field (admin orders), check service names
+        return order.items.some(item => {
+          const serviceName = item.service ? item.service.toLowerCase() : '';
+          switch (activeTab) {
+            case 'schedule-wash':
+              return serviceName.includes('wash') || serviceName.includes('fold');
+            case 'steam-ironing':
+              return serviceName.includes('iron') || serviceName.includes('steam');
+            case 'stain-removal':
+              return serviceName.includes('stain');
+            case 'shoe-polish':
+              return serviceName.includes('shoe') || serviceName.includes('polish');
+            case 'dry-cleaning':
+              return serviceName.includes('dry') && serviceName.includes('clean');
+            default:
+              return true;
+          }
+        });
+      });
+    }
+
     setFilteredOrders(filtered);
-  }, [searchTerm, statusFilter, orders]);
+  }, [searchTerm, statusFilter, activeTab, orders]);
 
   const getStatusColor = (status) => {
     const statusColors = {
@@ -209,6 +327,16 @@ const MyOrders = () => {
     );
   }
 
+  // Define tabs for different service types
+  const serviceTabs = [
+    { id: 'all', name: 'All Orders' },
+    { id: 'schedule-wash', name: 'Schedule Wash' },
+    { id: 'steam-ironing', name: 'Steam Ironing' },
+    { id: 'stain-removal', name: 'Stain Removal' },
+    { id: 'shoe-polish', name: 'Shoe Polish' },
+    { id: 'dry-cleaning', name: 'Dry Cleaning' }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50">
       {/* Header */}
@@ -234,43 +362,59 @@ const MyOrders = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Search and Filter Section */}
-        <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm border p-4">
-            <div className="flex flex-col md:flex-row gap-3">
-              {/* Search */}
-              <div className="flex-1">
-                <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search orders..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors"
-                  />
-                </div>
-              </div>
-              
-              {/* Status Filter */}
-              <div className="md:w-56">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-colors bg-white"
+        {/* Service Type Tabs */}
+        <div className="mb-8">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8 overflow-x-auto">
+              {serviceTabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-yellow-500 text-yellow-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
                 >
-                  <option value="all">All Statuses</option>
-                  <option value="order-placed">Order Placed</option>
-                  <option value="order-accepted">Order Accepted</option>
-                  <option value="out-for-pickup">Out for Pickup</option>
-                  <option value="pickup-completed">Pickup Completed</option>
-                  <option value="wash-in-progress">Wash in Progress</option>
-                  <option value="wash-completed">Wash Completed</option>
-                  <option value="out-for-delivery">Out for Delivery</option>
-                  <option value="delivery-completed">Delivery Completed</option>
-                </select>
-              </div>
+                  {tab.name}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Search and Filter Controls */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
             </div>
+            <input
+              type="text"
+              placeholder="Search orders..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500"
+            />
+          </div>
+          
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-yellow-500 focus:border-yellow-500"
+            >
+              <option value="all">All Statuses</option>
+              <option value="order-placed">Order Placed</option>
+              <option value="order-accepted">Order Accepted</option>
+              <option value="out-for-pickup">Out for Pickup</option>
+              <option value="pickup-completed">Pickup Completed</option>
+              <option value="wash-in-progress">Wash in Progress</option>
+              <option value="wash-completed">Wash Completed</option>
+              <option value="out-for-delivery">Out for Delivery</option>
+              <option value="delivery-completed">Delivery Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
         </div>
 
@@ -294,11 +438,11 @@ const MyOrders = () => {
             <ShoppingBagIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No Orders Found</h3>
             <p className="text-gray-500 mb-4">
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Try adjusting your search or filter criteria.' 
+              {searchTerm || statusFilter !== 'all' || activeTab !== 'all'
+                ? 'Try adjusting your search, filter criteria, or selecting a different tab.'
                 : 'You haven\'t placed any orders yet.'}
             </p>
-            {!searchTerm && statusFilter === 'all' && (
+            {!searchTerm && statusFilter === 'all' && activeTab === 'all' && (
               <button
                 onClick={() => navigate('/schedule-pickup')}
                 className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-6 rounded-lg font-medium transition-colors"
@@ -310,6 +454,11 @@ const MyOrders = () => {
         ) : (
           <div className="space-y-4">
             {filteredOrders.map((order) => {
+              // Skip orders without required data
+              if (!order._id || !order.orderNumber) {
+                return null;
+              }
+              
               const progress = getOrderProgress(order.status);
               
               return (
@@ -318,11 +467,11 @@ const MyOrders = () => {
                     {/* Order Header */}
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <h3 className="font-bold text-gray-900 text-lg">{order.orderNumber}</h3>
-                        <p className="text-sm text-gray-500">{new Date(order.orderDate || order.createdAt).toLocaleDateString()}</p>
+                        <h3 className="font-bold text-gray-900 text-lg">{order.orderNumber || 'Order #' + order._id.substring(0, 8)}</h3>
+                        <p className="text-sm text-gray-500">{order.orderDate || order.createdAt ? new Date(order.orderDate || order.createdAt).toLocaleDateString() : 'Date not available'}</p>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                        {order.status.replace(/-/g, ' ')}
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status || 'Pending')}`}>
+                        {(order.status || 'Pending').replace(/-/g, ' ')}
                       </div>
                     </div>
 
@@ -340,11 +489,11 @@ const MyOrders = () => {
                     <div className="grid grid-cols-3 gap-4 mb-4 text-sm">
                       <div>
                         <p className="text-gray-600">Items</p>
-                        <p className="font-semibold text-gray-900">{order.totalItems}</p>
+                        <p className="font-semibold text-gray-900">{order.totalItems || order.items?.length || 0}</p>
                       </div>
                       <div>
                         <p className="text-gray-600">Total</p>
-                        <p className="font-semibold text-gray-900">₹{order.totalAmount}</p>
+                        <p className="font-semibold text-gray-900">₹{order.totalAmount || 0}</p>
                       </div>
                       <div>
                         <p className="text-gray-600">Delivery</p>
@@ -411,17 +560,17 @@ const MyOrders = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Order ID:</span>
-                        <span className="font-medium text-gray-900">{selectedOrder.orderNumber}</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.orderNumber || 'Order #' + selectedOrder._id?.substring(0, 8)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Status:</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status)}`}>
-                          {selectedOrder.status.replace(/-/g, ' ')}
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedOrder.status || 'Pending')}`}>
+                          {(selectedOrder.status || 'Pending').replace(/-/g, ' ')}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Order Date:</span>
-                        <span className="font-medium text-gray-900">{new Date(selectedOrder.orderDate || selectedOrder.createdAt).toLocaleDateString()}</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.orderDate || selectedOrder.createdAt ? new Date(selectedOrder.orderDate || selectedOrder.createdAt).toLocaleDateString() : 'Date not available'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Pickup Date:</span>
@@ -439,19 +588,23 @@ const MyOrders = () => {
                     <div className="space-y-2 text-sm">
                       <div>
                         <span className="text-gray-600">Name:</span>
-                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo.name}</p>
+                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo?.name || 'Name not available'}</p>
                       </div>
                       <div>
                         <span className="text-gray-600">Address:</span>
-                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo.address.street}, {selectedOrder.customerInfo.address.city}, {selectedOrder.customerInfo.address.state} {selectedOrder.customerInfo.address.zipCode}</p>
+                        <p className="font-medium text-gray-900">
+                          {selectedOrder.customerInfo?.address ? 
+                            `${selectedOrder.customerInfo.address.street || ''}, ${selectedOrder.customerInfo.address.city || ''}, ${selectedOrder.customerInfo.address.state || ''} ${selectedOrder.customerInfo.address.zipCode || ''}` : 
+                            'Address not available'}
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-600">Phone:</span>
-                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo.phone}</p>
+                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo?.phone || 'Phone not available'}</p>
                       </div>
                       <div>
                         <span className="text-gray-600">Email:</span>
-                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo.email}</p>
+                        <p className="font-medium text-gray-900">{selectedOrder.customerInfo?.email || 'Email not available'}</p>
                       </div>
                     </div>
                   </div>
@@ -462,15 +615,19 @@ const MyOrders = () => {
                   <div className="bg-gray-50 rounded-lg p-4 border">
                     <h4 className="font-semibold text-gray-900 mb-3">Order Items</h4>
                     <div className="space-y-2">
-                      {selectedOrder.items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0 text-sm">
-                          <div>
-                            <p className="font-medium text-gray-900">{item.name}</p>
-                            <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
+                      {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                        selectedOrder.items.map((item, index) => (
+                          <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0 text-sm">
+                            <div>
+                              <p className="font-medium text-gray-900">{item.name || 'Item'}</p>
+                              <p className="text-xs text-gray-600">Service: {item.service || 'N/A'} | Qty: {item.quantity || 0}</p>
+                            </div>
+                            <span className="font-semibold text-gray-900">₹{item.price ? item.price.toFixed(2) : '0.00'}</span>
                           </div>
-                          <span className="font-semibold text-gray-900">₹{item.price.toFixed(2)}</span>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-center py-4">No items found for this order</p>
+                      )}
                     </div>
                   </div>
 
@@ -478,16 +635,16 @@ const MyOrders = () => {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-700">Total Items:</span>
-                        <span className="font-medium text-gray-900">{selectedOrder.totalItems} items</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.totalItems || selectedOrder.items?.length || 0} items</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-700">Weight:</span>
-                        <span className="font-medium text-gray-900">{selectedOrder.weight}</span>
+                        <span className="font-medium text-gray-900">{selectedOrder.weight || 'Not specified'}</span>
                       </div>
                       <div className="border-t pt-2">
                         <div className="flex justify-between items-center">
                           <span className="text-base font-semibold text-gray-900">Total:</span>
-                          <span className="text-xl font-bold text-yellow-600">₹{selectedOrder.totalAmount}</span>
+                          <span className="text-xl font-bold text-yellow-600">₹{selectedOrder.totalAmount || 0}</span>
                         </div>
                       </div>
                     </div>
