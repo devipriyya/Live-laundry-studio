@@ -8,7 +8,14 @@ const bcrypt = require('bcryptjs');
 // Get user profile with order statistics
 router.get('/', protect, async (req, res) => {
   try {
+    console.log('Profile route - User from middleware:', req.user);
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    
     const user = await User.findById(req.user.id).select('-password');
+    console.log('Profile route - User from database:', user);
+    
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -42,9 +49,10 @@ router.get('/', protect, async (req, res) => {
       currentTier: getOrderTier(orderStats[0]?.totalSpent || 0)
     };
 
+    console.log('Profile route - Sending user data:', userData);
     res.json(userData);
   } catch (error) {
-    console.error(error);
+    console.error('Profile route - Error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -60,7 +68,14 @@ function getOrderTier(totalSpent) {
 // Update user profile
 router.put('/', protect, async (req, res) => {
   try {
-    const { name, email, phone, addresses, preferences, profilePicture } = req.body;
+    console.log('Profile update route - User from middleware:', req.user);
+    console.log('Profile update route - Request body:', req.body);
+    
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+    
+    const { name, email, phone, dateOfBirth, gender, bio, profilePicture, addresses, preferences } = req.body;
     
     // Check if email is already taken by another user
     if (email) {
@@ -74,12 +89,15 @@ router.put('/', protect, async (req, res) => {
     }
 
     const updateData = {};
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
-    if (phone) updateData.phone = phone;
-    if (addresses) updateData.addresses = addresses;
-    if (preferences) updateData.preferences = preferences;
-    if (profilePicture) updateData.profilePicture = profilePicture;
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
+    if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
+    if (gender !== undefined) updateData.gender = gender;
+    if (bio !== undefined) updateData.bio = bio;
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+    if (addresses !== undefined) updateData.addresses = addresses;
+    if (preferences !== undefined) updateData.preferences = preferences;
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
@@ -93,8 +111,8 @@ router.put('/', protect, async (req, res) => {
 
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Profile update error:', error);
+    res.status(500).json({ message: 'Failed to save profile. Please try again.' });
   }
 });
 

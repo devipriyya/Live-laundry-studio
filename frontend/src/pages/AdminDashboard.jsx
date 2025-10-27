@@ -316,7 +316,6 @@ const AdminDashboard = () => {
     ]);
 
     setQuickActions([
-      { id: 1, title: 'Create New Order', icon: PlusIcon, color: 'blue', action: () => setActiveSection('orders') },
       { id: 2, title: 'Add Customer', icon: UserCircleIcon, color: 'green', action: () => setActiveSection('customers') },
       { id: 3, title: 'Schedule Pickup', icon: CalendarDaysIcon, color: 'purple', action: () => setActiveSection('delivery') },
       { id: 4, title: 'Generate Report', icon: DocumentTextIcon, color: 'orange', action: () => setActiveSection('reports') },

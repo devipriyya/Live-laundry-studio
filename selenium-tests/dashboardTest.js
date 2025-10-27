@@ -78,6 +78,8 @@ async function runDashboardTests() {
         throw new Error('Dashboard content not loaded properly');
       }
     } catch (error) {
+      // Define startTime here as well to avoid reference error
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Dashboard Page Load', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 1 FAILED: Dashboard Page Load -', error.message);
@@ -124,6 +126,7 @@ async function runDashboardTests() {
         }
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Navigation to My Orders Page', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 2 FAILED: Navigation to My Orders Page -', error.message);
@@ -178,6 +181,7 @@ async function runDashboardTests() {
         }
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Profile Navigation', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 3 FAILED: Profile Navigation -', error.message);
@@ -198,14 +202,11 @@ async function runDashboardTests() {
       
       // Try to find and click on Logout button
       try {
-        const logoutButton = await driver.findElement(By.css('button[type="button"], a[href*="logout"], button[href*="logout"]'));
-        const buttonText = await logoutButton.getText();
-        if (buttonText.toLowerCase().includes('logout') || buttonText.toLowerCase().includes('sign out')) {
-          await logoutButton.click();
-        }
+        const logoutButton = await driver.findElement(By.css('button[type="button"], a[href*="logout"]'));
+        await logoutButton.click();
       } catch (e) {
-        // Alternative approach - look for any button with logout text
-        const buttons = await driver.findElements(By.css('button'));
+        // Alternative approach - look for text containing "logout"
+        const buttons = await driver.findElements(By.css('button, a'));
         for (let button of buttons) {
           const text = await button.getText();
           if (text.toLowerCase().includes('logout') || text.toLowerCase().includes('sign out')) {
@@ -215,27 +216,19 @@ async function runDashboardTests() {
         }
       }
       
-      // Wait a bit for navigation
-      await driver.sleep(3000);
+      // Wait for navigation to login page
+      await driver.wait(until.urlContains('/login'), 10000);
       
       const currentUrl = await driver.getCurrentUrl();
-      // Check if we're back on login page or home page
-      if (currentUrl.includes('login') || currentUrl.includes('signin')) {
+      if (currentUrl.includes('/login')) {
         const endTime = Date.now();
         report.addTestResult('Logout Functionality', 'PASSED', null, endTime - startTime);
         console.log('✓ Test 4 PASSED: Logout Functionality');
       } else {
-        // Alternative check - see if login form is present
-        const loginElements = await driver.findElements(By.css('input[name="email"], input[name="password"]'));
-        if (loginElements.length >= 2) {
-          const endTime = Date.now();
-          report.addTestResult('Logout Functionality', 'PASSED', null, endTime - startTime);
-          console.log('✓ Test 4 PASSED: Logout Functionality');
-        } else {
-          throw new Error('Logout functionality failed');
-        }
+        throw new Error('Logout failed - not redirected to login page');
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Logout Functionality', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 4 FAILED: Logout Functionality -', error.message);

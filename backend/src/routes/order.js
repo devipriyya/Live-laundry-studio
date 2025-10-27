@@ -4,6 +4,7 @@ const PDFDocument = require('pdfkit');
 const Order = require('../models/Order');
 const { protect, optionalAuth } = require('../middleware/auth');
 const { isAdmin, isDeliveryBoy, isAdminOrDeliveryBoy } = require('../middleware/role');
+const { sendOrderStatusUpdateEmail } = require('../utils/emailService');
 
 // Admin: Get order trends (last 7 days)
 router.get('/analytics/orders', protect, isAdmin, async (req, res) => {
@@ -225,6 +226,7 @@ router.post('/', optionalAuth, async (req, res) => {
       ...req.body,
       userId: authenticatedUserId || null,
       orderNumber,
+      paymentStatus: req.body.paymentId ? 'paid' : 'pending', // Set payment status based on payment ID
       statusHistory: [{
         status: 'order-placed',
         timestamp: new Date(),
@@ -305,7 +307,8 @@ router.post('/dry-cleaning', optionalAuth, async (req, res) => {
       timeSlot: pickupTime,
       specialInstructions: pickupAddress.instructions || '',
       status: 'order-placed',
-      paymentStatus: 'pending',
+      paymentStatus: 'paid', // Set to 'paid' since payment was successful
+      paymentId: req.body.paymentId, // Include payment ID from frontend
       statusHistory: [{
         status: 'order-placed',
         timestamp: new Date(),
@@ -380,7 +383,8 @@ router.post('/dry-cleaning-clothes', optionalAuth, async (req, res) => {
       timeSlot: pickupTime,
       specialInstructions: pickupAddress.instructions || '',
       status: 'order-placed',
-      paymentStatus: 'pending',
+      paymentStatus: 'paid', // Set to 'paid' since payment was successful
+      paymentId: req.body.paymentId, // Include payment ID from frontend
       statusHistory: [{
         status: 'order-placed',
         timestamp: new Date(),
@@ -630,6 +634,9 @@ router.patch('/:id/status', protect, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this order' });
     }
     
+    // Store old status for email notification
+    const oldStatus = order.status;
+    
     // Update status if provided
     if (status) {
       order.status = status;
@@ -648,6 +655,25 @@ router.patch('/:id/status', protect, async (req, res) => {
     
     await order.save();
     
+    // Send email notification if status changed
+    if (status && status !== oldStatus) {
+      // Get the service name from the first item or default to 'Laundry Service'
+      const serviceName = order.items && order.items.length > 0 ? order.items[0].name : 'Laundry Service';
+      
+      // Send email notification
+      try {
+        const emailResult = await sendOrderStatusUpdateEmail(order, status, serviceName);
+        if (emailResult) {
+          console.log(`Email notification sent for order ${order.orderNumber}`);
+        } else {
+          console.warn(`Failed to send email notification for order ${order.orderNumber}`);
+        }
+      } catch (emailError) {
+        console.error(`Error sending email notification for order ${order.orderNumber}:`, emailError);
+        // Don't fail the request if email sending fails
+      }
+    }
+    
     // Populate the response
     await order.populate('userId', 'name email');
     await order.populate('serviceId');
@@ -665,6 +691,9 @@ router.patch('/bulk/status', protect, isAdmin, async (req, res) => {
   try {
     const { orderIds, status, note } = req.body;
     
+    // Find orders to get customer info before updating
+    const orders = await Order.find({ _id: { $in: orderIds } });
+    
     const result = await Order.updateMany(
       { _id: { $in: orderIds } },
       { 
@@ -680,9 +709,38 @@ router.patch('/bulk/status', protect, isAdmin, async (req, res) => {
       }
     );
     
+    // Send email notifications for each order
+    let emailSuccessCount = 0;
+    let emailFailCount = 0;
+    
+    for (const order of orders) {
+      // Get the service name from the first item or default to 'Laundry Service'
+      const serviceName = order.items && order.items.length > 0 ? order.items[0].name : 'Laundry Service';
+      
+      // Send email notification
+      try {
+        const emailResult = await sendOrderStatusUpdateEmail(order, status, serviceName);
+        if (emailResult) {
+          emailSuccessCount++;
+          console.log(`Email notification sent for order ${order.orderNumber}`);
+        } else {
+          emailFailCount++;
+          console.warn(`Failed to send email notification for order ${order.orderNumber}`);
+        }
+      } catch (emailError) {
+        emailFailCount++;
+        console.error(`Error sending email notification for order ${order.orderNumber}:`, emailError);
+        // Continue with other emails even if one fails
+      }
+    }
+    
+    console.log(`Bulk email notifications: ${emailSuccessCount} sent, ${emailFailCount} failed`);
+    
     res.json({ 
-      message: `Updated ${result.modifiedCount} orders`,
-      modifiedCount: result.modifiedCount 
+      message: `Updated ${result.modifiedCount} orders. Email notifications: ${emailSuccessCount} sent, ${emailFailCount} failed`,
+      modifiedCount: result.modifiedCount,
+      emailSuccessCount,
+      emailFailCount
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -740,6 +798,22 @@ router.patch('/:id/cancel', async (req, res) => {
     }
 
     await order.save();
+    
+    // Send email notification for cancellation
+    try {
+      // Get the service name from the first item or default to 'Laundry Service'
+      const serviceName = order.items && order.items.length > 0 ? order.items[0].name : 'Laundry Service';
+      const emailResult = await sendOrderStatusUpdateEmail(order, 'cancelled', serviceName);
+      if (emailResult) {
+        console.log(`Cancellation email notification sent for order ${order.orderNumber}`);
+      } else {
+        console.warn(`Failed to send cancellation email notification for order ${order.orderNumber}`);
+      }
+    } catch (emailError) {
+      console.error(`Error sending cancellation email notification for order ${order.orderNumber}:`, emailError);
+      // Don't fail the request if email sending fails
+    }
+    
     res.json({ 
       message: 'Order cancelled successfully', 
       order 
@@ -910,6 +984,9 @@ router.patch('/:id/delivery-status', protect, isDeliveryBoy, async (req, res) =>
       return res.status(403).json({ message: 'Not authorized to update this order' });
     }
     
+    // Store old status for email notification
+    const oldStatus = order.status;
+    
     // Allowed status transitions for delivery boy
     const allowedStatuses = [
       'out-for-pickup',
@@ -933,6 +1010,21 @@ router.patch('/:id/delivery-status', protect, isDeliveryBoy, async (req, res) =>
     });
     
     await order.save();
+    
+    // Send email notification if status changed
+    if (status && status !== oldStatus) {
+      // Get the service name from the first item or default to 'Laundry Service'
+      const serviceName = order.items && order.items.length > 0 ? order.items[0].name : 'Laundry Service';
+      
+      // Send email notification
+      try {
+        await sendOrderStatusUpdateEmail(order, status, serviceName);
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't fail the request if email sending fails
+      }
+    }
+    
     await order.populate('userId', 'name email');
     await order.populate('serviceId');
     await order.populate('deliveryBoyId', 'name email');

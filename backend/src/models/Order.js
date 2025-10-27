@@ -97,8 +97,7 @@ const OrderSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-// Add index for faster queries
-OrderSchema.index({ orderNumber: 1 });
+// Add index for faster queries (removed duplicate orderNumber index)
 OrderSchema.index({ userId: 1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ createdAt: -1 });

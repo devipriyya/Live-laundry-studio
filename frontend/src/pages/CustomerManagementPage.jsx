@@ -4,7 +4,7 @@ import CustomerManagement from '../components/CustomerManagement';
 const CustomerManagementPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <CustomerManagement />
+      <CustomerManagement isAdminView={true} />
     </div>
   );
 };

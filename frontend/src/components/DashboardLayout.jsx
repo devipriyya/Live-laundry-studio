@@ -24,6 +24,9 @@ import {
   BuildingStorefrontIcon,
   InformationCircleIcon,
   XMarkIcon,
+  LightBulbIcon, // Add this import
+  HeartIcon,
+  ShoppingCartIcon,
 } from '@heroicons/react/24/outline';
 
 const DashboardLayout = () => {
@@ -61,6 +64,7 @@ const DashboardLayout = () => {
     { id: 'quality', name: 'Quality Approval', icon: CheckCircleIcon, path: '/dashboard/quality' },
     { id: 'rate', name: 'Get Rate Card', icon: DocumentTextIcon, path: '/dashboard/rate' },
     { id: 'products', name: 'WashLab Products', icon: TagIcon, path: '/dashboard/products', badge: 'NEW' },
+    { id: 'recommendations', name: 'Recommendations', icon: LightBulbIcon, path: '/dashboard/recommendations', badge: 'AI' },
     { id: 'store', name: 'Store Locator', icon: BuildingStorefrontIcon, path: '/dashboard/store' },
     { id: 'legal', name: 'Legal Info', icon: InformationCircleIcon, path: '/dashboard/legal', hasSubmenu: true },
     { id: 'notifications', name: 'Notifications', icon: BellIcon, path: '/dashboard/notifications' },
@@ -102,8 +106,18 @@ const DashboardLayout = () => {
               <p className="text-xs text-gray-500">{user?.email || ''}</p>
             </div>
             
-            <button className="p-2 text-gray-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all duration-200 relative">
-              <BellIcon className="h-6 w-6" />
+            <button 
+              onClick={() => navigate('/dashboard/wishlist')}
+              className="p-2 text-gray-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all duration-200 relative"
+            >
+              <HeartIcon className="h-6 w-6" />
+            </button>
+            
+            <button 
+              onClick={() => navigate('/dashboard/cart')}
+              className="p-2 text-gray-600 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all duration-200 relative"
+            >
+              <ShoppingCartIcon className="h-6 w-6" />
               <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
             </button>
             

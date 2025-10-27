@@ -57,6 +57,8 @@ async function runLoginTests() {
         console.log('✓ Test 1 PASSED: Successful Login');
       }
     } catch (error) {
+      // Define startTime here as well to avoid reference error
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Successful Login', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 1 FAILED: Successful Login -', error.message);
@@ -92,6 +94,7 @@ async function runLoginTests() {
         throw new Error('Error message not displayed');
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Invalid Credentials', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 2 FAILED: Invalid Credentials -', error.message);
@@ -123,6 +126,7 @@ async function runLoginTests() {
         throw new Error('Error messages not displayed');
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Empty Form Submission', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 3 FAILED: Empty Form Submission -', error.message);
@@ -154,6 +158,7 @@ async function runLoginTests() {
         throw new Error('Navigation to registration page failed');
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Navigation to Registration Page', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 4 FAILED: Navigation to Registration Page -', error.message);

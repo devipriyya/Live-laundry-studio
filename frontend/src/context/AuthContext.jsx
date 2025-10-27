@@ -60,17 +60,60 @@ export const AuthProvider = ({ children }) => {
           role: userRole,
         };
         
-        // If this is an admin or delivery user, ensure we have a valid token
-        if (needsToken) {
-          const currentToken = localStorage.getItem('token');
-          console.log('AuthContext: Current token:', currentToken);
-          if (!currentToken) {
-            console.log('AuthContext: No token found for privileged user, calling demo login');
-            // Call the appropriate demo login function based on role
-            if (userRole === 'admin') {
-              await adminDemoLogin();
-            } else if (userRole === 'deliveryBoy') {
-              await deliveryBoyDemoLogin();
+        // For all users (including regular customers), ensure we have a valid token for API calls
+        let currentToken = localStorage.getItem('token');
+        console.log('AuthContext: Current token in localStorage:', currentToken);
+        console.log('AuthContext: Current token length:', currentToken ? currentToken.length : 0);
+        
+        if (!currentToken) {
+          console.log('AuthContext: No token found, attempting to exchange Firebase credentials for JWT');
+          try {
+            // Exchange Firebase user for backend JWT token
+            const response = await api.post('/auth/firebase-login', {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0]
+            });
+            console.log('AuthContext: Firebase login response:', response.data);
+            if (response.data.token) {
+              currentToken = response.data.token;
+              console.log('AuthContext: Setting token in localStorage:', currentToken);
+              console.log('AuthContext: Token to set length:', currentToken.length);
+              localStorage.setItem('token', currentToken);
+              // Dispatch a custom event to notify other components that the token has been set
+              window.dispatchEvent(new CustomEvent('tokenReady', { detail: { token: currentToken } }));
+            }
+          } catch (error) {
+            console.log('AuthContext: Firebase login failed, using demo token:', error);
+            // Fallback to demo token
+            currentToken = 'demo-jwt-token-' + Date.now();
+            console.log('AuthContext: Setting demo token in localStorage:', currentToken);
+            localStorage.setItem('token', currentToken);
+            // Dispatch a custom event to notify other components that the token has been set
+            window.dispatchEvent(new CustomEvent('tokenReady', { detail: { token: currentToken } }));
+          }
+        } else {
+          // If we have a token, verify it's still valid
+          try {
+            // We could verify the token here, but for now we'll just log it
+            console.log('AuthContext: Using existing token');
+          } catch (error) {
+            console.log('AuthContext: Existing token invalid, removing it');
+            localStorage.removeItem('token');
+            // Try to get a new token
+            try {
+              const response = await api.post('/auth/firebase-login', {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0]
+              });
+              if (response.data.token) {
+                currentToken = response.data.token;
+                localStorage.setItem('token', currentToken);
+                window.dispatchEvent(new CustomEvent('tokenReady', { detail: { token: currentToken } }));
+              }
+            } catch (refreshError) {
+              console.log('AuthContext: Failed to refresh token:', refreshError);
             }
           }
         }

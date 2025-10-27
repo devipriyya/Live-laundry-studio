@@ -65,6 +65,8 @@ async function runRegisterTests() {
         console.log('✓ Test 1 PASSED: Successful Registration');
       }
     } catch (error) {
+      // Define startTime here as well to avoid reference error
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Successful Registration', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 1 FAILED: Successful Registration -', error.message);
@@ -102,6 +104,7 @@ async function runRegisterTests() {
         throw new Error('Password mismatch error not displayed correctly');
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Password Mismatch', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 2 FAILED: Password Mismatch -', error.message);
@@ -139,6 +142,7 @@ async function runRegisterTests() {
         throw new Error('Weak password error not displayed correctly');
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Weak Password', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 3 FAILED: Weak Password -', error.message);
@@ -170,6 +174,7 @@ async function runRegisterTests() {
         throw new Error('Error messages not displayed');
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Empty Form Submission', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 4 FAILED: Empty Form Submission -', error.message);
@@ -201,6 +206,7 @@ async function runRegisterTests() {
         throw new Error('Navigation to login page failed');
       }
     } catch (error) {
+      const startTime = Date.now();
       const endTime = Date.now();
       report.addTestResult('Navigation to Login Page', 'FAILED', error.message, endTime - startTime);
       console.log('✗ Test 5 FAILED: Navigation to Login Page -', error.message);

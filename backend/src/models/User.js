@@ -10,19 +10,28 @@ const UserSchema = new mongoose.Schema({
   role: { type: String, enum: ['customer','admin','delivery'], default: 'customer' },
   isBlocked: { type: Boolean, default: false },
   firebaseUid: { type: String, unique: true, sparse: true }, // Add firebaseUid field
+  dateOfBirth: { type: Date },
+  gender: { type: String, enum: ['male', 'female', 'other', 'prefer-not-to-say'], default: 'prefer-not-to-say' },
+  bio: { type: String },
   addresses: [{
     type: { type: String, enum: ['Home', 'Office', 'Other'], required: true },
-    address: { type: String, required: true },
+    name: { type: String, required: true },
+    street: { type: String, required: true },
     city: { type: String, required: true },
     state: { type: String, required: true },
     zipCode: { type: String, required: true },
     isDefault: { type: Boolean, default: false }
   }],
   preferences: {
+    fabricCare: { type: String, enum: ['gentle', 'standard', 'intensive'], default: 'gentle' },
+    detergentType: { type: String, enum: ['eco-friendly', 'hypoallergenic', 'standard', 'premium'], default: 'eco-friendly' },
+    starchLevel: { type: String, enum: ['none', 'light', 'medium', 'heavy'], default: 'light' },
+    specialInstructions: { type: String },
     notifications: {
       email: { type: Boolean, default: true },
       sms: { type: Boolean, default: true },
-      push: { type: Boolean, default: true }
+      orderUpdates: { type: Boolean, default: true },
+      promotions: { type: Boolean, default: false }
     },
     language: { type: String, default: 'en' },
     currency: { type: String, default: 'USD' },

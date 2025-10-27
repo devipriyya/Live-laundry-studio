@@ -3,6 +3,8 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import orderService from '../services/orderService';
 import notificationService from '../services/notificationService';
+import ServiceRecommendations from '../components/ServiceRecommendations';
+import CustomerSegment from '../components/CustomerSegment';
 import {
   UserCircleIcon,
   ClockIcon,
@@ -41,6 +43,7 @@ import {
   DocumentTextIcon,
   QuestionMarkCircleIcon,
   XMarkIcon,
+  LightBulbIcon,
 } from '@heroicons/react/24/outline';
 
 const Dashboard = () => {
@@ -224,6 +227,7 @@ const Dashboard = () => {
     { id: 'quality', name: 'Quality Approval', icon: CheckCircleIcon },
     { id: 'rate', name: 'Get Rate Card', icon: DocumentTextIcon },
     { id: 'products', name: 'WashLab Products', icon: TagIcon, badge: 'NEW' },
+    { id: 'recommendations', name: 'Recommendations', icon: LightBulbIcon, badge: 'AI' },
     { id: 'store', name: 'Store Locator', icon: BuildingStorefrontIcon },
     { id: 'legal', name: 'Legal Info', icon: InformationCircleIcon, hasSubmenu: true },
     { id: 'notifications', name: 'Notifications', icon: BellIcon },
@@ -257,6 +261,8 @@ const Dashboard = () => {
       navigate('/schedule-pickup');
     } else if (itemId === 'notifications') {
       navigate('/notifications');
+    } else if (itemId === 'recommendations') {
+      navigate('/dashboard/recommendations');
     }
   };
 
@@ -343,6 +349,41 @@ const Dashboard = () => {
   const handleViewAllNotifications = () => {
     setShowNotifications(false);
     navigate('/notifications');
+  };
+
+  // Mock order history for demonstration - in a real app, this would come from an API
+  const mockOrderHistory = [
+    {
+      userOrderCount: 5,
+      totalAmount: 1200,
+      orderDate: '2023-05-15T10:30:00Z',
+      items: [{ service: 'washAndPress' }]
+    },
+    {
+      userOrderCount: 5,
+      totalAmount: 1450,
+      orderDate: '2023-05-10T11:15:00Z',
+      items: [{ service: 'washAndPress' }]
+    },
+    {
+      userOrderCount: 5,
+      totalAmount: 1100,
+      orderDate: '2023-05-05T09:45:00Z',
+      items: [{ service: 'washAndPress' }]
+    }
+  ];
+
+  // Mock customer data for segmentation
+  const mockCustomerData = {
+    orderFrequency: 15,
+    avgOrderValue: 1250,
+    daysSinceLastOrder: 5,
+    serviceVariety: 3,
+    satisfactionScore: 4.8,
+    referralCount: 2,
+    discountUsage: 4,
+    complaintCount: 0,
+    segment: 'premium'
   };
 
   return (
@@ -715,6 +756,16 @@ const Dashboard = () => {
 
               {/* Services Overview */}
               <div>
+                {/* ML: Service Recommendations */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                  <ServiceRecommendations userOrderHistory={mockOrderHistory} />
+                </div>
+
+                {/* ML: Customer Segment */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                  <CustomerSegment customerData={mockCustomerData} />
+                </div>
+
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">Our Services</h2>
                   

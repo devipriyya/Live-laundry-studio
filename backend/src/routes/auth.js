@@ -15,7 +15,18 @@ router.post('/register', async (req, res) => {
     let user = await User.findOne({ email });
     if (user) {
       console.log('User already exists:', user._id);
-      return res.status(400).json({ message: 'User exists' });
+      // If user exists but doesn't have a Firebase UID, and we're trying to register with one,
+      // update the user with the Firebase UID
+      if (firebaseUid && !user.firebaseUid) {
+        console.log('Updating existing user with Firebase UID:', firebaseUid);
+        user.firebaseUid = firebaseUid;
+        await user.save();
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        return res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+      }
+      // If user exists and we're not providing a Firebase UID, or user already has one,
+      // return appropriate message
+      return res.status(400).json({ message: 'User already exists. Please login instead.' });
     }
 
     // Create user with Firebase UID if provided
@@ -51,6 +62,51 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (err) { res.status(500).json({ message: 'Server error' }); }
+});
+
+// New route for Firebase login
+router.post('/firebase-login', async (req, res) => {
+  const { uid, email, name } = req.body;
+  try {
+    // Check if user exists with Firebase UID
+    let user = await User.findOne({ firebaseUid: uid });
+    
+    if (!user) {
+      // Check if user exists with email
+      user = await User.findOne({ email });
+      if (user) {
+        // Update existing user with Firebase UID
+        user.firebaseUid = uid;
+        await user.save();
+      } else {
+        // Create new user
+        user = new User({
+          name: name || email?.split('@')[0],
+          email: email,
+          firebaseUid: uid,
+          role: 'customer'
+        });
+        await user.save();
+      }
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    console.log('Firebase login - Generated token:', token);
+    console.log('Firebase login - User ID:', user._id);
+    res.json({ 
+      token, 
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role 
+      } 
+    });
+  } catch (err) {
+    console.error('Firebase login error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 // Get users by role (admin only)

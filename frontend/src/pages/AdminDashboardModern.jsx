@@ -100,7 +100,6 @@ const AdminDashboardModern = () => {
   const [recentActivities, setRecentActivities] = useState([]);
 
   const quickActions = [
-    { id: 1, title: 'New Order', description: 'Create a new order', icon: PlusIcon, color: 'blue', action: () => setActiveSection('orders') },
     { id: 2, title: 'Add Customer', description: 'Register new customer', icon: UserCircleIcon, color: 'purple', action: () => setActiveSection('customers') },
     { id: 3, title: 'Schedule Pickup', description: 'Arrange delivery', icon: CalendarDaysIcon, color: 'orange', action: () => setActiveSection('delivery') },
     { id: 4, title: 'Generate Report', description: 'View analytics', icon: DocumentChartBarIcon, color: 'teal', action: () => setActiveSection('reports') },
@@ -307,7 +306,7 @@ const AdminDashboardModern = () => {
       case 'orders':
         return <AdminOrderManagement />;
       case 'customers':
-        return <CustomerManagement />;
+        return <CustomerManagement isAdminView={true} />;
       case 'staff':
         return <StaffManagement />;
       case 'inventory':

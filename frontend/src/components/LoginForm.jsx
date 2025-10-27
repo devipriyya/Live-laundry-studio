@@ -80,6 +80,29 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       );
       const user = userCredential.user;
 
+      // Exchange Firebase token for backend JWT token
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/firebase-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName || user.email?.split('@')[0]
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('token', data.token);
+        }
+      } catch (tokenError) {
+        console.error('Failed to exchange Firebase token for JWT:', tokenError);
+        // Continue with login even if token exchange fails
+      }
+
       if (user.email === "admin@gmail.com") {
         navigate("/admin-dashboard");
       } else {
@@ -124,6 +147,29 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
       const userCredential = await signInWithPopup(auth, googleProvider);
       const user = userCredential.user;
+
+      // Exchange Firebase token for backend JWT token
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/firebase-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            email: user.email,
+            name: user.displayName || user.email?.split('@')[0]
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('token', data.token);
+        }
+      } catch (tokenError) {
+        console.error('Failed to exchange Firebase token for JWT:', tokenError);
+        // Continue with login even if token exchange fails
+      }
 
       if (user.email === "admin@gmail.com") {
         navigate("/admin-dashboard");

@@ -156,22 +156,35 @@ const Register = () => {
         console.error("Backend registration failed:", backendError);
         console.log("Step 3: Cleaning up Firebase user after backend failure");
 
-        try {
-          console.log("Attempting to delete Firebase user:", firebaseUser?.uid);
-          if (firebaseUser) {
-            await firebaseUser.delete();
-            console.log("Firebase user deleted successfully");
-          } else {
-            console.log("No Firebase user to delete");
+        // Check if it's a "User already exists" error
+        if (backendError.response?.data?.message?.includes("User already exists")) {
+          // In this case, we don't need to delete the Firebase user
+          // The user should just login instead
+          console.log("User already exists in backend. Redirecting to login.");
+          setErrors((prev) => ({ 
+            ...prev, 
+            general: "An account with this email already exists. Please login instead.",
+            success: ""
+          }));
+        } else {
+          // For other errors, try to clean up the Firebase user
+          try {
+            console.log("Attempting to delete Firebase user:", firebaseUser?.uid);
+            if (firebaseUser) {
+              await firebaseUser.delete();
+              console.log("Firebase user deleted successfully");
+            } else {
+              console.log("No Firebase user to delete");
+            }
+          } catch (deleteError) {
+            console.error("Failed to delete Firebase user:", deleteError);
+            console.warn("User exists in Firebase but not in MongoDB - cleanup failed");
           }
-        } catch (deleteError) {
-          console.error("Failed to delete Firebase user:", deleteError);
-          console.warn("User exists in Firebase but not in MongoDB - cleanup failed");
-        }
 
-        const errorMessage = backendError.response?.data?.message || "Registration failed. Please try again.";
-        console.log("Throwing error with message:", errorMessage);
-        throw new Error(errorMessage);
+          const errorMessage = backendError.response?.data?.message || "Registration failed. Please try again.";
+          console.log("Throwing error with message:", errorMessage);
+          throw new Error(errorMessage);
+        }
       }
     } catch (error) {
       console.error("Registration process error:", error);
@@ -180,7 +193,7 @@ const Register = () => {
 
       switch (error.code) {
         case "auth/email-already-in-use":
-          errorMessage = "An account with this email already exists";
+          errorMessage = "An account with this email already exists. Please login instead.";
           break;
         case "auth/invalid-email":
           errorMessage = "Invalid email address";

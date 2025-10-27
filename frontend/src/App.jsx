@@ -17,7 +17,10 @@ const DashboardOrders = React.lazy(() => import('./pages/dashboard/DashboardOrde
 const DashboardPayment = React.lazy(() => import('./pages/dashboard/DashboardPayment'));
 const DashboardQuality = React.lazy(() => import('./pages/dashboard/DashboardQuality'));
 const DashboardRate = React.lazy(() => import('./pages/dashboard/DashboardRate'));
-const DashboardProducts = React.lazy(() => import('./pages/dashboard/DashboardProducts'));
+const DashboardProducts = React.lazy(() => import('./pages/dashboard/DashboardProductsEnhanced'));
+const DashboardCart = React.lazy(() => import('./pages/dashboard/DashboardCart'));
+const DashboardWishlist = React.lazy(() => import('./pages/dashboard/DashboardWishlist'));
+const DashboardCheckout = React.lazy(() => import('./pages/dashboard/DashboardCheckout'));
 const DashboardStoreNew = React.lazy(() => import('./pages/dashboard/DashboardStoreNew'));
 const DashboardLegal = React.lazy(() => import('./pages/dashboard/DashboardLegal'));
 const DashboardAbout = React.lazy(() => import('./pages/dashboard/DashboardAbout'));
@@ -26,6 +29,7 @@ const DashboardShoeCleaning = React.lazy(() => import('./pages/dashboard/Dashboa
 const DashboardStainRemoval = React.lazy(() => import('./pages/dashboard/DashboardStainRemoval'));
 const DashboardSteamIroning = React.lazy(() => import('./pages/dashboard/DashboardSteamIroning'));
 const DashboardDryCleaning = React.lazy(() => import('./pages/dashboard/DashboardDryCleaning'));
+const DashboardRecommendations = React.lazy(() => import('./pages/dashboard/DashboardRecommendations'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const AdminDashboardModern = React.lazy(() => import('./pages/AdminDashboardModern'));
 const AdminOrderManagement = React.lazy(() => import('./pages/AdminOrderManagement'));
@@ -62,6 +66,7 @@ const NotificationTest = React.lazy(() => import('./NotificationTest'));
 const NotificationAPITest = React.lazy(() => import('./NotificationAPITest'));
 const TestAnalytics = React.lazy(() => import('./TestAnalytics'));
 const AuthTest = React.lazy(() => import('./AuthTest'));
+// const TestTokenFlow = React.lazy(() => import('./TestTokenFlow'));
 const EnhancedReportsAnalytics = React.lazy(() => import('./pages/EnhancedReportsAnalytics'));
 const PaymentManagementPage = React.lazy(() => import('./pages/PaymentManagementPage'));
 const EnhancedPaymentManagement = React.lazy(() => import('./components/EnhancedPaymentManagement'));
@@ -122,6 +127,7 @@ const AppRoutes = () => {
         <Route path="/notification-api-test" element={<NotificationAPITest />} />
         <Route path="/test-analytics" element={<TestAnalytics />} />
         <Route path="/auth-test" element={<AuthTest />} />
+        {/* <Route path="/test-token-flow" element={<TestTokenFlow />} /> */}
         <Route path="/register" element={<Register />} />
 
         {/* Enhanced Reports & Analytics */}
@@ -164,10 +170,20 @@ const AppRoutes = () => {
           <Route path="quality" element={<DashboardQuality />} />
           <Route path="rate" element={<DashboardRate />} />
           <Route path="products" element={<DashboardProducts />} />
+          <Route path="cart" element={<DashboardCart />} />
+          <Route path="wishlist" element={<DashboardWishlist />} />
+          <Route path="checkout" element={<DashboardCheckout />} />
           <Route path="store" element={<DashboardStoreNew />} />
           <Route path="legal" element={<DashboardLegal />} />
           <Route path="notifications" element={<DashboardNotifications />} />
+          <Route path="recommendations" element={<DashboardRecommendations />} />
         </Route>
+
+        {/* Redirect old dashboard route to new dashboard */}
+        <Route 
+          path="/dashboard-old" 
+          element={<Navigate to="/dashboard/home" replace />} 
+        />
 
         {/* User Profile Page - accessible to all authenticated users */}
         <Route 

@@ -101,9 +101,34 @@ const Profile = () => {
 
   // Load profile data on mount with better error handling
   useEffect(() => {
+    let tokenReadyListener;
+    
     const fetchProfileData = async () => {
+      // Check if we have a token before proceeding
+      const token = localStorage.getItem('token');
+      console.log('Profile: Current token in localStorage:', token);
+      
+      if (!token) {
+        console.log('Profile: No token found, waiting for authentication');
+        // Wait a bit and try again, or redirect to login
+        setTimeout(() => {
+          const retryToken = localStorage.getItem('token');
+          console.log('Profile: Token after waiting:', retryToken);
+          if (!retryToken) {
+            console.log('Profile: Still no token after waiting, redirecting to login');
+            navigate('/');
+          } else {
+            // Token was set, try fetching profile data again
+            console.log('Profile: Token found after waiting, fetching profile data');
+            fetchProfileData();
+          }
+        }, 2000);
+        return;
+      }
+      
       if (!user) {
         // If no user, redirect to login
+        console.log('Profile: No user found, redirecting to login');
         navigate('/');
         return;
       }
@@ -113,10 +138,11 @@ const Profile = () => {
         setError(null);
         
         // Fetch user profile from backend
+        console.log('Profile: Making API request to /profile');
         const response = await api.get('/profile');
         const userData = response.data;
         
-        console.log('Fetched user profile:', userData);
+        console.log('Profile: Fetched user profile:', userData);
         
         // Set profile data
         setProfileData({
@@ -162,7 +188,7 @@ const Profile = () => {
           setStats(userData.stats);
         }
       } catch (err) {
-        console.error('Error fetching profile data:', err);
+        console.error('Profile: Error fetching profile data:', err);
         setError('Failed to load profile data. Please try again.');
         
         // Fallback to user context data
@@ -180,7 +206,24 @@ const Profile = () => {
       }
     };
     
+    // Listen for tokenReady event
+    tokenReadyListener = () => {
+      console.log('Profile: Token is ready via event, fetching profile data');
+      fetchProfileData();
+    };
+    window.addEventListener('tokenReady', tokenReadyListener);
+    
+    // Initial fetch
+    console.log('Profile: Component mounted, fetching profile data');
     fetchProfileData();
+    
+    // Cleanup listener
+    return () => {
+      console.log('Profile: Cleaning up event listener');
+      if (tokenReadyListener) {
+        window.removeEventListener('tokenReady', tokenReadyListener);
+      }
+    };
   }, [user, navigate]);
 
   const loyaltyRewards = [
@@ -400,6 +443,14 @@ const Profile = () => {
     const validationErrors = validateProfileData(profileData);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      return;
+    }
+
+    // Check if we have a token before proceeding
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Authentication required. Please log in again.');
+      navigate('/');
       return;
     }
 

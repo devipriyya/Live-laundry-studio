@@ -3,9 +3,12 @@ const mongoose = require('mongoose');
 const ReviewSchema = new mongoose.Schema({
   orderId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Order', 
-    required: true 
+    ref: 'Order'
   },
+  items: [{
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Inventory' },
+    productName: String
+  }],
   userId: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User' 
@@ -68,6 +71,7 @@ ReviewSchema.index({ orderId: 1 });
 ReviewSchema.index({ userId: 1 });
 ReviewSchema.index({ rating: 1 });
 ReviewSchema.index({ createdAt: -1 });
+ReviewSchema.index({ 'items.productId': 1 });
 
 // Calculate average rating
 ReviewSchema.statics.getAverageRating = async function() {

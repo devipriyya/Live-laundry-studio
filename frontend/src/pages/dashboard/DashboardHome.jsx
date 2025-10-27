@@ -41,6 +41,9 @@ import {
   StarIcon as StarIconSolid,
 } from '@heroicons/react/24/solid';
 
+// Add the ServiceRecommendations import
+import ServiceRecommendations from '../../components/ServiceRecommendations';
+
 const DashboardHome = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -479,15 +482,39 @@ Investing in professional fabric care extends the life of your clothing and ensu
     setSelectedPost(null);
   };
 
+  // Mock order history for demonstration - in a real app, this would come from an API
+  const mockOrderHistory = [
+    {
+      userOrderCount: 5,
+      totalAmount: 1200,
+      orderDate: '2023-05-15T10:30:00Z',
+      items: [{ service: 'washAndPress' }]
+    },
+    {
+      userOrderCount: 5,
+      totalAmount: 1450,
+      orderDate: '2023-05-10T11:15:00Z',
+      items: [{ service: 'washAndPress' }]
+    },
+    {
+      userOrderCount: 5,
+      totalAmount: 1100,
+      orderDate: '2023-05-05T09:45:00Z',
+      items: [{ service: 'washAndPress' }]
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Main Dashboard Functionalities Section - Starting directly without welcome section */}
       <div className="px-6 py-12 max-w-7xl mx-auto">
-        <div className="mb-12">
+        <div className="mb-12 text-center">
           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
             <span className="text-cyan-500">Stay fresh, stay organized with your laundry services</span>
           </h2>
-          
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Discover personalized services tailored to your preferences
+          </p>
         </div>
 
         {/* Functionality Cards Grid */}
@@ -496,7 +523,7 @@ Investing in professional fabric care extends the life of your clothing and ensu
             <div
               key={card.id}
               onClick={() => navigate(card.path)}
-              className={`group relative ${card.bgColor} rounded-xl p-4 hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:scale-105 border border-gray-300/50 cursor-pointer overflow-hidden transform perspective-1000`}
+              className={`group relative ${card.bgColor} rounded-xl p-4 hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 hover:scale-105 border border-gray-300/50 cursor-pointer overflow-hidden transform perspective-1000 shadow-lg`}
               style={{
                 animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both, float 3s ease-in-out ${index * 0.2}s infinite`
               }}
@@ -552,193 +579,96 @@ Investing in professional fabric care extends the life of your clothing and ensu
           ))}
         </div>
 
-        {/* Add keyframe animations */}
-        <style jsx>{`
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(30px) scale(0.9);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-            }
-          }
+        {/* Add the ML Recommendations section after the functionality cards */}
+        <div className="mb-12">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main content area - we'll keep the existing content in the first two columns */}
+            <div className="lg:col-span-2">
+              {/* Getting Tired With Your Laundry Section */}
+              {/* Background Image: Add bg_image_2.png to show person with laundry */}
+              <div className="mb-20 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-12">
+                  {/* Image */}
+                  <div className="relative">
+                    <div className="bg-white/50 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
+                      <img 
+                        src="/bg_image_2.png" 
+                        alt="Person holding laundry basket"
+                        className="w-full h-full object-cover rounded-xl shadow-lg"
+                      />
+                    </div>
+                  </div>
 
-          @keyframes float {
-            0%, 100% {
-              transform: translateY(0px);
-            }
-            50% {
-              transform: translateY(-5px);
-            }
-          }
+                  {/* Content */}
+                  <div>
+                    <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+                      <span className="text-cyan-500">Getting Tired With</span><br />
+                      <span className="text-gray-900">Your Laundry?</span>
+                    </h2>
+                    <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+                      It must take a lot of time to prepare before you go to town. After grocery shopping your hands are full, so you can't carry your laundry. Then you'll end up taking two trips to get your laundry done. We've got a hack! We'll pick-up & drop-off. We're here for you.
+                    </p>
+                    <button 
+                      onClick={() => handleQuickAction('schedule')}
+                      className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                    >
+                      Order Pickup →
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-          @keyframes shimmer {
-            0% {
-              transform: translateX(-100%);
-            }
-            100% {
-              transform: translateX(100%);
-            }
-          }
-
-          @keyframes rotate-border {
-            0% {
-              transform: rotate(0deg);
-            }
-            100% {
-              transform: rotate(360deg);
-            }
-          }
-
-          @keyframes wiggle {
-            0%, 100% {
-              transform: rotate(0deg);
-            }
-            25% {
-              transform: rotate(-10deg);
-            }
-            75% {
-              transform: rotate(10deg);
-            }
-          }
-
-          @keyframes slide-left-right {
-            0%, 100% {
-              transform: translateX(-100%);
-            }
-            50% {
-              transform: translateX(100%);
-            }
-          }
-
-          @keyframes fade-in {
-            from {
-              opacity: 0;
-            }
-            to {
-              opacity: 1;
-            }
-          }
-
-          @keyframes pulse-slow {
-            0%, 100% {
-              opacity: 1;
-            }
-            50% {
-              opacity: 0.8;
-            }
-          }
-
-          .animate-shimmer {
-            animation: shimmer 2s ease-in-out infinite;
-          }
-
-          .animate-wiggle {
-            animation: wiggle 0.5s ease-in-out;
-          }
-
-          .animate-slide-left-right {
-            animation: slide-left-right 2s ease-in-out infinite;
-          }
-
-          .animate-fade-in {
-            animation: fade-in 0.5s ease-in;
-          }
-
-          .animate-pulse-slow {
-            animation: pulse-slow 2s ease-in-out infinite;
-          }
-        `}</style>
-        {/* Getting Tired With Your Laundry Section */}
-        {/* Background Image: Add bg_image_2.png to show person with laundry */}
-        <div className="mb-20 bg-gradient-to-r from-cyan-50 to-blue-50 rounded-3xl overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center p-12">
-            {/* Image */}
-            <div className="relative">
-              <div className="bg-white/50 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
-                <img 
-                  src="/bg_image_2.png" 
-                  alt="Person holding laundry basket"
-                  className="w-full h-full object-cover rounded-xl shadow-lg"
-                />
+              {/* Laundry Solutions For A Busy Life */}
+              <div className="mb-20 bg-gradient-to-br from-cyan-400 via-cyan-500 to-teal-500 rounded-3xl overflow-hidden relative shadow-lg hover:shadow-xl transition-shadow duration-300">
+                {/* Decorative elements */}
+                <div className="absolute top-0 left-0 w-64 h-64 opacity-10">
+                  <SparklesIcon className="h-64 w-64 text-white" />
+                </div>
+                <div className="absolute bottom-0 right-0 w-64 h-64 opacity-10">
+                  <ShoppingCartIcon className="h-64 w-64 text-white" />
+                </div>
+                
+                <div className="relative z-10 text-center py-20 px-6">
+                  <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
+                    Laundry Solutions For<br />A Busy Life
+                  </h2>
+                  <p className="text-white/90 text-lg mb-10 max-w-3xl mx-auto leading-relaxed">
+                    When you need a laundry service that fits in with your busy life, you need Fabrico. We collect dirty laundry, clean it and deliver it back to you – all from your mobile or laptop.
+                  </p>
+                  <button 
+                    onClick={() => handleQuickAction('laundry')}
+                    className="bg-white hover:bg-gray-50 text-cyan-600 font-semibold py-3 px-10 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                  >
+                    Learn More
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Content */}
-            <div>
-              <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
-                <span className="text-cyan-500">Getting Tired With</span><br />
-                <span className="text-gray-900">Your Laundry?</span>
-              </h2>
-              <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-                It must take a lot of time to prepare before you go to town. After grocery shopping your hands are full, so you can't carry your laundry. Then you'll end up taking two trips to get your laundry done. We've got a hack! We'll pick-up & drop-off. We're here for you.
-              </p>
-              <button 
-                onClick={() => handleQuickAction('schedule')}
-                className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-              >
-                Order Pickup →
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Laundry Solutions For A Busy Life */}
-        <div className="mb-20 bg-gradient-to-br from-cyan-400 via-cyan-500 to-teal-500 rounded-3xl overflow-hidden relative">
-          {/* Decorative elements */}
-          <div className="absolute top-0 left-0 w-64 h-64 opacity-10">
-            <SparklesIcon className="h-64 w-64 text-white" />
-          </div>
-          <div className="absolute bottom-0 right-0 w-64 h-64 opacity-10">
-            <ShoppingCartIcon className="h-64 w-64 text-white" />
-          </div>
-          
-          <div className="relative z-10 text-center py-20 px-6">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
-              Laundry Solutions For<br />A Busy Life
-            </h2>
-            <p className="text-white/90 text-lg mb-10 max-w-3xl mx-auto leading-relaxed">
-              When you need a laundry service that fits in with your busy life, you need Fabrico. We collect dirty laundry, clean it and deliver it back to you – all from your mobile or laptop.
-            </p>
-            <button 
-              onClick={() => handleQuickAction('laundry')}
-              className="bg-white hover:bg-gray-50 text-cyan-600 font-semibold py-3 px-10 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-            >
-              Learn More
-            </button>
-          </div>
-        </div>
-
-        {/* No Fading, Only Cleaning */}
-        <div className="mb-20">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-              <span className="text-cyan-500">No Fading,</span> Only Cleaning
-            </h2>
-            <p className="text-gray-600 text-lg max-w-3xl mx-auto leading-relaxed">
-              Bring new life to your old & treasured belongings by choosing the soft on color, tough on stains Fabrico service.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl p-10 hover:shadow-xl transition-all duration-300">
-              <div className="p-4 bg-white rounded-2xl w-fit mb-4 shadow-md">
-                <SparklesIcon className="h-12 w-12 text-yellow-600" />
+            {/* Sidebar with ML Recommendations */}
+            <div className="space-y-8">
+              {/* ML Recommendations Component */}
+              <ServiceRecommendations userOrderHistory={mockOrderHistory} />
+              
+              {/* No Fading, Only Cleaning section moved to sidebar */}
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl p-6 hover:shadow-xl transition-all duration-300 shadow-lg">
+                <div className="p-3 bg-white rounded-xl w-fit mb-3 shadow-md">
+                  <SparklesIcon className="h-8 w-8 text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Premium Perfume</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Leave all the worry of your clothes smelling weird to us. With Fabrico, fresh is the only way your clothes get back to you.
+                </p>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Premium Perfume</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Leave all the worry of your clothes smelling weird to us. With Fabrico, fresh is the only way your clothes get back to you.
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-3xl p-10 hover:shadow-xl transition-all duration-300">
-              <div className="p-4 bg-white rounded-2xl w-fit mb-4 shadow-md">
-                <BeakerIcon className="h-12 w-12 text-cyan-600" />
+              <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-3xl p-6 hover:shadow-xl transition-all duration-300 shadow-lg">
+                <div className="p-3 bg-white rounded-xl w-fit mb-3 shadow-md">
+                  <BeakerIcon className="h-8 w-8 text-cyan-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Trusted Detergent</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Choose the right detergent that gives your clothes the perfect amount of care. Quality washing chemicals that don't harm your fabric.
+                </p>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Trusted Detergent</h3>
-              <p className="text-gray-600 leading-relaxed">
-                Choose the right detergent that gives your clothes the perfect amount of care. Quality washing chemicals that don't harm your fabric.
-              </p>
             </div>
           </div>
         </div>

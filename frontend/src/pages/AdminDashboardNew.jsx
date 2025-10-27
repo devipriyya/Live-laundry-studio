@@ -417,19 +417,7 @@ const AdminDashboardNew = () => {
                 <DashboardStats />
 
                 {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
-                    <div className="flex items-center space-x-4">
-                      <div className="bg-blue-100 p-3 rounded-xl">
-                        <PlusIcon className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">New Order</h3>
-                        <p className="text-gray-600 text-sm">Create a new order</p>
-                      </div>
-                    </div>
-                  </div>
-                  
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-300">
                     <div className="flex items-center space-x-4">
                       <div className="bg-green-100 p-3 rounded-xl">
@@ -526,7 +514,7 @@ const AdminDashboardNew = () => {
 
             {/* Integrated Management Components */}
             {activeSection === 'orders' && <OrderManagementNew />}
-            {activeSection === 'customers' && <CustomerManagement />}
+            {activeSection === 'customers' && <CustomerManagement isAdminView={true} />}
             {activeSection === 'staff' && <StaffManagement />}
             {activeSection === 'inventory' && <InventoryManagement />}
             {activeSection === 'reports' && <ReportsAnalytics />}

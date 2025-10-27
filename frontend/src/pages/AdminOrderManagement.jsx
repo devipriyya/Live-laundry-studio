@@ -377,6 +377,48 @@ const AdminOrderManagement = () => {
     }
   };
 
+  // Test email functionality
+  const testEmailConfiguration = async () => {
+    try {
+      setLoading(true);
+      const response = await api.post('/notifications/test-email');
+      alert(response.data.message);
+    } catch (error) {
+      console.error('Error testing email configuration:', error);
+      alert('Failed to test email configuration: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Send test order email
+  const sendTestOrderEmail = async () => {
+    try {
+      setLoading(true);
+      // Use the first order as a test order if available
+      const testOrder = orders.length > 0 ? orders[0] : {
+        orderNumber: 'TEST-001',
+        customerInfo: {
+          name: 'Test Customer',
+          email: 'test@example.com'
+        },
+        items: [{ name: 'Test Service' }]
+      };
+      
+      const response = await api.post('/notifications/test-order-email', {
+        order: testOrder,
+        status: 'order-accepted',
+        serviceName: 'Test Service'
+      });
+      alert(response.data.message);
+    } catch (error) {
+      console.error('Error sending test order email:', error);
+      alert('Failed to send test order email: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const assignStaffToOrder = async (orderId) => {
     if (!selectedStaff) {
       alert('Please select a staff member');
@@ -813,6 +855,21 @@ const AdminOrderManagement = () => {
                   {exportLoading ? 'Exporting...' : 'Export PDF'}
                 </button>
               </div>
+              {/* Email Test Buttons */}
+              <button
+                onClick={testEmailConfiguration}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl hover:from-yellow-600 hover:to-orange-600"
+              >
+                <span className="text-lg">📧</span>
+                Test Email
+              </button>
+              <button
+                onClick={sendTestOrderEmail}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl hover:from-indigo-600 hover:to-purple-700"
+              >
+                <span className="text-lg">✉️</span>
+                Test Order Email
+              </button>
               <button
                 onClick={fetchOrders}
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700"
