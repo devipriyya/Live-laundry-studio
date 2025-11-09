@@ -74,6 +74,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/ml', mlRoutes);
 
+// Root endpoint
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
