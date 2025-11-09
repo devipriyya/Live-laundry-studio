@@ -66,11 +66,16 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    if (!validateForm()) return;
-
     setLoading(true);
-    setErrors((prev) => ({ ...prev, general: "", success: "" }));
+    setErrors(initialErrors);
+
+    // Validate form
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setLoading(false);
+      return;
+    }
 
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -82,7 +87,8 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
       // Exchange Firebase token for backend JWT token
       try {
-        const response = await fetch('http://localhost:5000/api/auth/firebase-login', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${API_URL}/auth/firebase-login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -150,7 +156,8 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
       // Exchange Firebase token for backend JWT token
       try {
-        const response = await fetch('http://localhost:5000/api/auth/firebase-login', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const response = await fetch(`${API_URL}/auth/firebase-login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

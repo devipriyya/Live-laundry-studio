@@ -549,8 +549,10 @@ const EnhancedPaymentManagement = () => {
       // Extract order number from payment ID
       const orderNumber = payment.orderId;
       
-      // Update order payment status to refunded
-      const response = await api.put(`/orders/${orderNumber}/status`, {
+      console.log(`Processing refund for payment ${paymentId}, order ${orderNumber}`);
+      
+      // Update order payment status to refunded using the correct endpoint
+      const response = await api.patch(`/orders/${orderNumber}/status`, {
         paymentStatus: 'refunded',
         note: 'Payment refunded by admin'
       });
@@ -571,40 +573,14 @@ const EnhancedPaymentManagement = () => {
       alert(`Refund processed successfully for payment ${paymentId}`);
     } catch (err) {
       console.error('Error processing refund:', err);
-      alert(`Failed to process refund: ${err.response?.data?.message || err.message}`);
-    }
-  };
-
-  const handleDelete = async (paymentId) => {
-    if (window.confirm('Are you sure you want to delete this payment record? This action cannot be undone.')) {
-      try {
-        // Find the order ID from the payment ID
-        const payment = payments.find(p => p.id === paymentId);
-        if (!payment) {
-          alert('Payment not found');
-          return;
-        }
-        
-        // Extract order number from payment ID
-        const orderNumber = payment.orderId;
-        
-        // Delete the order
-        await api.delete(`/orders/${orderNumber}`);
-        
-        // Update local state
-        setPayments(prevPayments => 
-          prevPayments.filter(payment => payment.id !== paymentId)
-        );
-        
-        if (selectedPayment && selectedPayment.id === paymentId) {
-          setShowModal(false);
-          setSelectedPayment(null);
-        }
-        
-        alert(`Payment record deleted successfully: ${paymentId}`);
-      } catch (err) {
-        console.error('Error deleting payment:', err);
-        alert(`Failed to delete payment record: ${err.response?.data?.message || err.message}`);
+      if (err.response?.status === 404) {
+        alert('Failed to process refund: Order not found. Please refresh the page and try again.');
+      } else if (err.response?.status === 403) {
+        alert('Failed to process refund: Not authorized to perform this action.');
+      } else if (err.response?.status === 400) {
+        alert(`Failed to process refund: ${err.response?.data?.message || 'Invalid request'}`);
+      } else {
+        alert(`Failed to process refund: ${err.response?.data?.message || err.message || 'Unknown error occurred'}`);
       }
     }
   };
@@ -621,8 +597,10 @@ const EnhancedPaymentManagement = () => {
       // Extract order number from payment ID
       const orderNumber = payment.orderId;
       
-      // Update order payment status to paid
-      const response = await api.put(`/orders/${orderNumber}/status`, {
+      console.log(`Retrying payment for payment ${paymentId}, order ${orderNumber}`);
+      
+      // Update order payment status to paid using the correct endpoint
+      const response = await api.patch(`/orders/${orderNumber}/status`, {
         paymentStatus: 'paid',
         note: 'Payment retried and completed by admin'
       });
@@ -643,7 +621,15 @@ const EnhancedPaymentManagement = () => {
       alert(`Payment retried successfully: ${paymentId}`);
     } catch (err) {
       console.error('Error retrying payment:', err);
-      alert(`Failed to retry payment: ${err.response?.data?.message || err.message}`);
+      if (err.response?.status === 404) {
+        alert('Failed to retry payment: Order not found. Please refresh the page and try again.');
+      } else if (err.response?.status === 403) {
+        alert('Failed to retry payment: Not authorized to perform this action.');
+      } else if (err.response?.status === 400) {
+        alert(`Failed to retry payment: ${err.response?.data?.message || 'Invalid request'}`);
+      } else {
+        alert(`Failed to retry payment: ${err.response?.data?.message || err.message || 'Unknown error occurred'}`);
+      }
     }
   };
 
@@ -659,8 +645,10 @@ const EnhancedPaymentManagement = () => {
       // Extract order number from payment ID
       const orderNumber = payment.orderId;
       
-      // Update order payment status to paid
-      const response = await api.put(`/orders/${orderNumber}/status`, {
+      console.log(`Marking payment as completed for payment ${paymentId}, order ${orderNumber}`);
+      
+      // Update order payment status to paid using the correct endpoint
+      const response = await api.patch(`/orders/${orderNumber}/status`, {
         paymentStatus: 'paid',
         note: 'Payment marked as completed by admin'
       });
@@ -681,7 +669,15 @@ const EnhancedPaymentManagement = () => {
       alert(`Payment marked as completed: ${paymentId}`);
     } catch (err) {
       console.error('Error marking payment as completed:', err);
-      alert(`Failed to mark payment as completed: ${err.response?.data?.message || err.message}`);
+      if (err.response?.status === 404) {
+        alert('Failed to mark payment as completed: Order not found. Please refresh the page and try again.');
+      } else if (err.response?.status === 403) {
+        alert('Failed to mark payment as completed: Not authorized to perform this action.');
+      } else if (err.response?.status === 400) {
+        alert(`Failed to mark payment as completed: ${err.response?.data?.message || 'Invalid request'}`);
+      } else {
+        alert(`Failed to mark payment as completed: ${err.response?.data?.message || err.message || 'Unknown error occurred'}`);
+      }
     }
   };
 
@@ -972,13 +968,6 @@ const EnhancedPaymentManagement = () => {
                 </svg>
                 <span>Send Receipt</span>
               </button>
-              <button 
-                onClick={() => handleDelete(payment.id)}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                <TrashIcon className="h-5 w-5" />
-                <span>Delete</span>
-              </button>
             </div>
           </div>
         </div>
@@ -995,7 +984,6 @@ const EnhancedPaymentManagement = () => {
       setSortOrder('desc'); // Default to descending for new sort
     }
   };
-
   // Get sort indicator
   const SortIndicator = ({ field }) => {
     if (sortBy !== field) return null;
@@ -1440,13 +1428,6 @@ const EnhancedPaymentManagement = () => {
                                   <ReceiptRefundIcon className="h-4 w-4" />
                                 </button>
                               )}
-                              <button
-                                onClick={() => handleDelete(payment.id)}
-                                className="text-red-600 hover:text-red-900 p-1 rounded transition-colors"
-                                title="Delete"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                              </button>
                             </div>
                           </td>
                         </tr>

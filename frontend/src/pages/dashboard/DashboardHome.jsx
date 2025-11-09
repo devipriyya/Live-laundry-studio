@@ -43,6 +43,9 @@ import {
 
 // Add the ServiceRecommendations import
 import ServiceRecommendations from '../../components/ServiceRecommendations';
+import CustomerSegment from '../../components/CustomerSegment';
+// Add MLComparison component import
+import MLComparison from '../../components/MLComparison';
 
 const DashboardHome = () => {
   const { user } = useContext(AuthContext);
@@ -51,6 +54,41 @@ const DashboardHome = () => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [selectedPost, setSelectedPost] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Mock order history for demonstration - in a real app, this would come from an API
+  const mockOrderHistory = [
+    {
+      userOrderCount: 5,
+      totalAmount: 1200,
+      orderDate: '2023-05-15T10:30:00Z',
+      items: [{ service: 'washAndPress' }]
+    },
+    {
+      userOrderCount: 5,
+      totalAmount: 1450,
+      orderDate: '2023-05-10T11:15:00Z',
+      items: [{ service: 'washAndPress' }]
+    },
+    {
+      userOrderCount: 5,
+      totalAmount: 1100,
+      orderDate: '2023-05-05T09:45:00Z',
+      items: [{ service: 'washAndPress' }]
+    }
+  ];
+
+  // Mock customer data for segmentation
+  const mockCustomerData = {
+    orderFrequency: 15,
+    avgOrderValue: 1250,
+    daysSinceLastOrder: 5,
+    serviceVariety: 3,
+    satisfactionScore: 4.8,
+    referralCount: 2,
+    discountUsage: 4,
+    complaintCount: 0,
+    segment: 'premium'
+  };
 
   // Dashboard functionality cards - all features from sidebar
   const functionalityCards = [
@@ -482,28 +520,6 @@ Investing in professional fabric care extends the life of your clothing and ensu
     setSelectedPost(null);
   };
 
-  // Mock order history for demonstration - in a real app, this would come from an API
-  const mockOrderHistory = [
-    {
-      userOrderCount: 5,
-      totalAmount: 1200,
-      orderDate: '2023-05-15T10:30:00Z',
-      items: [{ service: 'washAndPress' }]
-    },
-    {
-      userOrderCount: 5,
-      totalAmount: 1450,
-      orderDate: '2023-05-10T11:15:00Z',
-      items: [{ service: 'washAndPress' }]
-    },
-    {
-      userOrderCount: 5,
-      totalAmount: 1100,
-      orderDate: '2023-05-05T09:45:00Z',
-      items: [{ service: 'washAndPress' }]
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Main Dashboard Functionalities Section - Starting directly without welcome section */}
@@ -647,8 +663,8 @@ Investing in professional fabric care extends the life of your clothing and ensu
 
             {/* Sidebar with ML Recommendations */}
             <div className="space-y-8">
-              {/* ML Recommendations Component */}
-              <ServiceRecommendations userOrderHistory={mockOrderHistory} />
+              {/* ML Comparison Component - NEW */}
+              <MLComparison customerData={mockCustomerData} />
               
               {/* No Fading, Only Cleaning section moved to sidebar */}
               <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl p-6 hover:shadow-xl transition-all duration-300 shadow-lg">

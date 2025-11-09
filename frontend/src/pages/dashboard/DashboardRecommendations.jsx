@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ServiceRecommendations from '../../components/ServiceRecommendations';
 import CustomerSegment from '../../components/CustomerSegment';
+// Add DecisionTreeSegment component import
+import DecisionTreeSegment from '../../components/DecisionTreeSegment';
+// Add NaiveBayesPrediction component import
+import NaiveBayesPrediction from '../../components/NaiveBayesPrediction';
 
 const DashboardRecommendations = () => {
   const navigate = useNavigate();
@@ -100,6 +104,9 @@ const DashboardRecommendations = () => {
     const route = serviceRoutes[service];
     if (route) {
       navigate(route);
+    } else {
+      // Fallback to schedule pickup if route not found
+      navigate('/schedule-pickup');
     }
   };
 
@@ -244,8 +251,11 @@ const DashboardRecommendations = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Customer Segment */}
+          {/* Customer Segments - Show both SVM and Decision Tree */}
           <CustomerSegment customerData={mockCustomerData} />
+          
+          {/* Naive Bayes Prediction */}
+          <NaiveBayesPrediction userOrderHistory={mockOrderHistory} />
           
           {/* Current Recommendations Preview */}
           <ServiceRecommendations userOrderHistory={mockOrderHistory} />

@@ -165,100 +165,100 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900">
       <div className="absolute inset-0">
-        <div className="absolute -top-20 -left-16 h-96 w-96 rounded-full bg-pink-100 blur-3xl"></div>
-        <div className="absolute top-10 -right-32 h-[28rem] w-[28rem] rounded-full bg-pink-50 blur-3xl"></div>
-        <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-pink-100 blur-3xl"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,182,193,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,182,193,0.1)_1px,transparent_1px)] bg-[size:60px_60px]"></div>
+        <div className="absolute -top-20 -left-16 h-96 w-96 rounded-full bg-emerald-500/40 blur-3xl"></div>
+        <div className="absolute top-10 -right-32 h-[28rem] w-[28rem] rounded-full bg-cyan-500/30 blur-3xl"></div>
+        <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-teal-500/20 blur-3xl"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:60px_60px]"></div>
       </div>
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-16 sm:px-8">
         <div className="grid w-full max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
-          <div className="space-y-10 text-pink-900">
+          <div className="space-y-10 text-white">
             <div className="space-y-4">
-              <span className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-4 py-2 text-sm font-medium text-pink-600">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-emerald-200">
                 <SparklesIcon className="h-4 w-4" />
                 Premium Eco Laundry
               </span>
               <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
                 Seamlessly continue your WashLab journey
               </h1>
-              <p className="max-w-lg text-lg text-pink-700">
+              <p className="max-w-lg text-lg text-emerald-100/80">
                 Sign in to manage smart pickups, review garment timelines, and stay synced with your sustainable care plan.
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex items-center gap-4 rounded-2xl border border-pink-100 bg-pink-50 p-5 transition duration-300 hover:border-pink-200 hover:bg-pink-100">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-pink-400 to-rose-400">
+              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition duration-300 hover:border-emerald-300/40 hover:bg-white/10">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500">
                   <ShieldCheckIcon className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-pink-900">Trusted garment care</p>
-                  <p className="text-xs text-pink-700">Dedicated fabric specialists for every order</p>
+                  <p className="text-sm font-semibold text-white">Trusted garment care</p>
+                  <p className="text-xs text-emerald-100/80">Dedicated fabric specialists for every order</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 rounded-2xl border border-pink-100 bg-pink-50 p-5 transition duration-300 hover:border-pink-200 hover:bg-pink-100">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-pink-300 to-rose-300">
+              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition duration-300 hover:border-emerald-300/40 hover:bg-white/10">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500">
                   <LockClosedIcon className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-pink-900">Protected & private</p>
-                  <p className="text-xs text-pink-700">Secure sign-ins with real-time sync</p>
+                  <p className="text-sm font-semibold text-white">Protected & private</p>
+                  <p className="text-xs text-emerald-100/80">Secure sign-ins with real-time sync</p>
                 </div>
               </div>
             </div>
-            <div className="rounded-2xl border border-pink-100 bg-pink-50 p-6 text-sm text-pink-700">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-emerald-100/80">
               Access loyalty perks, transparent garment tracking, and carbon-conscious insights from your WashLab dashboard.
             </div>
           </div>
           <div className="w-full">
-            <div className="mx-auto w-full max-w-md rounded-3xl border border-pink-100 bg-white p-8 shadow-2xl backdrop-blur-xl">
+            <div className="mx-auto w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
               <div className="mb-8 space-y-2 text-center">
-                <h2 className="text-3xl font-bold text-pink-900">Sign in to WashLab</h2>
-                <p className="text-sm text-pink-700">Continue managing your effortless laundry experience</p>
+                <h2 className="text-3xl font-bold text-white">Sign in to WashLab</h2>
+                <p className="text-sm text-emerald-100/80">Continue managing your effortless laundry experience</p>
               </div>
               {errors.general && (
-                <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <div className="mb-6 rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                   {errors.general}
                 </div>
               )}
               {errors.success && (
-                <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                <div className="mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
                   {errors.success}
                 </div>
               )}
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                   <div className="relative">
-                    <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-pink-400" />
+                    <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
                     <input
                       type="email"
                       name="email"
                       placeholder="Email address"
                       value={form.email}
                       onChange={handleChange}
-                      className="w-full rounded-2xl border border-pink-100 bg-white px-12 py-4 text-pink-900 placeholder:text-pink-300 focus:border-pink-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-200"
+                      className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/50 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
                     />
                   </div>
                   {errors.email && (
-                    <p className="mt-2 text-xs text-red-500">{errors.email}</p>
+                    <p className="mt-2 text-xs text-red-200">{errors.email}</p>
                   )}
                 </div>
                 <div>
                   <div className="relative">
-                    <LockClosedIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-pink-400" />
+                    <LockClosedIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
                     <input
                       type={showPassword ? "text" : "password"}
                       name="password"
                       placeholder="Password"
                       value={form.password}
                       onChange={handleChange}
-                      className="w-full rounded-2xl border border-pink-100 bg-white px-12 py-4 pr-14 text-pink-900 placeholder:text-pink-300 focus:border-pink-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-200"
+                      className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 pr-14 text-white placeholder:text-emerald-100/50 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-pink-400 transition hover:text-pink-600"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-100/70 transition hover:text-white"
                     >
                       {showPassword ? (
                         <EyeSlashIcon className="h-5 w-5" />
@@ -268,10 +268,10 @@ export default function Login() {
                     </button>
                   </div>
                   {errors.password && (
-                    <p className="mt-2 text-xs text-red-500">{errors.password}</p>
+                    <p className="mt-2 text-xs text-red-200">{errors.password}</p>
                   )}
                 </div>
-                <div className="flex items-center justify-between rounded-2xl border border-pink-100 bg-pink-50 px-4 py-3 text-sm text-pink-700">
+                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-emerald-100/70">
                   <label className="flex items-center gap-3">
                     <span className="relative">
                       <input
@@ -281,7 +281,7 @@ export default function Login() {
                         className="sr-only"
                       />
                       <span
-                        className={`flex h-5 w-5 items-center justify-center rounded-lg border transition ${rememberMe ? "border-pink-300 bg-pink-500" : "border-pink-200 bg-white"}`}
+                        className={`flex h-5 w-5 items-center justify-center rounded-lg border transition ${rememberMe ? "border-emerald-300 bg-emerald-500" : "border-white/20 bg-white/10"}`}
                       >
                         {rememberMe && (
                           <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -295,7 +295,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setForgotPasswordModal(true)}
-                    className="rounded-xl border border-pink-200 px-3 py-1 font-semibold text-pink-600 transition hover:border-pink-300 hover:bg-pink-100 hover:text-pink-700"
+                    className="rounded-xl border border-white/20 px-3 py-1 font-semibold text-emerald-200 transition hover:border-emerald-300/40 hover:bg-white/10 hover:text-white"
                   >
                     Forgot password?
                   </button>
@@ -303,11 +303,11 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 px-6 py-4 text-lg font-semibold text-white transition duration-300 hover:from-pink-400 hover:via-rose-400 hover:to-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 px-6 py-4 text-lg font-semibold text-slate-950 transition duration-300 hover:from-emerald-300 hover:via-teal-300 hover:to-cyan-300 focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? (
                     <>
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/60 border-t-transparent"></div>
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900/60 border-t-transparent"></div>
                       Signing in...
                     </>
                   ) : (
@@ -316,15 +316,15 @@ export default function Login() {
                 </button>
               </form>
               <div className="mt-6 space-y-4 text-center">
-                <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-pink-400">
-                  <div className="h-px flex-1 bg-pink-100"></div>
+                <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-emerald-100/60">
+                  <div className="h-px flex-1 bg-white/10"></div>
                   or
-                  <div className="h-px flex-1 bg-pink-100"></div>
+                  <div className="h-px flex-1 bg-white/10"></div>
                 </div>
                 <button
                   onClick={handleGoogleSignIn}
                   disabled={loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl border border-pink-200 bg-white px-6 py-4 text-sm font-semibold text-pink-900 transition duration-300 hover:bg-pink-50 focus:outline-none focus:ring-2 focus:ring-pink-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-4 text-sm font-semibold text-slate-900 transition duration-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 256 262" role="img" aria-label="Google logo">
                     <path fill="#4285F4" d="M255.68 131.19c0-8.76-.72-17.82-2.28-26.4H130.56v50.1h70.2c-2.82 15.24-11.34 28.26-24.12 36.96v30.72h38.88c22.68-20.88 35.16-51.66 35.16-91.38z" />
@@ -334,9 +334,9 @@ export default function Login() {
                   </svg>
                   Continue with Google
                 </button>
-                <p className="text-sm text-pink-700">
+                <p className="text-sm text-emerald-100/70">
                   Need an account?
-                  <Link to="/register" className="ml-2 font-semibold text-pink-600 transition hover:text-pink-800">
+                  <Link to="/register" className="ml-2 font-semibold text-emerald-200 transition hover:text-white">
                     Create one
                   </Link>
                 </p>
@@ -347,43 +347,43 @@ export default function Login() {
       </div>
       {forgotPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur">
-          <div className="w-full max-w-md space-y-6 rounded-3xl border border-pink-100 bg-white p-8 shadow-2xl backdrop-blur-xl">
+          <div className="w-full max-w-md space-y-6 rounded-3xl border border-white/15 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
             <div className="space-y-2 text-center">
-              <span className="inline-flex items-center justify-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-pink-600">
+              <span className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-emerald-200">
                 Secure recovery
               </span>
-              <h3 className="text-2xl font-semibold text-pink-900">Reset password</h3>
-              <p className="text-sm text-pink-700">
+              <h3 className="text-2xl font-semibold text-white">Reset password</h3>
+              <p className="text-sm text-emerald-100/80">
                 Enter your email address and we'll send you a secure reset link.
               </p>
             </div>
             {errors.reset && (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {errors.reset}
               </div>
             )}
             <form onSubmit={handleForgotPassword} className="space-y-6">
               <div className="relative">
-                <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-pink-400" />
+                <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
                 <input
                   type="email"
                   value={resetEmail}
                   onChange={(event) => setResetEmail(event.target.value)}
                   placeholder="Your email address"
-                  className="w-full rounded-2xl border border-pink-100 bg-white px-12 py-4 text-pink-900 placeholder:text-pink-300 focus:border-pink-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-pink-200"
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/50 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
                 />
               </div>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setForgotPasswordModal(false)}
-                  className="flex-1 rounded-2xl border border-pink-200 bg-white py-3 text-sm font-semibold text-pink-700 transition duration-300 hover:border-pink-300 hover:bg-pink-50"
+                  className="flex-1 rounded-2xl border border-white/20 bg-white/10 py-3 text-sm font-semibold text-emerald-100 transition duration-300 hover:border-emerald-300/40 hover:bg-white/20"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-2xl bg-gradient-to-r from-pink-500 via-rose-500 to-pink-600 py-3 text-sm font-semibold text-white transition duration-300 hover:from-pink-400 hover:via-rose-400 hover:to-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-300"
+                  className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 py-3 text-sm font-semibold text-slate-950 transition duration-300 hover:from-emerald-300 hover:via-teal-300 hover:to-cyan-300 focus:outline-none focus:ring-2 focus:ring-emerald-300"
                 >
                   Send email
                 </button>

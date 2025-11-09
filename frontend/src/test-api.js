@@ -4,7 +4,8 @@ const testAPI = async () => {
     console.log('Testing API connection...');
     
     // Test the notifications endpoint directly
-    const response = await fetch('http://localhost:5000/api/notifications/user/demo@fabrico.com');
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const response = await fetch(`${API_URL}/notifications/user/demo@fabrico.com`);
     console.log('Response status:', response.status);
     
     if (response.ok) {

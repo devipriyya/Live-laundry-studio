@@ -589,21 +589,49 @@ router.get('/:id', protect, isAdmin, async (req, res) => {
 router.patch('/:id/assign', protect, isAdmin, async (req, res) => {
   try {
     const { deliveryBoyId } = req.body;
-    const order = await Order.findByIdAndUpdate(
-      req.params.id, 
-      { 
-        deliveryBoyId,
-        $push: {
-          statusHistory: {
-            status: order.status,
-            timestamp: new Date(),
-            updatedBy: req.user._id,
-            note: `Assigned to delivery person`
+    
+    // Check if the id is a valid MongoDB ObjectId or order number
+    let order;
+    if (req.params.id.length === 24 && /^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      // It's a valid ObjectId
+      order = await Order.findByIdAndUpdate(
+        req.params.id,
+        { 
+          deliveryBoyId,
+          $push: {
+            statusHistory: {
+              status: order.status,
+              timestamp: new Date(),
+              updatedBy: req.user._id,
+              note: `Assigned to delivery person`
+            }
           }
-        }
-      }, 
-      { new: true }
-    );
+        }, 
+        { new: true }
+      );
+    } else {
+      // It's likely an order number
+      const foundOrder = await Order.findOne({ orderNumber: req.params.id });
+      if (!foundOrder) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+      
+      order = await Order.findByIdAndUpdate(
+        foundOrder._id,
+        { 
+          deliveryBoyId,
+          $push: {
+            statusHistory: {
+              status: foundOrder.status,
+              timestamp: new Date(),
+              updatedBy: req.user._id,
+              note: `Assigned to delivery person`
+            }
+          }
+        }, 
+        { new: true }
+      );
+    }
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -619,7 +647,16 @@ router.patch('/:id/assign', protect, isAdmin, async (req, res) => {
 router.patch('/:id/status', protect, async (req, res) => {
   try {
     const { status, paymentStatus, note } = req.body;
-    const order = await Order.findById(req.params.id);
+    
+    // Check if the id is a valid MongoDB ObjectId or order number
+    let order;
+    if (req.params.id.length === 24 && /^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      // It's a valid ObjectId
+      order = await Order.findById(req.params.id);
+    } else {
+      // It's likely an order number
+      order = await Order.findOne({ orderNumber: req.params.id });
+    }
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -750,7 +787,15 @@ router.patch('/bulk/status', protect, isAdmin, async (req, res) => {
 // admin: delete order
 router.delete('/:id', protect, isAdmin, async (req, res) => {
   try {
-    const order = await Order.findByIdAndDelete(req.params.id);
+    // Check if the id is a valid MongoDB ObjectId or order number
+    let order;
+    if (req.params.id.length === 24 && /^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      // It's a valid ObjectId
+      order = await Order.findByIdAndDelete(req.params.id);
+    } else {
+      // It's likely an order number
+      order = await Order.findOneAndDelete({ orderNumber: req.params.id });
+    }
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -766,7 +811,16 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
 router.patch('/:id/cancel', async (req, res) => {
   try {
     const { reason, email } = req.body;
-    const order = await Order.findById(req.params.id);
+    
+    // Check if the id is a valid MongoDB ObjectId or order number
+    let order;
+    if (req.params.id.length === 24 && /^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      // It's a valid ObjectId
+      order = await Order.findById(req.params.id);
+    } else {
+      // It's likely an order number
+      order = await Order.findOne({ orderNumber: req.params.id });
+    }
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -827,7 +881,16 @@ router.patch('/:id/cancel', async (req, res) => {
 router.patch('/:id/refund', protect, isAdmin, async (req, res) => {
   try {
     const { refundAmount, refundMethod, refundId } = req.body;
-    const order = await Order.findById(req.params.id);
+    
+    // Check if the id is a valid MongoDB ObjectId or order number
+    let order;
+    if (req.params.id.length === 24 && /^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      // It's a valid ObjectId
+      order = await Order.findById(req.params.id);
+    } else {
+      // It's likely an order number
+      order = await Order.findOne({ orderNumber: req.params.id });
+    }
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -973,7 +1036,16 @@ router.get('/my-deliveries/stats', protect, isDeliveryBoy, async (req, res) => {
 router.patch('/:id/delivery-status', protect, isDeliveryBoy, async (req, res) => {
   try {
     const { status, note, location } = req.body;
-    const order = await Order.findById(req.params.id);
+    
+    // Check if the id is a valid MongoDB ObjectId or order number
+    let order;
+    if (req.params.id.length === 24 && /^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      // It's a valid ObjectId
+      order = await Order.findById(req.params.id);
+    } else {
+      // It's likely an order number
+      order = await Order.findOne({ orderNumber: req.params.id });
+    }
     
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });

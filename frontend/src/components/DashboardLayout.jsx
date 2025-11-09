@@ -27,6 +27,7 @@ import {
   LightBulbIcon, // Add this import
   HeartIcon,
   ShoppingCartIcon,
+  BeakerIcon,
 } from '@heroicons/react/24/outline';
 
 const DashboardLayout = () => {
@@ -56,8 +57,7 @@ const DashboardLayout = () => {
 
   // Navigation menu items
   const menuItems = [
-    { id: 'home', name: 'Home', icon: HomeIcon, path: '/dashboard/home' },
-    { id: 'profile', name: 'My Profile', icon: UserCircleIcon, path: '/dashboard/profile' },
+    { id: 'home', name: 'Dashboard Home', icon: HomeIcon, path: '/dashboard/home' },
     { id: 'laundry', name: 'Laundry Segment', icon: CubeIcon, path: '/dashboard/laundry', hasSubmenu: true },
     { id: 'schedule', name: 'Schedule Wash', icon: CalendarDaysIcon, path: '/dashboard/schedule' },
     { id: 'orders', name: 'My Orders', icon: ShoppingBagIcon, path: '/dashboard/orders' },
@@ -65,6 +65,7 @@ const DashboardLayout = () => {
     { id: 'rate', name: 'Get Rate Card', icon: DocumentTextIcon, path: '/dashboard/rate' },
     { id: 'products', name: 'WashLab Products', icon: TagIcon, path: '/dashboard/products', badge: 'NEW' },
     { id: 'recommendations', name: 'Recommendations', icon: LightBulbIcon, path: '/dashboard/recommendations', badge: 'AI' },
+    { id: 'test-naive-bayes', name: 'Naive Bayes Test', icon: BeakerIcon, path: '/dashboard/test-naive-bayes', badge: 'ML' },
     { id: 'store', name: 'Store Locator', icon: BuildingStorefrontIcon, path: '/dashboard/store' },
     { id: 'legal', name: 'Legal Info', icon: InformationCircleIcon, path: '/dashboard/legal', hasSubmenu: true },
     { id: 'notifications', name: 'Notifications', icon: BellIcon, path: '/dashboard/notifications' },

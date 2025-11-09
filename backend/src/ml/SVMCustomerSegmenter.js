@@ -1,4 +1,6 @@
 const svm = require('svm');
+const fs = require('fs');
+const path = require('path');
 
 class SVMCustomerSegmenter {
   constructor() {
@@ -16,6 +18,8 @@ class SVMCustomerSegmenter {
       'budget': 2,
       'inactive': 3
     };
+    // Try to load a previously trained model
+    this.loadModel();
   }
 
   // Extract features from customer data for SVM
@@ -59,10 +63,73 @@ class SVMCustomerSegmenter {
       this.model.train(trainingData, labels);
       this.isTrained = true;
       
+      // Save the trained model
+      this.saveModel();
+      
       console.log('SVM Customer Segmenter trained successfully with', customerDataArray.length, 'samples');
       return true;
     } catch (error) {
       console.error('Error training SVM Customer Segmenter:', error);
+      return false;
+    }
+  }
+
+  // Save the trained model to disk
+  saveModel() {
+    if (!this.isTrained) {
+      return false;
+    }
+    
+    try {
+      const modelPath = path.join(__dirname, '..', '..', 'models', 'svm-model.json');
+      const modelData = {
+        model: this.model.toJSON(),
+        isTrained: this.isTrained,
+        labelMapping: this.labelMapping,
+        reverseLabelMapping: this.reverseLabelMapping,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Ensure the models directory exists
+      const modelsDir = path.dirname(modelPath);
+      if (!fs.existsSync(modelsDir)) {
+        fs.mkdirSync(modelsDir, { recursive: true });
+      }
+      
+      fs.writeFileSync(modelPath, JSON.stringify(modelData, null, 2));
+      console.log('SVM model saved to', modelPath);
+      return true;
+    } catch (error) {
+      console.error('Error saving SVM model:', error);
+      return false;
+    }
+  }
+
+  // Load a previously trained model from disk
+  loadModel() {
+    try {
+      const modelPath = path.join(__dirname, '..', '..', 'models', 'svm-model.json');
+      
+      if (!fs.existsSync(modelPath)) {
+        console.log('No saved SVM model found');
+        return false;
+      }
+      
+      const modelData = JSON.parse(fs.readFileSync(modelPath, 'utf8'));
+      
+      if (modelData.isTrained && modelData.model) {
+        this.model.fromJSON(modelData.model);
+        this.isTrained = modelData.isTrained;
+        this.labelMapping = modelData.labelMapping || this.labelMapping;
+        this.reverseLabelMapping = modelData.reverseLabelMapping || this.reverseLabelMapping;
+        console.log('SVM model loaded from', modelPath);
+        return true;
+      }
+      
+      console.log('Saved SVM model is not trained');
+      return false;
+    } catch (error) {
+      console.error('Error loading SVM model:', error);
       return false;
     }
   }

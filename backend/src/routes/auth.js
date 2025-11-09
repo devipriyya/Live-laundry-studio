@@ -417,4 +417,233 @@ router.put('/settings', protect, isAdmin, async (req, res) => {
   }
 });
 
+// Admin: Export all users as CSV
+router.get('/users/export/csv', protect, isAdmin, async (req, res) => {
+  try {
+    const users = await User.find({ email: { $ne: 'admin@gmail.com' } })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    // Create CSV header
+    const csvHeader = 'Name,Email,Phone,Role,Status,Total Orders,Total Spent,Member Since\n';
+    
+    // Create CSV rows
+    const csvRows = users.map(user => {
+      const totalOrders = user.stats?.totalOrders || 0;
+      const totalSpent = user.stats?.totalSpent || 0;
+      const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '';
+      const status = user.isBlocked ? 'Blocked' : 'Active';
+      
+      // Escape fields that might contain commas
+      return [
+        `"${user.name || ''}"`,
+        `"${user.email || ''}"`,
+        `"${user.phone || ''}"`,
+        `"${user.role || ''}"`,
+        `"${status}"`,
+        `"${totalOrders}"`,
+        `"${totalSpent.toFixed(2)}"`,
+        `"${memberSince}"`
+      ].join(',');
+    });
+
+    const csvContent = csvHeader + csvRows.join('\n');
+
+    // Set headers for CSV download
+    res.header('Content-Type', 'text/csv');
+    res.attachment('customers-export.csv');
+    res.status(200).send(csvContent);
+  } catch (error) {
+    console.error('Error exporting customers as CSV:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Export all users as PDF
+router.get('/users/export/pdf', protect, isAdmin, async (req, res) => {
+  try {
+    const users = await User.find({ email: { $ne: 'admin@gmail.com' } })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    // Import PDFKit dynamically
+    const PDFDocument = require('pdfkit');
+    
+    // Create a document
+    const doc = new PDFDocument({ margin: 50 });
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=customers-export.pdf');
+    
+    // Pipe the PDF into the response
+    doc.pipe(res);
+
+    // Add company header with business details
+    doc.fontSize(24).font('Helvetica-Bold').text('FABRICO LAUNDRY SERVICES', { align: 'center' });
+    doc.fontSize(12).font('Helvetica')
+      .text('123 Business Avenue, Commercial District', { align: 'center' })
+      .text('Mumbai, Maharashtra 400001', { align: 'center' })
+      .text('Phone: +91 98765 43210 | Email: info@fabrico.in', { align: 'center' })
+      .text('GSTIN: 27AABCF1234L1Z5', { align: 'center' });
+    
+    // Add a line separator
+    doc.moveTo(50, doc.y + 20)
+       .lineTo(550, doc.y + 20)
+       .stroke();
+
+    // Report title
+    doc.moveDown()
+       .fontSize(18).font('Helvetica-Bold')
+       .text('Customer Management Report', { align: 'center' });
+    
+    // Report date
+    doc.fontSize(12).font('Helvetica')
+       .text(`Generated on: ${new Date().toLocaleDateString('en-IN', { 
+         day: '2-digit', 
+         month: 'long', 
+         year: 'numeric' 
+       })}`, { align: 'center' });
+    
+    // Add a line separator
+    doc.moveTo(50, doc.y + 20)
+       .lineTo(550, doc.y + 20)
+       .stroke();
+
+    // Summary section with better formatting
+    doc.moveDown()
+       .fontSize(12);
+    
+    const totalCustomers = users.length;
+    const activeCustomers = users.filter(user => !user.isBlocked).length;
+    const blockedCustomers = totalCustomers - activeCustomers;
+    const totalOrders = users.reduce((sum, user) => sum + (user.stats?.totalOrders || 0), 0);
+    const totalRevenue = users.reduce((sum, user) => sum + (user.stats?.totalSpent || 0), 0);
+    
+    // Create a summary table-like structure
+    doc.font('Helvetica-Bold').text('Summary Statistics:');
+    doc.moveDown(0.5);
+    
+    // Summary details in a structured format
+    doc.font('Helvetica')
+       .text(`• Total Customers:     ${totalCustomers}`)
+       .text(`• Active Customers:    ${activeCustomers}`)
+       .text(`• Blocked Customers:   ${blockedCustomers}`)
+       .text(`• Total Orders:        ${totalOrders}`)
+       .text(`• Total Revenue:       ₹${totalRevenue.toFixed(2)}`);
+    
+    // Add a line separator before the customer table
+    doc.moveTo(50, doc.y + 20)
+       .lineTo(550, doc.y + 20)
+       .stroke();
+
+    // Check if there are customers to display
+    if (users.length === 0) {
+      doc.moveDown()
+         .fontSize(12).text('No customers found.', { align: 'center' });
+      doc.end();
+      return;
+    }
+
+    // Customer table with improved structure
+    doc.moveDown()
+       .fontSize(14).font('Helvetica-Bold')
+       .text('Customer Details', { align: 'center' });
+    
+    doc.moveDown();
+    
+    // Table headers with better styling
+    const tableTop = doc.y;
+    const rowHeight = 25;
+    const startX = 50;
+    const columnWidths = [90, 120, 80, 60, 60, 50, 60]; // Adjusted widths for better fit
+    
+    // Header row with background
+    doc.rect(startX, tableTop, 500, rowHeight).fill('#f0f0f0');
+    doc.fillColor('black').fontSize(10).font('Helvetica-Bold');
+    
+    const headers = ['Name', 'Email', 'Phone', 'Role', 'Status', 'Orders', 'Spent (₹)'];
+    let currentX = startX + 5; // Add some padding
+    
+    headers.forEach((header, i) => {
+      doc.text(header, currentX, tableTop + 8);
+      currentX += columnWidths[i];
+    });
+    
+    doc.font('Helvetica');
+
+    // Draw table rows with alternating colors
+    let y = tableTop + rowHeight;
+    let isEvenRow = false;
+    
+    for (const user of users) {
+      if (y > 750) { // Create new page if needed
+        doc.addPage({ margin: 50 });
+        y = 50;
+        
+        // Re-add headers on new page
+        doc.rect(startX, y, 500, rowHeight).fill('#f0f0f0');
+        doc.fillColor('black').fontSize(10).font('Helvetica-Bold');
+        
+        currentX = startX + 5;
+        headers.forEach((header, i) => {
+          doc.text(header, currentX, y + 8);
+          currentX += columnWidths[i];
+        });
+        
+        doc.font('Helvetica');
+        y += rowHeight;
+      }
+      
+      // Alternate row colors
+      if (isEvenRow) {
+        doc.rect(startX, y, 500, rowHeight).fill('#f8f8f8');
+        doc.fillColor('black');
+      }
+      
+      const totalOrders = user.stats?.totalOrders || 0;
+      const totalSpent = user.stats?.totalSpent ? user.stats.totalSpent.toFixed(2) : '0.00';
+      const status = user.isBlocked ? 'Blocked' : 'Active';
+      const role = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A';
+      
+      // Add data to the row
+      doc.fontSize(9);
+      currentX = startX + 5;
+      
+      doc.text(user.name || 'N/A', currentX, y + 8);
+      currentX += columnWidths[0];
+      
+      doc.text(user.email || 'N/A', currentX, y + 8);
+      currentX += columnWidths[1];
+      
+      doc.text(user.phone || 'N/A', currentX, y + 8);
+      currentX += columnWidths[2];
+      
+      doc.text(role, currentX, y + 8);
+      currentX += columnWidths[3];
+      
+      doc.text(status, currentX, y + 8);
+      currentX += columnWidths[4];
+      
+      doc.text(totalOrders.toString(), currentX, y + 8);
+      currentX += columnWidths[5];
+      
+      doc.text(`₹${totalSpent}`, currentX, y + 8);
+      
+      y += rowHeight;
+      isEvenRow = !isEvenRow;
+    }
+
+    // Add footer with page number
+    doc.fontSize(10).font('Helvetica')
+       .text(`Page 1`, 500, 800, { align: 'right' });
+
+    // Finalize the PDF
+    doc.end();
+  } catch (error) {
+    console.error('Error exporting customers as PDF:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

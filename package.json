@@ -4,6 +4,7 @@
   "description": "Fabrico Dry Cleaning Service",
   "scripts": {
     "test": "jest",
+    "test:login": "node run-login-tests.js",
     "test:selenium": "cd selenium-tests && node testRunner.js",
     "test:selenium:login": "cd selenium-tests && node loginTest.js",
     "test:selenium:register": "cd selenium-tests && node registerTest.js",

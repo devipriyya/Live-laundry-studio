@@ -5,7 +5,8 @@ const KNNRecommender = require('../src/ml/KNNRecommender');
 // Load environment variables
 dotenv.config({ path: __dirname + '/../.env' });
 
-// Import models
+// Import models (ensure both User and Order models are imported)
+require('../src/models/User');
 const Order = require('../src/models/Order');
 
 // MongoDB connection

@@ -1,0 +1,61 @@
+{
+  "model": {
+    "options": {
+      "gainFunction": "gini",
+      "splitFunction": "mean",
+      "minNumSamples": 3,
+      "maxDepth": 10,
+      "gainThreshold": 0.01,
+      "minSamplesSplit": 5,
+      "kind": "classifier"
+    },
+    "root": {
+      "kind": "classifier",
+      "gainFunction": "gini",
+      "splitFunction": "mean",
+      "minNumSamples": 3,
+      "maxDepth": 10,
+      "gainThreshold": 0.01,
+      "splitValue": 0.5,
+      "splitColumn": 0,
+      "gain": 0.21491045397750944,
+      "numberSamples": 49,
+      "left": {
+        "kind": "classifier",
+        "gainFunction": "gini",
+        "splitFunction": "mean",
+        "minNumSamples": 3,
+        "maxDepth": 10,
+        "gainThreshold": 0.01,
+        "gain": null,
+        "distribution": [
+          [
+            0,
+            0,
+            0,
+            1.0000000000000007
+          ]
+        ]
+      },
+      "right": {
+        "kind": "classifier",
+        "gainFunction": "gini",
+        "splitFunction": "mean",
+        "minNumSamples": 3,
+        "maxDepth": 10,
+        "gainThreshold": 0.01,
+        "gain": null,
+        "distribution": [
+          [
+            0,
+            0,
+            0.9999999999999999
+          ]
+        ]
+      }
+    },
+    "name": "DTClassifier"
+  },
+  "isTrained": true,
+  "timestamp": "2025-10-31T11:14:24.322Z"
+}

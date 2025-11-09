@@ -1,5 +1,5 @@
 import React, { Suspense, useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthContext } from './context/AuthContext';
 import './styles/analytics.css';
@@ -75,6 +75,9 @@ const Register = React.lazy(() => import('./pages/Register'));
 const TestAdminDashboard = React.lazy(() => import('./TestAdminDashboard'));
 const SimplifiedAdminDashboard = React.lazy(() => import('./SimplifiedAdminDashboard'));
 const TestProtectedRoute = React.lazy(() => import('./TestProtectedRoute')); // Added test component
+const TestCustomerSegment = React.lazy(() => import('./TestCustomerSegment'));
+const CustomerSegmentDetails = React.lazy(() => import('./pages/CustomerSegmentDetails'));
+const TestNaiveBayes = React.lazy(() => import('./pages/TestNaiveBayes'));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -91,9 +94,9 @@ function App() {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-white">
-        <BrowserRouter>
+        <Router>
           <AppRoutes />
-        </BrowserRouter>
+        </Router>
       </div>
     </ThemeProvider>
   );
@@ -177,6 +180,7 @@ const AppRoutes = () => {
           <Route path="legal" element={<DashboardLegal />} />
           <Route path="notifications" element={<DashboardNotifications />} />
           <Route path="recommendations" element={<DashboardRecommendations />} />
+          <Route path="test-naive-bayes" element={<TestNaiveBayes />} />
         </Route>
 
         {/* Redirect old dashboard route to new dashboard */}
@@ -419,6 +423,22 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <NotificationsPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Test Customer Segment Route */}
+        <Route 
+          path="/test-customer-segment" 
+          element={<TestCustomerSegment />} 
+        />
+
+        {/* Customer Segment Details */}
+        <Route 
+          path="/customer-segment" 
+          element={
+            <ProtectedRoute roles={['customer']}>
+              <CustomerSegmentDetails />
             </ProtectedRoute>
           } 
         />

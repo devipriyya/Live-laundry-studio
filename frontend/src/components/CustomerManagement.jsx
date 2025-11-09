@@ -26,6 +26,8 @@ import {
   InformationCircleIcon,
   ShieldCheckIcon
 } from '@heroicons/react/24/outline';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 const CustomerManagement = ({ isAdminView = false }) => {
   const { user } = useContext(AuthContext);
@@ -555,6 +557,81 @@ const CustomerManagement = ({ isAdminView = false }) => {
     document.body.removeChild(link);
   };
 
+  // Export customers to PDF (using backend endpoint)
+  const exportToPDF = async () => {
+    try {
+      // Show loading state
+      const exportButton = document.querySelector('button.flex.items-center.space-x-2.px-4.py-2.bg-red-600');
+      if (exportButton) {
+        const originalContent = exportButton.innerHTML;
+        exportButton.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Generating PDF...
+        `;
+        exportButton.disabled = true;
+      }
+
+      // Call backend PDF export endpoint
+      const response = await api.get('/auth/users/export/pdf', {
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `fabrico-customers-export-${new Date().toISOString().slice(0, 10)}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      // Show success message
+      setNotification({
+        show: true,
+        message: 'PDF exported successfully!',
+        type: 'success'
+      });
+      
+      // Reset button state
+      if (exportButton) {
+        setTimeout(() => {
+          exportButton.innerHTML = `
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>PDF Format</span>
+          `;
+          exportButton.disabled = false;
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error exporting customers as PDF:', error);
+      setNotification({
+        show: true,
+        message: 'Failed to export customers as PDF. Please try again.',
+        type: 'error'
+      });
+      
+      // Reset button state on error
+      const exportButton = document.querySelector('button.flex.items-center.space-x-2.px-4.py-2.bg-red-600');
+      if (exportButton) {
+        exportButton.innerHTML = `
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 00-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          <span>PDF Format</span>
+        `;
+        exportButton.disabled = false;
+      }
+    }
+  };
+
   // Sort customers
   const sortCustomers = (customers) => {
     try {
@@ -637,7 +714,12 @@ const CustomerManagement = ({ isAdminView = false }) => {
                 }}
                 className="w-full flex items-center justify-between px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
               >
-                <span>CSV Format</span>
+                <div className="flex items-center space-x-2">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>CSV Format</span>
+                </div>
                 <ArrowDownTrayIcon className="h-5 w-5" />
               </button>
               <button
@@ -647,7 +729,12 @@ const CustomerManagement = ({ isAdminView = false }) => {
                 }}
                 className="w-full flex items-center justify-between px-4 py-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
               >
-                <span>Excel Format</span>
+                <div className="flex items-center space-x-2">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Excel Format</span>
+                </div>
                 <ArrowDownTrayIcon className="h-5 w-5" />
               </button>
               <button
@@ -657,10 +744,18 @@ const CustomerManagement = ({ isAdminView = false }) => {
                 }}
                 className="w-full flex items-center justify-between px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
               >
-                <span>PDF Format</span>
+                <div className="flex items-center space-x-2">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>PDF Format</span>
+                </div>
                 <ArrowDownTrayIcon className="h-5 w-5" />
               </button>
             </div>
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              PDF includes business details and structured customer information
+            </p>
           </div>
         </div>
       </div>
@@ -1331,8 +1426,11 @@ const CustomerManagement = ({ isAdminView = false }) => {
         <ExportModal 
           onClose={() => setShowExportModal(false)}
           onExport={(format) => {
+            console.log('Export format selected:', format);
             if (format === 'csv') {
               exportToCSV();
+            } else if (format === 'pdf') {
+              exportToPDF();
             }
             // Add other format exports here if needed
             setShowExportModal(false);

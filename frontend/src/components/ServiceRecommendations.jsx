@@ -12,8 +12,9 @@ const ServiceRecommendations = ({ userOrderHistory }) => {
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
         // Use the correct POST endpoint instead of the non-existent GET endpoint
-        const response = await axios.post('http://localhost:5000/api/ml/recommend', {
+        const response = await axios.post(`${API_URL}/ml/recommend`, {
           userOrderHistory: userOrderHistory || [] // Use passed order history or empty array
         });
         // Transform the response to match the expected format
@@ -23,8 +24,30 @@ const ServiceRecommendations = ({ userOrderHistory }) => {
         }));
         setRecommendations(transformedRecommendations);
       } catch (err) {
-        setError('Failed to load recommendations');
-        console.error('Error fetching recommendations:', err);
+        // If KNN recommendations fail, try Naive Bayes as fallback
+        try {
+          // First train the Naive Bayes model
+          await axios.post(`${API_URL}/ml/train-naive-bayes`, {
+            orders: userOrderHistory || []
+          });
+          
+          // Then get probabilities from Naive Bayes
+          const nbResponse = await axios.post(`${API_URL}/ml/predict-probabilities`, {
+            userOrderHistory: userOrderHistory || []
+          });
+          
+          // Transform Naive Bayes probabilities to recommendations format
+          const nbRecommendations = nbResponse.data.probabilities.map(prob => ({
+            name: prob.service,
+            confidence: prob.probability
+          }));
+          
+          setRecommendations(nbRecommendations);
+        } catch (nbErr) {
+          setError('Failed to load recommendations');
+          console.error('Error fetching recommendations:', err);
+          console.error('Error fetching Naive Bayes predictions:', nbErr);
+        }
       } finally {
         setLoading(false);
       }
@@ -34,28 +57,21 @@ const ServiceRecommendations = ({ userOrderHistory }) => {
   }, [userOrderHistory]);
 
   const getServiceRoute = (serviceName) => {
-    // Map service names to the correct dashboard menu items
+    // Map service names to the correct dashboard routes
     const serviceRoutes = {
-      'washAndPress': 'schedule',
-      'dryCleaning': 'schedule',
-      'steamPress': 'schedule',
-      'stainRemoval': 'schedule',
-      'shoeCare': 'schedule'
+      'washAndPress': '/dashboard/laundry',
+      'dryCleaning': '/dashboard/dry-cleaning',
+      'steamPress': '/dashboard/steam-ironing',
+      'stainRemoval': '/dashboard/stain-removal',
+      'shoeCare': '/dashboard/shoe-cleaning'
     };
-    return serviceRoutes[serviceName] || 'schedule';
+    return serviceRoutes[serviceName] || '/schedule-pickup';
   };
 
   const handleRecommendationClick = (serviceName) => {
-    // Navigate to the correct dashboard section
-    const menuItemId = getServiceRoute(serviceName);
-    // Since we're in a component, we need to navigate to the correct route
-    // Based on the Dashboard.jsx, schedule wash is at /schedule-pickup
-    if (menuItemId === 'schedule') {
-      navigate('/schedule-pickup');
-    } else {
-      // For other services, navigate to schedule pickup as default
-      navigate('/schedule-pickup');
-    }
+    // Navigate to the correct service page based on the recommendation
+    const route = getServiceRoute(serviceName);
+    navigate(route);
   };
 
   if (loading) return <div className="text-center py-4">Loading recommendations...</div>;
