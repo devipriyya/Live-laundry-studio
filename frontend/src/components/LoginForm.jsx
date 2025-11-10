@@ -87,7 +87,7 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
       // Exchange Firebase token for backend JWT token
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
         const response = await fetch(`${API_URL}/auth/firebase-login`, {
           method: 'POST',
           headers: {
@@ -156,7 +156,7 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
       // Exchange Firebase token for backend JWT token
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
         const response = await fetch(`${API_URL}/auth/firebase-login`, {
           method: 'POST',
           headers: {

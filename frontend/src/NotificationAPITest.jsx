@@ -10,7 +10,7 @@ const NotificationAPITest = () => {
     setError(null);
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
       const response = await fetch(`${API_URL}/notifications/user/demo@fabrico.com`);
       
       if (!response.ok) {

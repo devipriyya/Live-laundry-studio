@@ -12,7 +12,7 @@ const ServiceRecommendations = ({ userOrderHistory }) => {
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
         // Use the correct POST endpoint instead of the non-existent GET endpoint
         const response = await axios.post(`${API_URL}/ml/recommend`, {
           userOrderHistory: userOrderHistory || [] // Use passed order history or empty array
