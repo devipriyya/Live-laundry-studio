@@ -66,16 +66,11 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setLoading(true);
-    setErrors(initialErrors);
 
-    // Validate form
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      setLoading(false);
-      return;
-    }
+    if (!validateForm()) return;
+
+    setLoading(true);
+    setErrors((prev) => ({ ...prev, general: "", success: "" }));
 
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -87,8 +82,7 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
       // Exchange Firebase token for backend JWT token
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
-        const response = await fetch(`${API_URL}/auth/firebase-login`, {
+        const response = await fetch('http://localhost:5000/api/auth/firebase-login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -156,8 +150,7 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
       // Exchange Firebase token for backend JWT token
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
-        const response = await fetch(`${API_URL}/auth/firebase-login`, {
+        const response = await fetch('http://localhost:5000/api/auth/firebase-login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

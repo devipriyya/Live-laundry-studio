@@ -15,21 +15,55 @@ const CustomerSegment = ({ customerData }) => {
     fetchSegments();
   }, [customerData]);
 
-  const fetchSegments = async (customerData) => {
+  const fetchSegments = async () => {
+    // If we have mock data with a predefined segment, use it directly
+    if (customerData && customerData.segment) {
+      setSegments({
+        svm: {
+          segment: customerData.segment,
+          confidence: 0.95,
+          features: []
+        },
+        decisionTree: {
+          segment: customerData.segment,
+          confidence: 0.85,
+          features: []
+        }
+      });
+      return;
+    }
+    
+    // Only fetch from API if we have customerData and no predefined segment
+    if (!customerData) {
+      // Set default segments if no data provided
+      setSegments({
+        svm: {
+          segment: 'regular',
+          confidence: 0.8,
+          features: []
+        },
+        decisionTree: {
+          segment: 'regular',
+          confidence: 0.75,
+          features: []
+        }
+      });
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
       // Fetch both SVM and Decision Tree predictions
       const [svmResponse, dtResponse] = await Promise.all([
-        axios.post(`${API_URL}/ml/segment`, {
+        axios.post('http://localhost:5000/api/ml/segment', {
           customerData
         }).catch(err => {
           console.error('Error fetching SVM segment:', err);
           return null;
         }),
-        axios.post(`${API_URL}/ml/segment-dt`, {
+        axios.post('http://localhost:5000/api/ml/segment-dt', {
           customerData
         }).catch(err => {
           console.error('Error fetching Decision Tree segment:', err);

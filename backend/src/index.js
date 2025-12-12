@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 
+// Import routes
 const authRoutes = require('./routes/auth');
 const serviceRoutes = require('./routes/service');
 const orderRoutes = require('./routes/order');
@@ -17,26 +18,38 @@ const notificationRoutes = require('./routes/notification');
 const productRoutes = require('./routes/product');
 const mlRoutes = require('./routes/mlRoutes');
 
+// Connect to MongoDB
 connectDB();
 const app = express();
 
-// Configure CORS to allow requests from the frontend
+// ✅ Allow CORS for both local and production (Vercel)
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'https://washlab-frontend.vercel.app' // <-- replace with your actual Vercel frontend URL
+  ],
   credentials: true
 }));
 
+// Middleware
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Test route to verify token generation
+// ✅ Test route to check if backend works
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
+
+// ✅ Route to test JWT generation
 app.get('/api/test-token', (req, res) => {
   const testToken = jwt.sign({ id: 'test-user-id' }, process.env.JWT_SECRET, { expiresIn: '1h' });
   console.log('Test route - Generated test token:', testToken);
   res.json({ token: testToken });
 });
 
-// Test route to verify token verification
+// ✅ Route to test JWT verification
 app.get('/api/verify-token', async (req, res) => {
   const authHeader = req.headers.authorization;
   console.log('Verify token route - Authorization header:', authHeader);
@@ -63,6 +76,7 @@ app.get('/api/verify-token', async (req, res) => {
   }
 });
 
+// ✅ All your routes
 app.use('/api/auth', authRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/orders', orderRoutes);
@@ -74,12 +88,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/ml', mlRoutes);
 
-// Root endpoint
-app.get("/", (req, res) => {
-  res.send("Backend is running 🚀");
-});
-
-// Health check endpoint
+// ✅ Health check endpoint for Render
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
@@ -88,5 +97,6 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ✅ Start the server (Render provides PORT)
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

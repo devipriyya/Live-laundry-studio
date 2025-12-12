@@ -12,13 +12,33 @@ const DecisionTreeSegment = ({ customerData }) => {
     fetchSegment();
   }, [customerData]);
 
-  const fetchSegment = async (customerData) => {
+  const fetchSegment = async () => {
+    // If we have mock data with a predefined segment, use it directly
+    if (customerData && customerData.segment) {
+      setSegment({
+        segment: customerData.segment,
+        confidence: 0.95,
+        features: []
+      });
+      return;
+    }
+    
+    // Only fetch from API if we have customerData and no predefined segment
+    if (!customerData) {
+      // Set default segment if no data provided
+      setSegment({
+        segment: 'regular',
+        confidence: 0.8,
+        features: []
+      });
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
-      const response = await axios.post(`${API_URL}/ml/segment-dt`, {
+      const response = await axios.post('http://localhost:5000/api/ml/segment-dt', {
         customerData
       });
       

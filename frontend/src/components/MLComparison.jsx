@@ -14,21 +14,24 @@ const MLComparison = ({ customerData }) => {
     fetchAllPredictions();
   }, [customerData]);
 
-  const fetchPredictions = async (customerData) => {
+  const fetchAllPredictions = async () => {
+    if (!customerData) {
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
       // Fetch predictions from all three models
       const [knnResponse, svmResponse, dtResponse] = await Promise.all([
-        axios.post(`${API_URL}/ml/recommend`, {
+        axios.post('http://localhost:5000/api/ml/recommend', {
           userOrderHistory: []
         }).catch(() => null),
-        axios.post(`${API_URL}/ml/segment`, {
+        axios.post('http://localhost:5000/api/ml/segment', {
           customerData
         }).catch(() => null),
-        axios.post(`${API_URL}/ml/segment-dt`, {
+        axios.post('http://localhost:5000/api/ml/segment-dt', {
           customerData
         }).catch(() => null)
       ]);

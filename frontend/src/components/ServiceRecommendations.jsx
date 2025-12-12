@@ -12,9 +12,8 @@ const ServiceRecommendations = ({ userOrderHistory }) => {
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
-        const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
         // Use the correct POST endpoint instead of the non-existent GET endpoint
-        const response = await axios.post(`${API_URL}/ml/recommend`, {
+        const response = await axios.post('http://localhost:5000/api/ml/recommend', {
           userOrderHistory: userOrderHistory || [] // Use passed order history or empty array
         });
         // Transform the response to match the expected format
@@ -27,12 +26,12 @@ const ServiceRecommendations = ({ userOrderHistory }) => {
         // If KNN recommendations fail, try Naive Bayes as fallback
         try {
           // First train the Naive Bayes model
-          await axios.post(`${API_URL}/ml/train-naive-bayes`, {
+          await axios.post('http://localhost:5000/api/ml/train-naive-bayes', {
             orders: userOrderHistory || []
           });
           
           // Then get probabilities from Naive Bayes
-          const nbResponse = await axios.post(`${API_URL}/ml/predict-probabilities`, {
+          const nbResponse = await axios.post('http://localhost:5000/api/ml/predict-probabilities', {
             userOrderHistory: userOrderHistory || []
           });
           

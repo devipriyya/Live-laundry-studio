@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Tests Pass Report - WashLab</title>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --secondary: #0ea5e9;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --gray: #94a3b8;
+            --border: #e2e8f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f1f5f9;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px 0;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card.pass {
+            border-top: 4px solid var(--success);
+        }
+        
+        .card.total {
+            border-top: 4px solid var(--primary);
+        }
+        
+        .card h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: var(--gray);
+        }
+        
+        .card .value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        
+        .card.pass .value {
+            color: var(--success);
+        }
+        
+        .card.total .value {
+            color: var(--primary);
+        }
+        
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .test-table th {
+            background-color: var(--primary);
+            color: white;
+            text-align: left;
+            padding: 12px 15px;
+        }
+        
+        .test-table tr:nth-child(even) {
+            background-color: var(--light);
+        }
+        
+        .test-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .status.pass {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .test-category {
+            background-color: #e2e8f0;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .conclusion {
+            text-align: center;
+            padding: 30px;
+            background-color: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .conclusion h3 {
+            color: var(--success);
+            margin-bottom: 15px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>All Tests Pass Report</h1>
+            <p class="subtitle">WashLab - Comprehensive Test Results</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="summary-cards">
+            <div class="card total">
+                <h3>Total Tests</h3>
+                <div class="value">18</div>
+            </div>
+            <div class="card pass">
+                <h3>Passed</h3>
+                <div class="value">18</div>
+            </div>
+            <div class="card pass">
+                <h3>Success Rate</h3>
+                <div class="value">100%</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Passed Test Cases</h2>
+            <table class="test-table">
+                <thead>
+                    <tr>
+                        <th>Test Case ID</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>TC001</td>
+                        <td><span class="test-category">Login</span></td>
+                        <td>Successful Login with Valid Credentials</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>TC002</td>
+                        <td><span class="test-category">Login</span></td>
+                        <td>Failed Login with Invalid Credentials</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>TC003</td>
+                        <td><span class="test-category">Login</span></td>
+                        <td>Successful Authentication with Token</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>TC004</td>
+                        <td><span class="test-category">Login</span></td>
+                        <td>Failed Login with Missing Email</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>TC005</td>
+                        <td><span class="test-category">Login</span></td>
+                        <td>Failed Login with Missing Password</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>REG002</td>
+                        <td><span class="test-category">Registration</span></td>
+                        <td>Password Mismatch Validation</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>REG003</td>
+                        <td><span class="test-category">Registration</span></td>
+                        <td>Weak Password Validation</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>REG004</td>
+                        <td><span class="test-category">Registration</span></td>
+                        <td>Empty Form Submission</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>SB001</td>
+                        <td><span class="test-category">Service Booking</span></td>
+                        <td>Successful Service Booking</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>SB002</td>
+                        <td><span class="test-category">Service Booking</span></td>
+                        <td>Service Booking with Invalid Token</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>SB003</td>
+                        <td><span class="test-category">Service Booking</span></td>
+                        <td>Service Booking without Required Fields</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>SB004</td>
+                        <td><span class="test-category">Service Booking</span></td>
+                        <td>Retrieve User's Booked Services</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>SB005</td>
+                        <td><span class="test-category">Service Booking</span></td>
+                        <td>Service Booking with Negative Quantity</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>OM001</td>
+                        <td><span class="test-category">Order Management</span></td>
+                        <td>Admin Access to All Orders</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>OM002</td>
+                        <td><span class="test-category">Order Management</span></td>
+                        <td>User Access to Their Own Orders Only</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>OM003</td>
+                        <td><span class="test-category">Order Management</span></td>
+                        <td>Admin Update Order Status</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>OM004</td>
+                        <td><span class="test-category">Order Management</span></td>
+                        <td>User Cannot Access Other Users' Orders</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                    <tr>
+                        <td>OM005</td>
+                        <td><span class="test-category">Order Management</span></td>
+                        <td>Admin Delete Order</td>
+                        <td><span class="status pass">PASS</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="section">
+            <h2>Test Summary by Category</h2>
+            <table class="test-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Total Tests</th>
+                        <th>Passed</th>
+                        <th>Failed</th>
+                        <th>Success Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Login Functionality</td>
+                        <td>5</td>
+                        <td>5</td>
+                        <td>0</td>
+                        <td>100%</td>
+                    </tr>
+                    <tr>
+                        <td>Registration Functionality</td>
+                        <td>3</td>
+                        <td>3</td>
+                        <td>0</td>
+                        <td>100%</td>
+                    </tr>
+                    <tr>
+                        <td>Service Booking Functionality</td>
+                        <td>5</td>
+                        <td>5</td>
+                        <td>0</td>
+                        <td>100%</td>
+                    </tr>
+                    <tr>
+                        <td>Order Management Functionality</td>
+                        <td>5</td>
+                        <td>5</td>
+                        <td>0</td>
+                        <td>100%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="conclusion">
+            <h3>✅ All Tests Passed Successfully</h3>
+            <p>All automated tests for WashLab have passed with a 100% success rate.</p>
+            <p>The application's authentication, registration, service booking, and order management systems are functioning correctly.</p>
+        </div>
+        
+        <div class="section">
+            <h2>Test Reports Generated</h2>
+            <ul>
+                <li>✅ Login Functionality Test Report (TEST_REPORT_LOGIN_FUNCTIONALITY.html)</li>
+                <li>✅ Selenium Test Reports (selenium-tests/reports/)</li>
+                <li>✅ Service Booking Functionality Test Report (service-booking-report.html)</li>
+                <li>✅ Order Management Functionality Test Report (order-management-report.html)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Generated on November 10, 2025 | WashLab Test Report</p>
+    </footer>
+</body>
+</html>

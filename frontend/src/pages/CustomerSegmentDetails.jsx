@@ -37,24 +37,23 @@ const CustomerSegmentDetails = () => {
   };
 
   useEffect(() => {
-    fetchSegments(customerData);
+    fetchSegments();
   }, []);
 
-  const fetchSegments = async (customerData) => {
+  const fetchSegments = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://washlab.onrender.com/api';
       // Fetch both SVM and Decision Tree predictions
       const [svmResponse, dtResponse] = await Promise.all([
-        axios.post(`${API_URL}/ml/segment`, {
+        axios.post('http://localhost:5000/api/ml/segment', {
           customerData
         }).catch(err => {
           console.error('Error fetching SVM segment:', err);
           return null;
         }),
-        axios.post(`${API_URL}/ml/segment-dt`, {
+        axios.post('http://localhost:5000/api/ml/segment-dt', {
           customerData
         }).catch(err => {
           console.error('Error fetching Decision Tree segment:', err);

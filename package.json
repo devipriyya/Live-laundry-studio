@@ -5,6 +5,8 @@
   "scripts": {
     "test": "jest",
     "test:login": "node run-login-tests.js",
+    "test:service-booking": "node run-test-case-3.js",
+    "test:order-management": "node run-test-case-4.js",
     "test:selenium": "cd selenium-tests && node testRunner.js",
     "test:selenium:login": "cd selenium-tests && node loginTest.js",
     "test:selenium:register": "cd selenium-tests && node registerTest.js",
