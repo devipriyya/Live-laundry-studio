@@ -428,30 +428,34 @@ const DashboardShoeCleaning = () => {
       let token = localStorage.getItem('token');
       console.log('Token status before order creation:', token ? 'Present' : 'Missing');
       
-      // If no token, try to refresh authentication for privileged users only
+      // If no token, try to refresh authentication
       if (!token) {
-        console.log('No token found, checking user role');
+        console.log('No token found, attempting to refresh authentication');
         // Try to get user from localStorage
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
           const user = JSON.parse(storedUser);
           console.log('Stored user:', user);
-          // Only try to refresh token for admin or delivery users
-          if (user.role === 'admin' || user.role === 'deliveryBoy') {
-            console.log('Attempting to refresh token for privileged user');
-            try {
-              // Try to refresh by making a simple authenticated request
-              const profileResponse = await api.get('/auth/profile');
-              console.log('Profile request successful, token should be refreshed');
-              // Get the new token
-              token = localStorage.getItem('token');
-            } catch (refreshError) {
-              console.log('Token refresh failed:', refreshError.message);
+          
+          // For all users including customers, try to get a fresh token
+          try {
+            // Try to refresh by making a Firebase login request
+            const profileResponse = await api.post('/auth/firebase-login', {
+              uid: user.uid,
+              email: user.email,
+              name: user.name
+            });
+            console.log('Firebase login successful, new token obtained');
+            
+            // Set the new token
+            if (profileResponse.data.token) {
+              token = profileResponse.data.token;
+              localStorage.setItem('token', token);
+              console.log('New token set in localStorage');
             }
-          }
-          // For regular customers, we'll proceed without a token as they use Firebase auth
-          else if (user.role === 'customer') {
-            console.log('Regular customer, proceeding without JWT token');
+          } catch (refreshError) {
+            console.log('Token refresh failed:', refreshError.message);
+            // Even if refresh fails, we'll try to proceed as the order endpoint uses optionalAuth
           }
         }
       }

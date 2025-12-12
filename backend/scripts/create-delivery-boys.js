@@ -32,7 +32,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   phone: { type: String },
   profilePicture: { type: String },
-  role: { type: String, enum: ['customer','admin','delivery'], default: 'customer' },
+  role: { type: String, enum: ['customer','admin','deliveryBoy'], default: 'customer' },
   isBlocked: { type: Boolean, default: false },
   addresses: [{
     type: { type: String, enum: ['Home', 'Office', 'Other'], required: true },
@@ -69,21 +69,21 @@ const deliveryBoys = [
     email: 'mike.delivery@fabrico.com',
     password: 'delivery123',
     phone: '+1 (555) 123-4567',
-    role: 'delivery'
+    role: 'deliveryBoy'
   },
   {
     name: 'Sarah Wilson',
     email: 'sarah.delivery@fabrico.com',
     password: 'delivery123',
     phone: '+1 (555) 234-5678',
-    role: 'delivery'
+    role: 'deliveryBoy'
   },
   {
     name: 'Tom Parker',
     email: 'tom.delivery@fabrico.com',
     password: 'delivery123',
     phone: '+1 (555) 345-6789',
-    role: 'delivery'
+    role: 'deliveryBoy'
   }
 ];
 

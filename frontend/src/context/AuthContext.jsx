@@ -1,6 +1,4 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { auth } from '../firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 import api from '../api';
 
 export const AuthContext = createContext();
@@ -9,154 +7,30 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
   const [loading, setLoading] = useState(true);
 
-  // Debug logging
-  console.log('AuthContext: Initializing AuthProvider');
-  console.log('AuthContext: Initial user state:', user);
-  console.log('AuthContext: Initial loading state:', loading);
-
-  // Function to verify user exists in backend database
-  const verifyUserInDatabase = async (userData) => {
-    try {
-      console.log('AuthContext: Verifying user in database:', userData);
-      // Try to get user details from backend
-      const response = await api.get(`/auth/users/${userData.uid}`);
-      console.log('AuthContext: User verification response:', response.data);
-      if (response.data) {
-        return {
-          ...userData,
-          ...response.data,
-          id: response.data._id || response.data.id
-        };
-      }
-      return userData;
-    } catch (error) {
-      console.warn('AuthContext: User not found in backend database:', error);
-      return userData;
-    }
-  };
-
+  // Check if we have a token and user in localStorage on initial load
   useEffect(() => {
-    console.log('AuthContext: useEffect triggered');
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('AuthContext: Firebase user state changed:', firebaseUser);
-      if (firebaseUser) {
-        let userRole = 'customer';
-        let needsToken = false;
-        
-        if (firebaseUser.email === 'admin@gmail.com') {
-          userRole = 'admin';
-          needsToken = true;
-          console.log('AuthContext: Admin user detected');
-        } else if (firebaseUser.email && firebaseUser.email.includes('delivery')) {
-          userRole = 'deliveryBoy';
-          needsToken = true;
-          console.log('AuthContext: Delivery boy detected');
-        }
-        
-        const userData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
-          role: userRole,
-        };
-        
-        // For all users (including regular customers), ensure we have a valid token for API calls
-        let currentToken = localStorage.getItem('token');
-        console.log('AuthContext: Current token in localStorage:', currentToken);
-        console.log('AuthContext: Current token length:', currentToken ? currentToken.length : 0);
-        
-        if (!currentToken) {
-          console.log('AuthContext: No token found, attempting to exchange Firebase credentials for JWT');
-          try {
-            // Exchange Firebase user for backend JWT token
-            const response = await api.post('/auth/firebase-login', {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0]
-            });
-            console.log('AuthContext: Firebase login response:', response.data);
-            if (response.data.token) {
-              currentToken = response.data.token;
-              console.log('AuthContext: Setting token in localStorage:', currentToken);
-              console.log('AuthContext: Token to set length:', currentToken.length);
-              localStorage.setItem('token', currentToken);
-              // Dispatch a custom event to notify other components that the token has been set
-              window.dispatchEvent(new CustomEvent('tokenReady', { detail: { token: currentToken } }));
-            }
-          } catch (error) {
-            console.log('AuthContext: Firebase login failed, using demo token:', error);
-            // Fallback to demo token
-            currentToken = 'demo-jwt-token-' + Date.now();
-            console.log('AuthContext: Setting demo token in localStorage:', currentToken);
-            localStorage.setItem('token', currentToken);
-            // Dispatch a custom event to notify other components that the token has been set
-            window.dispatchEvent(new CustomEvent('tokenReady', { detail: { token: currentToken } }));
-          }
-        } else {
-          // If we have a token, verify it's still valid
-          try {
-            // We could verify the token here, but for now we'll just log it
-            console.log('AuthContext: Using existing token');
-          } catch (error) {
-            console.log('AuthContext: Existing token invalid, removing it');
-            localStorage.removeItem('token');
-            // Try to get a new token
-            try {
-              const response = await api.post('/auth/firebase-login', {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email,
-                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0]
-              });
-              if (response.data.token) {
-                currentToken = response.data.token;
-                localStorage.setItem('token', currentToken);
-                window.dispatchEvent(new CustomEvent('tokenReady', { detail: { token: currentToken } }));
-              }
-            } catch (refreshError) {
-              console.log('AuthContext: Failed to refresh token:', refreshError);
-            }
-          }
-        }
-        
-        const verifiedUser = await verifyUserInDatabase(userData);
-        console.log('AuthContext: Setting user data:', verifiedUser);
-        setUser(verifiedUser);
-        localStorage.setItem('user', JSON.stringify(verifiedUser));
-        setLoading(false);
-      } else {
-        const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-        console.log('AuthContext: No Firebase user, checking stored session', { storedToken, storedUser });
-        if (storedToken && storedUser) {
-          console.log('AuthContext: Preserving stored user session');
-          setUser(JSON.parse(storedUser));
-        } else {
-          console.log('AuthContext: No user, clearing state');
-          setUser(null);
-          localStorage.removeItem('user');
-        }
-        setLoading(false);
-      }
-    });
+    const storedUser = localStorage.getItem('user');
+    const storedToken = localStorage.getItem('token');
     
-    // Set loading to false after a timeout to prevent infinite loading
+    if (storedUser && storedToken) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+      } catch (e) {
+        console.error('Failed to parse stored user:', e);
+      }
+    }
+    
+    // Set loading to false after a short delay to ensure UI renders
     const timer = setTimeout(() => {
-      if (loading) {
-        console.log('AuthContext: Loading timeout reached');
-        setLoading(false);
-      }
-    }, 2000);
+      setLoading(false);
+    }, 100);
     
-    return () => {
-      console.log('AuthContext: Cleaning up');
-      unsubscribe();
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, []);
 
   const logout = () => {
     console.log('AuthContext: Logging out');
-    auth.signOut();
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
@@ -282,28 +156,140 @@ export const AuthProvider = ({ children }) => {
     console.log("AuthContext: Demo admin user set successfully");
   };
 
+  // Universal login function that handles all user types correctly
+  const universalLogin = async (email, password) => {
+    console.log("AuthContext: universalLogin called with:", { email, password });
+    
+    try {
+      // Always try backend authentication first
+      console.log("AuthContext: Trying backend authentication");
+      const response = await api.post('/auth/login', {
+        email,
+        password
+      });
+      
+      console.log("AuthContext: Backend authentication response:", response.status, response.data);
+
+      if (response.data && response.data.token) {
+        // Store token in localStorage
+        localStorage.setItem('token', response.data.token);
+        
+        // Store user data
+        const userData = {
+          uid: response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: response.data.user.role,
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+        
+        console.log("AuthContext: User logged in successfully with role:", userData.role);
+        return { success: true, role: userData.role };
+      } else {
+        console.log("AuthContext: Invalid response from backend");
+        return { success: false, error: "Invalid response from server" };
+      }
+    } catch (error) {
+      console.log("AuthContext: Backend authentication failed:", error);
+      
+      // Return specific error based on status code
+      if (error.response) {
+        console.log("AuthContext: Error response:", error.response.status, error.response.data);
+        switch (error.response.status) {
+          case 401:
+            return { success: false, error: "Invalid email or password" };
+          case 403:
+            return { success: false, error: "Access denied" };
+          case 500:
+            return { success: false, error: "Server error. Please try again later." };
+          default:
+            return { success: false, error: error.response.data?.message || "Login failed. Please try again." };
+        }
+      }
+      
+      // Network or other error
+      return { success: false, error: "Unable to connect to server. Please check your connection." };
+    }
+  };
+
+  const deliveryBoyLogin = async (email, password) => {
+    console.log("AuthContext: deliveryBoyLogin called with:", { email, password });
+    
+    try {
+      // Use backend API for delivery boy login
+      console.log("AuthContext: Making API call to /auth/login");
+      const response = await api.post('/auth/login', {
+        email,
+        password
+      });
+      console.log("AuthContext: API response received:", response.status, response.data);
+
+      if (response.data && response.data.token) {
+        // Store token in localStorage
+        localStorage.setItem('token', response.data.token);
+        
+        // Store user data
+        const deliveryBoyUser = {
+          uid: response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: response.data.user.role,
+        };
+        
+        localStorage.setItem('user', JSON.stringify(deliveryBoyUser));
+        setUser(deliveryBoyUser);
+        
+        console.log("AuthContext: Delivery boy logged in successfully");
+        return { success: true };
+      } else {
+        console.log("AuthContext: Invalid response from server");
+        throw new Error("Invalid response from server");
+      }
+    } catch (error) {
+      console.log("AuthContext: Delivery boy login failed with error:", error);
+      let errorMessage = "Login failed. Please try again.";
+      
+      if (error.response) {
+        console.log("AuthContext: Error response:", error.response.status, error.response.data);
+        switch (error.response.status) {
+          case 401:
+            errorMessage = "Invalid email or password";
+            break;
+          case 403:
+            errorMessage = "Access denied. You may not have delivery boy permissions.";
+            break;
+          case 500:
+            errorMessage = "Server error. Please try again later.";
+            break;
+          default:
+            errorMessage = error.response.data?.message || "Login failed. Please try again.";
+        }
+      }
+
+      console.log("AuthContext: Delivery boy login failed:", errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const deliveryBoyDemoLogin = async () => {
     console.log("AuthContext: deliveryBoyDemoLogin called");
     
     // Option 1: Use real database login
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: 'mike.delivery@fabrico.com',
-          password: 'delivery123'
-        })
+      const response = await api.post('/auth/login', {
+        email: 'mike.delivery@fabrico.com',
+        password: 'delivery123'
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('token', data.token);
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
         const deliveryBoyUser = {
-          uid: data.user.id,
-          email: data.user.email,
-          name: data.user.name,
-          role: data.user.role,
+          uid: response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: response.data.user.role,
         };
         setUser(deliveryBoyUser);
         localStorage.setItem('user', JSON.stringify(deliveryBoyUser));
@@ -332,11 +318,66 @@ export const AuthProvider = ({ children }) => {
     console.log("AuthContext: Delivery boy user set successfully");
   };
 
+  // Profile functions
+  const getProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await api.get('/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('AuthContext: Error fetching profile:', error);
+      throw error;
+    }
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await api.put('/profile', profileData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update user in context and localStorage if successful
+      if (response.data && response.data.user) {
+        setUser(response.data.user);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('AuthContext: Error updating profile:', error);
+      throw error;
+    }
+  };
+
   // Debug logging
   console.log('AuthContext: Rendering children with user:', user, 'loading:', loading);
 
   return (
-    <AuthContext.Provider value={{ user, setUser, logout, demoLogin, adminDemoLogin, deliveryBoyDemoLogin, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      setUser, 
+      logout, 
+      demoLogin, 
+      adminDemoLogin, 
+      deliveryBoyLogin, 
+      deliveryBoyDemoLogin, 
+      universalLogin, 
+      loading,
+      getProfile,
+      updateProfile
+    }}>
       {children}
     </AuthContext.Provider>
   );

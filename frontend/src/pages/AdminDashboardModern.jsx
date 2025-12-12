@@ -9,6 +9,7 @@ import EnhancedPaymentManagement from '../components/EnhancedPaymentManagement';
 import EnhancedReportsAnalytics from './EnhancedReportsAnalytics'; // Changed to import EnhancedReportsAnalytics
 import Settings from '../components/Settings';
 import DeliveryManagement from './DeliveryManagement';
+import DeliveryBoyManagement from '../components/DeliveryBoyManagement';
 import api from '../api';
 import { dashboardService } from '../services/dashboardService';
 import {
@@ -87,6 +88,7 @@ const AdminDashboardModern = () => {
     { id: 'orders', label: 'Orders', icon: ShoppingBagIcon },
     { id: 'customers', label: 'Customers', icon: UsersIcon },
     { id: 'staff', label: 'Staff', icon: UserGroupIcon },
+    { id: 'delivery-boys', label: 'Delivery Boys', icon: TruckIcon },
     { id: 'inventory', label: 'Inventory', icon: CubeIcon },
     { id: 'payments', label: 'Payment Management', icon: CreditCardIcon },
     { id: 'reports', label: 'Reports', icon: ChartBarIcon }, // Changed this to stay within dashboard
@@ -309,6 +311,8 @@ const AdminDashboardModern = () => {
         return <CustomerManagement isAdminView={true} />;
       case 'staff':
         return <StaffManagement />;
+      case 'delivery-boys':
+        return <DeliveryBoyManagement />;
       case 'inventory':
         return <InventoryManagement />;
       case 'payments':

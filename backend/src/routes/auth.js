@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
 const Order = require('../models/Order');
@@ -77,14 +78,19 @@ router.post('/firebase-login', async (req, res) => {
       if (user) {
         // Update existing user with Firebase UID
         user.firebaseUid = uid;
+        // Preserve the user's existing role, but ensure admin@gmail.com has admin role
+        if (email === 'admin@gmail.com' && user.role !== 'admin') {
+          user.role = 'admin';
+        }
         await user.save();
       } else {
         // Create new user
+        const role = email === 'admin@gmail.com' ? 'admin' : 'customer';
         user = new User({
           name: name || email?.split('@')[0],
           email: email,
           firebaseUid: uid,
-          role: 'customer'
+          role: role
         });
         await user.save();
       }
@@ -459,6 +465,242 @@ router.get('/users/export/csv', protect, isAdmin, async (req, res) => {
   }
 });
 
+// Get all delivery boys (admin only)
+router.get('/delivery-boys', protect, isAdmin, async (req, res) => {
+  try {
+    const deliveryBoys = await User.find({ role: 'deliveryBoy' })
+      .select('-password')
+      .sort({ createdAt: -1 });
+    
+    // Get order count for each delivery boy
+    const deliveryBoysWithStats = await Promise.all(
+      deliveryBoys.map(async (boy) => {
+        const activeOrders = await Order.countDocuments({
+          deliveryBoyId: boy._id,
+          status: { $in: ['out-for-pickup', 'pickup-completed', 'out-for-delivery'] }
+        });
+        
+        const completedOrders = await Order.countDocuments({
+          deliveryBoyId: boy._id,
+          status: 'delivery-completed'
+        });
+        
+        // Determine status based on isBlocked field
+        const status = boy.isBlocked ? 'Inactive' : 'Active';
+        
+        return {
+          ...boy.toObject(),
+          status, // Add status field for frontend compatibility
+          activeOrders,
+          completedOrders
+        };
+      })
+    );
+    
+    res.json({ deliveryBoys: deliveryBoysWithStats });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Create delivery boy (admin only)
+router.post('/delivery-boys', protect, isAdmin, async (req, res) => {
+  try {
+    const { name, email, phone, password } = req.body;
+    
+    console.log('=== DELIVERY BOY CREATION ROUTE ===');
+    console.log('Request body:', { name, email, phone, passwordLength: password?.length });
+    
+    // Validate required fields
+    if (!name || !email || !password) {
+      console.log('❌ Missing required fields:', { name: !!name, email: !!email, password: !!password });
+      return res.status(400).json({ message: 'Name, email, and password are required' });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.log('❌ Invalid email format:', email);
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
+    
+    console.log('✅ Basic validation passed');
+    
+    // Check if user already exists
+    console.log('Checking if user already exists...');
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      console.log('❌ User already exists with email:', email);
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+    
+    console.log('✅ Email is unique');
+    
+    // Validate password strength
+    if (password.length < 6) {
+      console.log('❌ Password too short:', password.length);
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+    
+    console.log('✅ Password validation passed');
+    
+    // Create delivery boy with plain password - let the pre-save hook handle hashing
+    console.log('Creating delivery boy object with plain password...');
+    const deliveryBoy = new User({
+      name,
+      email,
+      phone,
+      password, // Plain password - will be hashed by pre-save hook
+      role: 'deliveryBoy'
+    });
+    
+    console.log('Delivery boy object created:', {
+      name: deliveryBoy.name,
+      email: deliveryBoy.email,
+      phone: deliveryBoy.phone,
+      passwordLength: deliveryBoy.password?.length,
+      role: deliveryBoy.role
+    });
+    
+    console.log('Saving delivery boy to database...');
+    const saveResult = await deliveryBoy.save();
+    console.log('✅ Delivery boy saved successfully:', saveResult._id);
+    
+    res.status(201).json({ 
+      message: 'Delivery boy created successfully', 
+      deliveryBoy: {
+        id: deliveryBoy._id,
+        name: deliveryBoy.name,
+        email: deliveryBoy.email,
+        phone: deliveryBoy.phone,
+        role: deliveryBoy.role
+      }
+    });
+  } catch (error) {
+    console.log('=== DELIVERY BOY CREATION ERROR ===');
+    console.error('❌ Error creating delivery boy:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
+    
+    // Handle specific MongoDB errors
+    if (error.code === 11000) {
+      console.log('❌ Duplicate key error');
+      return res.status(400).json({ message: 'A user with this email already exists' });
+    }
+    
+    if (error.name === 'ValidationError') {
+      console.log('❌ Validation error');
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ message: 'Validation error', errors });
+    }
+    
+    console.log('❌ Unknown error, returning 500');
+    res.status(500).json({ message: 'Failed to save delivery boy. Please try again.' });
+  }
+});
+
+// Update delivery boy (admin only)
+router.put('/delivery-boys/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    
+    // Check if email is already taken by another user
+    if (email) {
+      const existingUser = await User.findOne({ 
+        email, 
+        _id: { $ne: req.params.id } 
+      });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+    }
+    
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+    
+    const deliveryBoy = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!deliveryBoy) {
+      return res.status(404).json({ message: 'Delivery boy not found' });
+    }
+    
+    res.json({ message: 'Delivery boy updated successfully', deliveryBoy });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete delivery boy (admin only)
+router.delete('/delivery-boys/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const deliveryBoy = await User.findByIdAndDelete(req.params.id);
+    if (!deliveryBoy) {
+      return res.status(404).json({ message: 'Delivery boy not found' });
+    }
+    res.json({ message: 'Delivery boy deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Block/Unblock delivery boy (admin only)
+router.patch('/delivery-boys/:id/block', protect, isAdmin, async (req, res) => {
+  try {
+    const { isBlocked } = req.body;
+    const deliveryBoy = await User.findByIdAndUpdate(
+      req.params.id,
+      { isBlocked },
+      { new: true }
+    ).select('-password');
+    
+    if (!deliveryBoy) {
+      return res.status(404).json({ message: 'Delivery boy not found' });
+    }
+    
+    // Add status field for frontend compatibility
+    const deliveryBoyWithStatus = {
+      ...deliveryBoy.toObject(),
+      status: isBlocked ? 'Inactive' : 'Active'
+    };
+    
+    res.json({ 
+      message: isBlocked ? 'Delivery boy blocked successfully' : 'Delivery boy unblocked successfully', 
+      deliveryBoy: deliveryBoyWithStatus
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get delivery boy's order history (admin only)
+router.get('/delivery-boys/:id/orders', protect, isAdmin, async (req, res) => {
+  try {
+    const deliveryBoy = await User.findById(req.params.id);
+    if (!deliveryBoy) {
+      return res.status(404).json({ message: 'Delivery boy not found' });
+    }
+    
+    const orders = await Order.find({ deliveryBoyId: req.params.id })
+      .populate('userId', 'name email')
+      .populate('serviceId')
+      .sort({ createdAt: -1 });
+    
+    res.json({ orders });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Admin: Export all users as PDF
 router.get('/users/export/pdf', protect, isAdmin, async (req, res) => {
   try {
@@ -642,6 +884,61 @@ router.get('/users/export/pdf', protect, isAdmin, async (req, res) => {
     doc.end();
   } catch (error) {
     console.error('Error exporting customers as PDF:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get current user profile
+router.get('/profile', protect, async (req, res) => {
+  try {
+    // Return the current user's profile (without password)
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update current user profile
+router.put('/profile', protect, async (req, res) => {
+  try {
+    const { name, email, phone, addresses, preferences } = req.body;
+    
+    // Check if email is already taken by another user
+    if (email) {
+      const existingUser = await User.findOne({ 
+        email, 
+        _id: { $ne: req.user._id } 
+      });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+    }
+    
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (phone) updateData.phone = phone;
+    if (addresses) updateData.addresses = addresses;
+    if (preferences) updateData.preferences = preferences;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ message: 'Profile updated successfully', user });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -283,16 +283,14 @@ const AdminOrderManagement = () => {
     }
   };
 
-  const fetchStaff = async () => {
+  const fetchDeliveryBoys = async () => {
     if (!isAuthorized) {
       return;
     }
     try {
-      const response = await api.get('/auth/users', {
-        params: { role: 'deliveryBoy' }
-      });
-      if (Array.isArray(response.data.users)) {
-        setStaffMembers(response.data.users);
+      const response = await api.get('/auth/delivery-boys');
+      if (response.data.deliveryBoys && Array.isArray(response.data.deliveryBoys)) {
+        setStaffMembers(response.data.deliveryBoys);
       } else {
         setStaffMembers([]);
       }
@@ -300,11 +298,11 @@ const AdminOrderManagement = () => {
       if (error.response?.status === 401) {
         const reauthorized = await handleUnauthorized();
         if (reauthorized) {
-          await fetchStaff();
+          await fetchDeliveryBoys();
         }
         return;
       }
-      console.error('Error fetching staff:', error);
+      console.error('Error fetching delivery boys:', error);
       setStaffMembers([
         { _id: '1', name: 'Mike Johnson', email: 'mike@fabrico.com' },
         { _id: '2', name: 'Sarah Wilson', email: 'sarah@fabrico.com' },
@@ -318,7 +316,7 @@ const AdminOrderManagement = () => {
       return;
     }
     fetchOrders();
-    fetchStaff();
+    fetchDeliveryBoys();
   }, [statusFilter, isAuthorized]);
 
   useEffect(() => {
@@ -690,7 +688,7 @@ const AdminOrderManagement = () => {
                 className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
               >
                 <UserPlusIcon className="w-5 h-5" />
-                Assign Staff
+                Assign Delivery Boy
               </button>
               <button
                 onClick={() => generateInvoice(order._id)}
@@ -741,24 +739,24 @@ const AdminOrderManagement = () => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Assign Staff Member</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Assign Delivery Boy</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
             <XCircleIcon className="w-6 h-6 text-gray-600" />
           </button>
         </div>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Staff Member
+            Select Delivery Boy
           </label>
           <select
             value={selectedStaff}
             onChange={(e) => setSelectedStaff(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value="">Select a staff member...</option>
+            <option value="">Select a delivery boy...</option>
             {staffMembers.map((staff) => (
               <option key={staff._id} value={staff._id}>
-                {staff.name} - {staff.email}
+                {staff.name} ({staff.activeOrders || 0} active orders)
               </option>
             ))}
           </select>
@@ -769,7 +767,7 @@ const AdminOrderManagement = () => {
             className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
             disabled={!selectedStaff}
           >
-            Assign
+            Assign Delivery Boy
           </button>
           <button
             onClick={onClose}

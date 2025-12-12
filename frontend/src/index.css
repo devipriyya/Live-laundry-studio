@@ -68,3 +68,32 @@
     background-color: #f9f9f9;
   }
 }
+
+/* Dark mode override */
+.dark {
+  color-scheme: dark;
+  background-color: #1a1a1a;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.dark body {
+  background-color: #1a1a1a;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+.dark a {
+  @apply text-indigo-300;
+}
+
+.dark a:hover {
+  @apply text-indigo-200;
+}
+
+.dark button {
+  background-color: #3a3a3a;
+  border-color: #5a5a5a;
+}
+
+.dark button:hover {
+  border-color: #8a8a8a;
+}

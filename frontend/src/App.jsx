@@ -1,7 +1,9 @@
 import React, { Suspense, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthContext } from './context/AuthContext';
+import { AuthProvider, AuthContext } from './context/AuthContext';
+import { ChatProvider } from './context/ChatContext';
+import './i18n'; // Initialize i18n
 import './styles/analytics.css';
 
 // Lazy load components to catch import errors
@@ -78,6 +80,11 @@ const TestProtectedRoute = React.lazy(() => import('./TestProtectedRoute')); // 
 const TestCustomerSegment = React.lazy(() => import('./TestCustomerSegment'));
 const CustomerSegmentDetails = React.lazy(() => import('./pages/CustomerSegmentDetails'));
 const TestNaiveBayes = React.lazy(() => import('./pages/TestNaiveBayes'));
+const DeliveryBoyManagementPage = React.lazy(() => import('./pages/DeliveryBoyManagement'));
+const TestDeliveryLogin = React.lazy(() => import('./TestDeliveryLogin'));
+const DeliveryBoyTest = React.lazy(() => import('./DeliveryBoyTest'));
+const DeliveryBoyLogin = React.lazy(() => import('./DeliveryBoyLogin'));
+const DebugDeliveryLogin = React.lazy(() => import('./DebugDeliveryLogin'));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -92,13 +99,17 @@ const LoadingSpinner = () => (
 // Main App component
 function App() {
   return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-white">
-        <Router>
-          <AppRoutes />
-        </Router>
-      </div>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <ChatProvider>
+          <div className="min-h-screen bg-white">
+            <Router>
+              <AppRoutes />
+            </Router>
+          </div>
+        </ChatProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 
@@ -299,6 +310,16 @@ const AppRoutes = () => {
           } 
         />
 
+        {/* Delivery Boy Management */}
+        <Route 
+          path="/delivery-boy-management" 
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <DeliveryBoyManagementPage />
+            </ProtectedRoute>
+          } 
+        />
+
         {/* Admin Payment Management */}
         <Route 
           path="/admin-payments" 
@@ -461,6 +482,30 @@ const AppRoutes = () => {
               <SimplifiedAdminDashboard />
             </ProtectedRoute>
           } 
+        />
+
+        {/* Test Delivery Login Route */}
+        <Route 
+          path="/test-delivery-login" 
+          element={<TestDeliveryLogin />} 
+        />
+        
+        {/* Delivery Boy Test Route */}
+        <Route 
+          path="/delivery-boy-test" 
+          element={<DeliveryBoyTest />} 
+        />
+        
+        {/* Delivery Boy Login Route */}
+        <Route 
+          path="/delivery-login" 
+          element={<DeliveryBoyLogin />} 
+        />
+        
+        {/* Debug Delivery Boy Login Route */}
+        <Route 
+          path="/debug-delivery-login" 
+          element={<DebugDeliveryLogin />} 
         />
 
         {/* Catch-all redirect to home */}

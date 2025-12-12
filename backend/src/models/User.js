@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: function() { return !this.firebaseUid; } }, // Password required only if no Firebase UID
   phone: { type: String },
   profilePicture: { type: String },
-  role: { type: String, enum: ['customer','admin','delivery'], default: 'customer' },
+  role: { type: String, enum: ['customer','admin','deliveryBoy'], default: 'customer' },
   isBlocked: { type: Boolean, default: false },
   firebaseUid: { type: String, unique: true, sparse: true }, // Add firebaseUid field
   dateOfBirth: { type: Date },

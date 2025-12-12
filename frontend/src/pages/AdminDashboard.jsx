@@ -11,6 +11,8 @@ import InventoryManagement from '../components/InventoryManagement';
 import PaymentManagement from '../components/PaymentManagement';
 import DeliveryManagement from './DeliveryManagement';
 import ReportsAnalytics from './ReportsAnalytics';
+import IncidentManagement from '../components/IncidentManagement';
+import LiveLocationMap from '../components/LiveLocationMap';
 import {
   UserCircleIcon,
   ClockIcon,
@@ -203,7 +205,24 @@ const AdminDashboard = () => {
       activeClasses: 'bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 border-r-4 border-gray-500 shadow-sm',
       iconActiveClass: 'text-gray-600'
     },
-  ];
+    { 
+      id: 'incidents', 
+      name: 'Incident Management', 
+      icon: ExclamationTriangleIcon, 
+      description: 'Delivery Issues & Reports',
+      badge: null,
+      activeClasses: 'bg-gradient-to-r from-red-50 to-red-100 text-red-700 border-r-4 border-red-500 shadow-sm',
+      iconActiveClass: 'text-red-600'
+    },
+    { 
+      id: 'live-tracking', 
+      name: 'Live Tracking', 
+      icon: MapPinIcon, 
+      description: 'Real-time Delivery Tracking',
+      badge: null,
+      activeClasses: 'bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 border-r-4 border-teal-500 shadow-sm',
+      iconActiveClass: 'text-teal-600'
+    },  ];
 
   // Enhanced navigation handlers
   const handleMenuClick = (sectionId) => {
@@ -771,6 +790,8 @@ const AdminDashboard = () => {
           {activeSection === 'payments' && <PaymentManagement />}
           {activeSection === 'delivery' && <DeliveryManagement />}
           {activeSection === 'reports' && <ReportsAnalytics />}
+          {activeSection === 'incidents' && <IncidentManagement />}
+          {activeSection === 'live-tracking' && <LiveLocationMap />}
           
           {activeSection === 'services' && (
             <div className="p-6">

@@ -1,19 +1,14 @@
-import { useState } from "react";
-import {
-  signInWithEmailAndPassword,
-  signInWithPopup,
+import { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
   sendPasswordResetEmail,
+  GoogleAuthProvider 
 } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  EyeIcon,
-  EyeSlashIcon,
-  EnvelopeIcon,
-  LockClosedIcon,
-  SparklesIcon,
-  ShieldCheckIcon,
-} from "@heroicons/react/24/outline";
+import { AuthContext } from "../context/AuthContext";
+import { SparklesIcon, ShieldCheckIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 
 const initialErrors = {
   email: "",
@@ -32,8 +27,10 @@ export default function Login() {
   const [resetEmail, setResetEmail] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+  const { universalLogin } = useContext(AuthContext);
 
   const validateForm = () => {
+    console.log("Login.jsx: validateForm called with form data:", form);
     const newErrors = { ...initialErrors };
 
     if (!form.email.trim()) {
@@ -48,12 +45,14 @@ export default function Login() {
       newErrors.password = "Password must be at least 6 characters";
     }
 
+    console.log("Login.jsx: validateForm errors:", newErrors);
     setErrors(newErrors);
     return !newErrors.email && !newErrors.password;
   };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    console.log("Login.jsx: handleChange called with:", { name, value });
     setForm({ ...form, [name]: value });
 
     if (errors[name]) {
@@ -67,49 +66,50 @@ export default function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    console.log("Login.jsx: handleSubmit called");
 
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log("Login.jsx: Form validation failed");
+      return;
+    }
 
     setLoading(true);
     setErrors((prev) => ({ ...prev, general: "", success: "" }));
 
+    // Use universal login for all users
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        form.email,
-        form.password
-      );
-      const user = userCredential.user;
-
-      if (user.email === "admin@gmail.com") {
-        navigate("/admin-dashboard");
+      console.log("Login.jsx: Attempting universal login with:", { email: form.email, password: form.password });
+      
+      const result = await universalLogin(form.email, form.password);
+      console.log("Login.jsx: Universal login result:", result);
+      
+      if (result.success) {
+        // Successfully authenticated
+        console.log("Login.jsx: Authentication successful with role:", result.role);
+        
+        // Navigate based on role
+        switch (result.role) {
+          case 'deliveryBoy':
+            console.log("Login.jsx: Navigating to delivery dashboard");
+            navigate("/delivery-dashboard");
+            break;
+          case 'admin':
+            console.log("Login.jsx: Navigating to admin dashboard");
+            navigate("/admin-dashboard");
+            break;
+          default:
+            console.log("Login.jsx: Navigating to customer dashboard");
+            navigate("/dashboard");
+        }
+        return;
       } else {
-        navigate("/dashboard");
+        // Authentication failed
+        console.log("Login.jsx: Authentication failed with message:", result.error);
+        setErrors((prev) => ({ ...prev, general: result.error, success: "" }));
       }
     } catch (error) {
-      let errorMessage = "Login failed. Please try again.";
-
-      switch (error.code) {
-        case "auth/user-not-found":
-          errorMessage = "No account found with this email address";
-          break;
-        case "auth/wrong-password":
-          errorMessage = "Incorrect password";
-          break;
-        case "auth/invalid-email":
-          errorMessage = "Invalid email address";
-          break;
-        case "auth/user-disabled":
-          errorMessage = "This account has been disabled";
-          break;
-        case "auth/too-many-requests":
-          errorMessage = "Too many failed attempts. Please try again later";
-          break;
-        default:
-          break;
-      }
-
-      setErrors((prev) => ({ ...prev, general: errorMessage, success: "" }));
+      console.log("Login.jsx: Authentication exception:", error);
+      setErrors((prev) => ({ ...prev, general: "Login failed. Please try again.", success: "" }));
     } finally {
       setLoading(false);
     }
@@ -334,12 +334,14 @@ export default function Login() {
                   </svg>
                   Continue with Google
                 </button>
-                <p className="text-sm text-emerald-100/70">
-                  Need an account?
-                  <Link to="/register" className="ml-2 font-semibold text-emerald-200 transition hover:text-white">
-                    Create one
-                  </Link>
-                </p>
+                <div className="flex flex-col space-y-2">
+                  <p className="text-sm text-emerald-100/70">
+                    Need an account?
+                    <Link to="/register" className="ml-2 font-semibold text-emerald-200 transition hover:text-white">
+                      Create one
+                    </Link>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
