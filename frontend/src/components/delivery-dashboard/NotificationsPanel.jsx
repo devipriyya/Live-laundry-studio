@@ -24,7 +24,7 @@ import { BellIcon as BellIconSolid } from '@heroicons/react/24/solid';
 const NotificationsPanel = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
   // State
   const [notifications, setNotifications] = useState([]);

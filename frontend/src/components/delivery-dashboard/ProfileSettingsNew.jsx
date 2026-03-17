@@ -36,7 +36,7 @@ import { StarIcon as StarSolid, CheckCircleIcon as CheckCircleSolid } from '@her
 const ProfileSettingsNew = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
   const fileInputRef = useRef(null);
 
   // State

@@ -76,8 +76,11 @@ const sampleOrders = [
 
 const trainModel = async () => {
   try {
-    console.log('Training ML model with sample data...');
-    const response = await axios.post('http://localhost:5000/api/ml/train', {
+    const PORT = process.env.PORT || 5006;
+    const API_URL = `http://localhost:${PORT}/api`;
+    
+    console.log(`Training ML model with sample data at ${API_URL}...`);
+    const response = await axios.post(`${API_URL}/ml/train`, {
       orders: sampleOrders
     });
     
@@ -118,7 +121,7 @@ const trainModel = async () => {
     ];
     
     console.log('Training SVM Customer Segmenter...');
-    const svmResponse = await axios.post('http://localhost:5000/api/ml/train-segmenter', {
+    const svmResponse = await axios.post(`${API_URL}/ml/train-segmenter`, {
       customers: sampleCustomers
     });
     

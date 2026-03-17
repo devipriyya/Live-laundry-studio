@@ -18,14 +18,14 @@ async function testDecisionTreeAPI() {
     
     // Test 1: Check model status
     console.log('1. Checking model status...');
-    const statusResponse = await axios.get('http://localhost:5000/api/ml/status');
+    const statusResponse = await axios.get('http://localhost:5006/api/ml/status');
     console.log('Status:', statusResponse.data);
     console.log('');
     
     // Test 2: Get feature importance
     console.log('2. Getting feature importance...');
     try {
-      const importanceResponse = await axios.get('http://localhost:5000/api/ml/feature-importance');
+      const importanceResponse = await axios.get('http://localhost:5006/api/ml/feature-importance');
       console.log('Feature Importance:', importanceResponse.data);
     } catch (error) {
       console.log('Feature importance not available yet (model not trained)');
@@ -34,7 +34,7 @@ async function testDecisionTreeAPI() {
     
     // Test 3: Make a prediction (this will use default values since model is not trained)
     console.log('3. Making a prediction with untrained model...');
-    const predictResponse = await axios.post('http://localhost:5000/api/ml/segment-dt', {
+    const predictResponse = await axios.post('http://localhost:5006/api/ml/segment-dt', {
       customerData: testCustomerData
     });
     console.log('Prediction:', predictResponse.data);

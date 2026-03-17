@@ -34,7 +34,7 @@ import { CheckCircleIcon as CheckCircleSolid, StarIcon as StarSolid } from '@her
 
 const HelpSupportNew = () => {
   const { t } = useTranslation();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
   
   // State
   const [loading, setLoading] = useState(true);

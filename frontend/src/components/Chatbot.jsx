@@ -111,7 +111,8 @@ const Chatbot = () => {
   const handleTrackOrder = async (orderId) => {
     setIsTyping(true);
     try {
-      const response = await axios.get(`http://localhost:5006/api/orders/track/${orderId}`);
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
+      const response = await axios.get(`${API_BASE_URL}/orders/track/${orderId}`);
       const order = response.data;
       
       const statusMsg = `Order #${order.orderNumber} Status: ${order.status.toUpperCase()}. \nEstimated Delivery: ${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString() : 'Updating soon'}.`;

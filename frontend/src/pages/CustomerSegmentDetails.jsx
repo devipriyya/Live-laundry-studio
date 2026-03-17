@@ -45,15 +45,16 @@ const CustomerSegmentDetails = () => {
     setError(null);
     
     try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
       // Fetch both SVM and Decision Tree predictions
       const [svmResponse, dtResponse] = await Promise.all([
-        axios.post('http://localhost:5000/api/ml/segment', {
+        axios.post(`${API_BASE_URL}/ml/segment`, {
           customerData
         }).catch(err => {
           console.error('Error fetching SVM segment:', err);
           return null;
         }),
-        axios.post('http://localhost:5000/api/ml/segment-dt', {
+        axios.post(`${API_BASE_URL}/ml/segment-dt`, {
           customerData
         }).catch(err => {
           console.error('Error fetching Decision Tree segment:', err);

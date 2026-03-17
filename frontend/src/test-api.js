@@ -4,7 +4,7 @@ const testAPI = async () => {
     console.log('Testing API connection...');
     
     // Test the notifications endpoint directly
-    const response = await fetch('http://localhost:5000/api/notifications/user/demo@fabrico.com');
+    const response = await fetch('http://localhost:5006/api/notifications/user/demo@fabrico.com');
     console.log('Response status:', response.status);
     
     if (response.ok) {

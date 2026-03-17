@@ -25,15 +25,16 @@ const MLComparison = ({ customerData }) => {
     setError(null);
     
     try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
       // Fetch predictions from all three models
       const [knnResponse, svmResponse, dtResponse] = await Promise.all([
-        axios.post('http://localhost:5000/api/ml/recommend', {
+        axios.post(`${API_BASE_URL}/ml/recommend`, {
           userOrderHistory: []
         }).catch(() => null),
-        axios.post('http://localhost:5000/api/ml/segment', {
+        axios.post(`${API_BASE_URL}/ml/segment`, {
           customerData
         }).catch(() => null),
-        axios.post('http://localhost:5000/api/ml/segment-dt', {
+        axios.post(`${API_BASE_URL}/ml/segment-dt`, {
           customerData
         }).catch(() => null)
       ]);

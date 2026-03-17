@@ -29,7 +29,7 @@ const IncidentManagement = () => {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
   // Incident type labels
   const incidentTypeLabels = {

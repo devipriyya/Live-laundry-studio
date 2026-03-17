@@ -20,7 +20,7 @@ export const ChatProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
   const { user } = useAuth();
   
-  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+  const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5006/api').replace('/api', '');
   
   // Initialize socket connection
   useEffect(() => {

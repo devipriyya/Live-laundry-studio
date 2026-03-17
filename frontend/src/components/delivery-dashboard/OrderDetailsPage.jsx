@@ -39,7 +39,7 @@ const OrderDetailsPage = () => {
   const { t } = useTranslation();
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
   
   // State
   const [order, setOrder] = useState(null);

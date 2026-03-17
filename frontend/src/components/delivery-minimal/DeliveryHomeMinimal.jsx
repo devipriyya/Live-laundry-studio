@@ -16,7 +16,7 @@ import {
 
 const DeliveryHomeMinimal = () => {
   const { t } = useTranslation();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
   
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({

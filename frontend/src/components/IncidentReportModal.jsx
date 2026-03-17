@@ -16,7 +16,7 @@ const IncidentReportModal = ({ order, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
   const incidentTypes = [
     { id: 'customer-not-available', label: 'Customer Not Available', icon: '👤' },

@@ -66,7 +66,7 @@ const OrderDetailsPageEnhanced = () => {
   const [statusPhotoUrl, setStatusPhotoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
   // Fetch order details
   const fetchOrderDetails = useCallback(async () => {

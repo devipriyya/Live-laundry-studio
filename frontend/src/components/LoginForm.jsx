@@ -122,7 +122,8 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       let role = 'customer';
 
       try {
-        const response = await fetch('http://localhost:5000/api/auth/firebase-login', {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
+        const response = await fetch(`${API_BASE_URL}/auth/firebase-login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -19,7 +19,7 @@ const testAdminAuth = async () => {
     // First, login as admin to get token
     console.log('Attempting to login as admin...');
     
-    const loginResponse = await axios.post('http://localhost:5000/api/auth/login', {
+    const loginResponse = await axios.post('http://localhost:5006/api/auth/login', {
       email: 'admin@gmail.com',
       password: 'admin123'
     });
@@ -30,7 +30,7 @@ const testAdminAuth = async () => {
     // Test accessing order management endpoint
     console.log('Testing access to order management endpoint...');
     
-    const ordersResponse = await axios.get('http://localhost:5000/api/orders', {
+    const ordersResponse = await axios.get('http://localhost:5006/api/orders', {
       headers: {
         'Authorization': `Bearer ${token}`
       }

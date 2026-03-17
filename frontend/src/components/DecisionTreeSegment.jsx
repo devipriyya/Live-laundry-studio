@@ -38,7 +38,7 @@ const DecisionTreeSegment = ({ customerData }) => {
     setError(null);
     
     try {
-      const response = await axios.post('http://localhost:5000/api/ml/segment-dt', {
+      const response = await axios.post('http://localhost:5006/api/ml/segment-dt', {
         customerData
       });
       

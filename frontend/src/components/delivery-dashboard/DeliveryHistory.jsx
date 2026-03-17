@@ -22,7 +22,7 @@ import {
 const DeliveryHistory = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
   
   // State
   const [orders, setOrders] = useState([]);

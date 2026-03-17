@@ -109,7 +109,7 @@ async function trainAndTestSVM() {
     console.log('=== SVM Customer Segmentation API Demo ===\n');
     
     // Base URL for the API
-    const baseURL = 'http://localhost:5000/api/ml';
+    const baseURL = 'http://localhost:5006/api/ml';
     
     // Train the SVM model
     console.log('Training SVM model with sample data...');

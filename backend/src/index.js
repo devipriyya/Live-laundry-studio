@@ -46,7 +46,8 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:5174',
     'http://localhost:5175',
-    'https://washlab-frontend.vercel.app' // <-- replace with your actual Vercel frontend URL
+    'https://washlab-frontend.vercel.app',
+    'https://live-laundry-studio-p16i.vercel.app' // Added actual frontend URL
   ],
   credentials: true
 }));
@@ -75,7 +76,8 @@ const io = new Server(server, {
       'http://localhost:5173',
       'http://localhost:5174',
       'http://localhost:5175',
-      'https://washlab-frontend.vercel.app'
+      'https://washlab-frontend.vercel.app',
+      'https://live-laundry-studio-p16i.vercel.app'
     ],
     methods: ['GET', 'POST']
   }

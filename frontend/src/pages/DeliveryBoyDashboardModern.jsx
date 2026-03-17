@@ -138,7 +138,7 @@ const DeliveryBoyDashboardModern = () => {
   }, [language, i18n]);
   const fileInputRef = useRef(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5006/api';
 
   // Apply theme on mount and when theme changes
   useEffect(() => {
