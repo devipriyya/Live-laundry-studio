@@ -53,7 +53,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
 
   // Fetch data based on user role
   const fetchData = async () => {
-    if (isAdminView && user?.role === 'admin') {
+    if (isAdminView && (user?.role === 'admin' || user?.role === 'assistant')) {
       // Admin view - fetch all users
       await fetchCustomers();
     } else {
@@ -62,7 +62,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
     }
   };
 
-  // Fetch all customers from API (admin only)
+  // Fetch all customers from API (admin or assistant only)
   const fetchCustomers = async () => {
     try {
       setLoading(true);
@@ -93,9 +93,9 @@ const CustomerManagement = ({ isAdminView = false }) => {
       if (err.response) {
         console.error('Error response:', err.response);
         if (err.response.status === 401) {
-          errorMessage = 'Failed to load customers: Not authorized. Please log in as an administrator to access customer management.';
+          errorMessage = 'Failed to load customers: Not authorized. Please log in as an administrator or assistant to access customer management.';
         } else if (err.response.status === 403) {
-          errorMessage = 'Failed to load customers: Access denied. This feature is only available to administrators.';
+          errorMessage = 'Failed to load customers: Access denied. This feature is only available to administrators and assistants.';
         } else {
           errorMessage = `Failed to load customers: ${err.response.data.message || err.response.statusText || 'Unknown error'}. Showing sample data.`;
         }
@@ -295,6 +295,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
       case 'admin': return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'customer': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'delivery': return 'bg-green-100 text-green-800 border-green-200';
+      case 'laundryStaff': return 'bg-orange-100 text-orange-800 border-orange-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -304,7 +305,8 @@ const CustomerManagement = ({ isAdminView = false }) => {
     const roleNames = {
       'admin': 'Admin',
       'customer': 'Customer',
-      'delivery': 'Delivery Staff'
+      'delivery': 'Delivery Staff',
+      'laundryStaff': 'Laundry Staff'
     };
     return roleNames[role] || role;
   };
@@ -1190,6 +1192,7 @@ const CustomerManagement = ({ isAdminView = false }) => {
               <option value="customer">Customers</option>
               <option value="admin">Admins</option>
               <option value="delivery">Delivery Staff</option>
+              <option value="laundryStaff">Laundry Staff</option>
             </select>
 
             <select
@@ -1317,10 +1320,12 @@ const CustomerManagement = ({ isAdminView = false }) => {
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           customer.role === 'admin' ? 'bg-purple-100 text-purple-800' :
                           customer.role === 'delivery' ? 'bg-green-100 text-green-800' :
+                          customer.role === 'laundryStaff' ? 'bg-orange-100 text-orange-800' :
                           'bg-blue-100 text-blue-800'
                         }`}>
                           {customer.role === 'admin' ? 'Admin' : 
-                           customer.role === 'delivery' ? 'Delivery' : 'Customer'}
+                           customer.role === 'delivery' ? 'Delivery' : 
+                           customer.role === 'laundryStaff' ? 'Laundry Staff' : 'Customer'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

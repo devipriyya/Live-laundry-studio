@@ -17,7 +17,8 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
-  StarIcon
+  StarIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 const NewOrder = () => {
@@ -58,9 +59,16 @@ const NewOrder = () => {
       temperature: 'warm',
       specialInstructions: ''
     },
-    paymentMethod: 'card'
+    paymentMethod: 'card',
+    insurance: {
+      enabled: false,
+      policyType: 'none',
+      cost: 0,
+      coverageAmount: 0
+    }
   });
 
+  const [insurancePolicies, setInsurancePolicies] = useState([]);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -144,8 +152,8 @@ const NewOrder = () => {
   ];
 
   const timeSlots = [
-    '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
-    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'
+    '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+    '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM'
   ];
 
   // Calculate totals when services/items change
@@ -168,16 +176,19 @@ const NewOrder = () => {
 
     const delivery = subtotal > 50 ? 0 : 4.99;
     const tax = subtotal * 0.08; // 8% tax
-    const total = subtotal + tax + delivery;
 
-    setOrderData(prev => ({
-      ...prev,
-      subtotal,
-      tax,
-      delivery,
-      total,
-      totalItems
-    }));
+    setOrderData(prev => {
+      const insuranceCost = prev.insurance.enabled ? prev.insurance.cost : 0;
+      const total = subtotal + tax + delivery + insuranceCost;
+      return {
+        ...prev,
+        subtotal,
+        tax,
+        delivery,
+        total,
+        totalItems
+      };
+    });
   };
 
   const handleServiceToggle = (serviceId) => {
@@ -327,7 +338,13 @@ const NewOrder = () => {
         specialInstructions: orderData.preferences.specialInstructions,
         paymentMethod: orderData.paymentMethod,
         status: 'order-placed',
-        paymentStatus: 'pending'
+        paymentStatus: 'pending',
+        insurance: orderData.insurance.enabled ? {
+          enabled: true,
+          cost: orderData.insurance.cost,
+          coverageAmount: orderData.insurance.coverageAmount,
+          policyType: orderData.insurance.policyType
+        } : { enabled: false, cost: 0, coverageAmount: 0, policyType: 'none' }
       };
 
       // Check if this is a dry cleaning order (shoe care or clothes)
@@ -1116,6 +1133,15 @@ const NewOrder = () => {
               <p>Delivery {orderData.subtotal > 50 ? '(Free!)' : ''}</p>
               <p>{orderData.delivery === 0 ? 'FREE' : `$${orderData.delivery.toFixed(2)}`}</p>
             </div>
+            {orderData.insurance.enabled && (
+              <div className="flex justify-between text-gray-600">
+                <p className="flex items-center gap-1">
+                  <ShieldCheckIcon className="h-4 w-4 text-green-600" />
+                  Insurance ({orderData.insurance.policyType})
+                </p>
+                <p>${orderData.insurance.cost.toFixed(2)}</p>
+              </div>
+            )}
             <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t border-gray-200">
               <p>Total</p>
               <p>${orderData.total.toFixed(2)}</p>
@@ -1144,6 +1170,120 @@ const NewOrder = () => {
         </p>
         {orderData.address.instructions && (
           <p className="text-sm text-gray-600 mt-1">Note: {orderData.address.instructions}</p>
+        )}
+      </div>
+
+      {/* Cloth Damage Insurance */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <ShieldCheckIcon className="h-6 w-6 text-green-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Cloth Damage Insurance</h3>
+          </div>
+          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Optional</span>
+        </div>
+        <p className="text-sm text-gray-600 mb-4">
+          Protect your expensive or delicate clothes during washing, drying, and ironing. Get compensated if anything goes wrong.
+        </p>
+
+        <div className="space-y-3">
+          {/* No Insurance */}
+          <label className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${orderData.insurance.policyType === 'none' ? 'border-gray-400 bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+            <div className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="insurance"
+                value="none"
+                checked={orderData.insurance.policyType === 'none'}
+                onChange={() => {
+                  setOrderData(prev => {
+                    const updated = { ...prev, insurance: { enabled: false, policyType: 'none', cost: 0, coverageAmount: 0 } };
+                    updated.total = prev.subtotal + prev.tax + prev.delivery;
+                    return updated;
+                  });
+                }}
+                className="text-gray-600 focus:ring-gray-500"
+              />
+              <div>
+                <p className="font-medium text-gray-900">No Insurance</p>
+                <p className="text-sm text-gray-500">Proceed without cloth damage protection</p>
+              </div>
+            </div>
+            <p className="font-semibold text-gray-600">$0.00</p>
+          </label>
+
+          {/* Basic Protection */}
+          <label className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${orderData.insurance.policyType === 'basic' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'}`}>
+            <div className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="insurance"
+                value="basic"
+                checked={orderData.insurance.policyType === 'basic'}
+                onChange={() => {
+                  const cost = Math.max(1.99, +(orderData.subtotal * 0.05).toFixed(2));
+                  const coverage = Math.min(200, +(orderData.subtotal * 2).toFixed(2));
+                  setOrderData(prev => {
+                    const updated = { ...prev, insurance: { enabled: true, policyType: 'basic', cost, coverageAmount: coverage } };
+                    updated.total = prev.subtotal + prev.tax + prev.delivery + cost;
+                    return updated;
+                  });
+                }}
+                className="text-blue-600 focus:ring-blue-500"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Basic Protection</p>
+                <p className="text-sm text-gray-500">Coverage up to ${Math.min(200, +(orderData.subtotal * 2).toFixed(2))} for damage, loss, or mishandling</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="font-semibold text-blue-700">+${Math.max(1.99, +(orderData.subtotal * 0.05).toFixed(2))}</p>
+              <p className="text-xs text-gray-500">5% of subtotal</p>
+            </div>
+          </label>
+
+          {/* Premium Protection */}
+          <label className={`relative flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${orderData.insurance.policyType === 'premium' ? 'border-purple-500 bg-purple-50 shadow-sm' : 'border-gray-200 hover:border-purple-200'}`}>
+            <span className="absolute -top-2 right-4 text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full font-medium">Recommended</span>
+            <div className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="insurance"
+                value="premium"
+                checked={orderData.insurance.policyType === 'premium'}
+                onChange={() => {
+                  const cost = Math.max(3.99, +(orderData.subtotal * 0.10).toFixed(2));
+                  const coverage = Math.min(500, +(orderData.subtotal * 5).toFixed(2));
+                  setOrderData(prev => {
+                    const updated = { ...prev, insurance: { enabled: true, policyType: 'premium', cost, coverageAmount: coverage } };
+                    updated.total = prev.subtotal + prev.tax + prev.delivery + cost;
+                    return updated;
+                  });
+                }}
+                className="text-purple-600 focus:ring-purple-500"
+              />
+              <div>
+                <p className="font-medium text-gray-900">Premium Protection</p>
+                <p className="text-sm text-gray-500">Coverage up to ${Math.min(500, +(orderData.subtotal * 5).toFixed(2))} — full protection for luxury & delicates</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="font-semibold text-purple-700">+${Math.max(3.99, +(orderData.subtotal * 0.10).toFixed(2))}</p>
+              <p className="text-xs text-gray-500">10% of subtotal</p>
+            </div>
+          </label>
+        </div>
+
+        {orderData.insurance.enabled && (
+          <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-green-800">
+                <p className="font-medium">You're covered!</p>
+                <p>If any item is damaged, lost, or mishandled during the laundry process, you can file a claim and receive up to <strong>${orderData.insurance.coverageAmount.toFixed(2)}</strong> in compensation.</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Lost and Found Test Report</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 40px; }
+    .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 20px; shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    h1 { color: #0f172a; margin-top: 0; }
+    .summary { display: flex; gap: 20px; margin-bottom: 30px; }
+    .stat-card { flex: 1; padding: 20px; border-radius: 15px; text-align: center; color: white; }
+    .stat-card.duration { background: #6366f1; }
+    .stat-card.passed { background: #10b981; }
+    .stat-card.failed { background: #ef4444; }
+    .stat-value { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+    .stat-label { font-size: 14px; opacity: 0.9; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { text-align: left; padding: 15px; background: #f8fafc; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #1e293b; }
+    tr.fail { background: #fef2f2; }
+    .status-pill { padding: 4px 10px; border-radius: 100px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+    .status-pill.pass { background: #d1fae5; color: #065f46; }
+    .status-pill.fail { background: #fee2e2; color: #991b1b; }
+    .status-pill.info { background: #e0f2fe; color: #075985; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Lost and Found Automation Report</h1>
+    <div class="summary">
+      <div class="stat-card duration">
+        <div class="stat-value">17.10s</div>
+        <div class="stat-label">Duration</div>
+      </div>
+      <div class="stat-card passed">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Steps Passed</div>
+      </div>
+      <div class="stat-card failed">
+        <div class="stat-value">1</div>
+        <div class="stat-label">Steps Failed</div>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Test Step</th>
+          <th>Status</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+      <tr class="info">
+        <td>12:11:39 am</td>
+        <td>Navigating to Login page</td>
+        <td><span class="status-pill info">INFO</span></td>
+        <td></td>
+      </tr>
+    
+      <tr class="info">
+        <td>12:11:43 am</td>
+        <td>Entering credentials</td>
+        <td><span class="status-pill info">INFO</span></td>
+        <td></td>
+      </tr>
+    
+      <tr class="fail">
+        <td>12:11:53 am</td>
+        <td>Test Failed</td>
+        <td><span class="status-pill fail">FAIL</span></td>
+        <td>no such element: Unable to locate element: {"method":"css selector","selector":"*[name="email"]"}
+  (Session info: chrome=145.0.7632.160)</td>
+      </tr>
+    
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

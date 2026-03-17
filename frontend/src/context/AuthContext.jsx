@@ -29,8 +29,13 @@ export const AuthProvider = ({ children }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  const logout = () => {
+  const logout = async () => {
     console.log('AuthContext: Logging out');
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Failed to logout on backend:', error);
+    }
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
@@ -182,6 +187,10 @@ export const AuthProvider = ({ children }) => {
           role: response.data.user.role,
         };
         
+        console.log("AuthContext: Storing user data:", userData);
+        console.log("AuthContext: User role:", userData.role);
+        console.log("AuthContext: User role type:", typeof userData.role);
+        
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
         
@@ -242,7 +251,7 @@ export const AuthProvider = ({ children }) => {
         setUser(deliveryBoyUser);
         
         console.log("AuthContext: Delivery boy logged in successfully");
-        return { success: true };
+        return { success: true, role: response.data.user.role };
       } else {
         console.log("AuthContext: Invalid response from server");
         throw new Error("Invalid response from server");
@@ -318,6 +327,95 @@ export const AuthProvider = ({ children }) => {
     console.log("AuthContext: Delivery boy user set successfully");
   };
 
+  const laundryStaffDemoLogin = async () => {
+    console.log("AuthContext: laundryStaffDemoLogin called");
+    
+    // Option 1: Try to use real database login
+    try {
+      const response = await api.post('/auth/login', {
+        email: 'jane.laundry@fabrico.com',
+        password: 'laundrystaff123'
+      });
+      
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        const laundryStaffUser = {
+          uid: response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: response.data.user.role,
+        };
+        setUser(laundryStaffUser);
+        localStorage.setItem('user', JSON.stringify(laundryStaffUser));
+        console.log("AuthContext: Laundry staff logged in from database");
+        return;
+      }
+    } catch (error) {
+      console.log('Database login failed, using demo mode:', error);
+    }
+    
+    // Option 2: Fallback to demo mode if database login fails
+    const laundryStaffUser = {
+      uid: 'laundry-demo-user',
+      email: 'laundry@fabrico.com',
+      name: 'Laundry Staff',
+      role: 'laundryStaff',
+    };
+    console.log("AuthContext: Setting laundry staff user:", laundryStaffUser);
+    
+    // Generate a demo JWT token for backend compatibility
+    const demoToken = 'demo-jwt-token-' + Date.now();
+    localStorage.setItem('token', demoToken);
+    
+    setUser(laundryStaffUser);
+    localStorage.setItem('user', JSON.stringify(laundryStaffUser));
+    console.log("AuthContext: Laundry staff user set successfully");
+  };
+
+  const assistantDemoLogin = async () => {
+    console.log("AuthContext: assistantDemoLogin called");
+    
+    // Option 1: Try to use real database login if a demo assistant exists
+    try {
+      const response = await api.post('/auth/login', {
+        email: 'assistant@gmail.com',
+        password: 'assistant123'
+      });
+      
+      if (response.data && response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        const assistantUser = {
+          uid: response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: response.data.user.role,
+        };
+        setUser(assistantUser);
+        localStorage.setItem('user', JSON.stringify(assistantUser));
+        console.log("AuthContext: Assistant logged in from database");
+        return;
+      }
+    } catch (error) {
+      console.log('Database login failed for assistant, using demo mode:', error);
+    }
+    
+    // Option 2: Fallback to demo mode
+    const assistantUser = {
+      uid: 'assistant-demo-user',
+      email: 'assistant@gmail.com',
+      name: 'Assistant User',
+      role: 'assistant',
+    };
+    console.log("AuthContext: Setting assistant user:", assistantUser);
+    
+    const demoToken = 'demo-jwt-token-' + Date.now();
+    localStorage.setItem('token', demoToken);
+    
+    setUser(assistantUser);
+    localStorage.setItem('user', JSON.stringify(assistantUser));
+    console.log("AuthContext: Assistant user set successfully");
+  };
+
   // Profile functions
   const getProfile = async () => {
     try {
@@ -373,6 +471,8 @@ export const AuthProvider = ({ children }) => {
       adminDemoLogin, 
       deliveryBoyLogin, 
       deliveryBoyDemoLogin, 
+      laundryStaffDemoLogin,
+      assistantDemoLogin,
       universalLogin, 
       loading,
       getProfile,

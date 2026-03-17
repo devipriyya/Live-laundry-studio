@@ -9,9 +9,19 @@ const NotificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  recipientRole: {
+    type: String,
+    enum: ['customer', 'admin', 'deliveryBoy'],
+    default: 'customer'
+  },
   type: {
     type: String,
-    enum: ['order', 'payment', 'delivery', 'system', 'promotion', 'review'],
+    enum: [
+      'order', 'payment', 'delivery', 'system', 'promotion', 'review', 'support-ticket',
+      // Delivery Boy specific types
+      'new-assignment', 'order-status-update', 'admin-message', 
+      'pickup-reminder', 'delivery-reminder', 'earnings-update'
+    ],
     required: true
   },
   priority: {
@@ -30,6 +40,11 @@ const NotificationSchema = new mongoose.Schema({
   data: {
     type: mongoose.Schema.Types.Mixed
   },
+  // Reference to related order for delivery notifications
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order'
+  },
   read: {
     type: Boolean,
     default: false
@@ -46,6 +61,7 @@ const NotificationSchema = new mongoose.Schema({
 // Indexes
 NotificationSchema.index({ userId: 1, read: 1 });
 NotificationSchema.index({ recipientEmail: 1, read: 1 });
+NotificationSchema.index({ recipientRole: 1, createdAt: -1 });
 NotificationSchema.index({ createdAt: -1 });
 NotificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 

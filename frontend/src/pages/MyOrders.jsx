@@ -21,7 +21,15 @@ import {
   FunnelIcon,
   ShoppingBagIcon,
   InformationCircleIcon,
+  ShieldCheckIcon,
+  ExclamationTriangleIcon,
+  PhotoIcon,
+  CheckBadgeIcon,
 } from '@heroicons/react/24/outline';
+import {
+  HandThumbUpIcon,
+  StarIcon as StarIconSolid
+} from '@heroicons/react/24/solid';
 
 const MyOrders = () => {
   const navigate = useNavigate();
@@ -30,7 +38,6 @@ const MyOrders = () => {
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancellingOrder, setCancellingOrder] = useState(null);
@@ -39,6 +46,12 @@ const MyOrders = () => {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState('');
   const [activeTab, setActiveTab] = useState('all'); // New state for tabs
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claimOrder, setClaimOrder] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewingOrder, setReviewingOrder] = useState(null);
+  const [claimItems, setClaimItems] = useState([{ itemName: '', description: '', estimatedValue: 0, damageType: 'stained' }]);
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
 
   // Load orders from the backend API
   const loadOrders = async (email) => {
@@ -466,9 +479,27 @@ const MyOrders = () => {
                       <div>
                         <h3 className="font-bold text-gray-900 text-lg">{order.orderNumber || 'Order #' + order._id.substring(0, 8)}</h3>
                         <p className="text-sm text-gray-500">{order.orderDate || order.createdAt ? new Date(order.orderDate || order.createdAt).toLocaleDateString() : 'Date not available'}</p>
+                        {order.isReviewed && order.rating && (
+                          <div className="flex items-center mt-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <StarIconSolid 
+                                key={star} 
+                                className={`h-4 w-4 ${star <= order.rating ? 'text-yellow-400' : 'text-gray-300'}`} 
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status || 'Pending')}`}>
-                        {(order.status || 'Pending').replace(/-/g, ' ')}
+                      <div className="flex items-center gap-2">
+                        <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status || 'Pending')}`}>
+                          {(order.status || 'Pending').replace(/-/g, ' ')}
+                        </div>
+                        {order.insurance?.enabled && (
+                          <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 flex items-center gap-1">
+                            <ShieldCheckIcon className="h-3 w-3" />
+                            Insured
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -562,7 +593,21 @@ const MyOrders = () => {
                           }}
                           className="px-4 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-medium transition-colors text-sm"
                         >
-                          Cancel
+                          Cancel Order
+                        </button>
+                      )}
+
+                      {order.status === 'delivered' && !order.isReviewed && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReviewingOrder(order);
+                            setShowReviewModal(true);
+                          }}
+                          className="flex-1 bg-purple-100 hover:bg-purple-200 text-purple-700 py-2 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-1"
+                        >
+                          <StarIconSolid className="h-4 w-4 text-yellow-500" />
+                          Rate Order
                         </button>
                       )}
                     </div>
@@ -722,7 +767,21 @@ const MyOrders = () => {
                         }}
                         className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 rounded-lg font-medium transition-colors text-sm"
                       >
-                        Cancel
+                        Cancel Order
+                      </button>
+                    )}
+
+                    {selectedOrder.insurance?.enabled && !['order-placed', 'order-accepted', 'cancelled'].includes(selectedOrder.status) && (
+                      <button
+                        onClick={() => {
+                          setClaimOrder(selectedOrder);
+                          setClaimItems([{ itemName: '', description: '', estimatedValue: 0, damageType: 'stained' }]);
+                          setShowClaimModal(true);
+                        }}
+                        className="flex-1 bg-orange-100 hover:bg-orange-200 text-orange-700 py-2 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-1"
+                      >
+                        <ShieldCheckIcon className="h-4 w-4" />
+                        File Claim
                       </button>
                     )}
                     
@@ -739,32 +798,6 @@ const MyOrders = () => {
           </div>
         )}
 
-        {/* Review Form Modal */}
-        {showReviewForm && selectedOrder && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Write a Review</h3>
-                <button
-                  onClick={() => setShowReviewForm(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <XMarkIcon className="h-5 w-5 text-gray-500" />
-                </button>
-              </div>
-              
-              <ReviewForm
-                orderId={selectedOrder._id}
-                orderNumber={selectedOrder.orderNumber}
-                customerInfo={selectedOrder.customerInfo}
-                onSubmitSuccess={() => {
-                  setShowReviewForm(false);
-                  alert('Thank you for your review!');
-                }}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Cancel Order Modal */}
         {showCancelModal && cancellingOrder && (
@@ -830,6 +863,203 @@ const MyOrders = () => {
                 >
                   Cancel Order
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Insurance Claim Modal */}
+        {showClaimModal && claimOrder && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                <div className="flex items-center gap-2">
+                  <ShieldCheckIcon className="h-6 w-6 text-orange-600" />
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">File Insurance Claim</h3>
+                    <p className="text-sm text-gray-500">Order: {claimOrder.orderNumber} • {claimOrder.insurance?.policyType} coverage up to ${claimOrder.insurance?.coverageAmount?.toFixed(2)}</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowClaimModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <XMarkIcon className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-start gap-2">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-orange-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-orange-800">
+                    Please describe each damaged, lost, or mishandled item with as much detail as possible. Our team will review your claim within 48 hours.
+                  </p>
+                </div>
+
+                {/* Damaged Items */}
+                {claimItems.map((item, idx) => (
+                  <div key={idx} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-gray-900">Item {idx + 1}</h4>
+                      {claimItems.length > 1 && (
+                        <button
+                          onClick={() => setClaimItems(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
+                        <input
+                          type="text"
+                          value={item.itemName}
+                          onChange={(e) => {
+                            const updated = [...claimItems];
+                            updated[idx].itemName = e.target.value;
+                            setClaimItems(updated);
+                          }}
+                          placeholder="e.g., Silk Shirt, Wool Blazer"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Damage Type</label>
+                        <select
+                          value={item.damageType}
+                          onChange={(e) => {
+                            const updated = [...claimItems];
+                            updated[idx].damageType = e.target.value;
+                            setClaimItems(updated);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                        >
+                          <option value="stained">Stained</option>
+                          <option value="torn">Torn</option>
+                          <option value="discolored">Discolored</option>
+                          <option value="shrunk">Shrunk</option>
+                          <option value="lost">Lost</option>
+                          <option value="burned">Burned</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea
+                          value={item.description}
+                          onChange={(e) => {
+                            const updated = [...claimItems];
+                            updated[idx].description = e.target.value;
+                            setClaimItems(updated);
+                          }}
+                          placeholder="Describe the damage in detail..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          rows="2"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Value ($)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={item.estimatedValue}
+                          onChange={(e) => {
+                            const updated = [...claimItems];
+                            updated[idx].estimatedValue = parseFloat(e.target.value) || 0;
+                            setClaimItems(updated);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => setClaimItems(prev => [...prev, { itemName: '', description: '', estimatedValue: 0, damageType: 'stained' }])}
+                  className="w-full py-2 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-orange-400 hover:text-orange-600 transition-colors text-sm font-medium"
+                >
+                  + Add Another Item
+                </button>
+
+                {/* Total */}
+                <div className="bg-gray-100 rounded-xl p-4 flex items-center justify-between">
+                  <span className="font-medium text-gray-700">Total Claim Amount:</span>
+                  <span className="text-xl font-bold text-gray-900">${claimItems.reduce((s, i) => s + (i.estimatedValue || 0), 0).toFixed(2)}</span>
+                </div>
+
+                {/* Submit */}
+                <div className="flex gap-3">
+                  <button
+                    onClick={async () => {
+                      const hasEmpty = claimItems.some(i => !i.itemName.trim() || !i.description.trim() || !i.estimatedValue);
+                      if (hasEmpty) {
+                        alert('Please fill in all fields for each damaged item.');
+                        return;
+                      }
+                      setClaimSubmitting(true);
+                      try {
+                        await api.post('/insurance/claims', {
+                          orderId: claimOrder._id,
+                          damagedItems: claimItems
+                        });
+                        alert('Insurance claim submitted successfully! We will review it within 48 hours.');
+                        setShowClaimModal(false);
+                        setClaimOrder(null);
+                        setClaimItems([{ itemName: '', description: '', estimatedValue: 0, damageType: 'stained' }]);
+                      } catch (error) {
+                        alert(error.response?.data?.message || 'Failed to submit claim. Please try again.');
+                      } finally {
+                        setClaimSubmitting(false);
+                      }
+                    }}
+                    disabled={claimSubmitting}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-xl font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {claimSubmitting ? 'Submitting...' : 'Submit Claim'}
+                  </button>
+                  <button
+                    onClick={() => setShowClaimModal(false)}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Review Modal */}
+        {showReviewModal && reviewingOrder && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[70] overflow-y-auto">
+            <div className="w-full max-w-2xl my-8">
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowReviewModal(false);
+                    setReviewingOrder(null);
+                  }}
+                  className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+                >
+                  <XMarkIcon className="h-6 w-6 text-gray-500" />
+                </button>
+                <ReviewForm 
+                  orderId={reviewingOrder._id}
+                  orderNumber={reviewingOrder.orderNumber}
+                  customerInfo={reviewingOrder.customerInfo}
+                  onSubmitSuccess={async () => {
+                    alert('Thank you for your review!');
+                    setShowReviewModal(false);
+                    setReviewingOrder(null);
+                    // Refresh orders
+                    const updatedOrders = await loadOrders(userEmail);
+                    setOrders(updatedOrders);
+                    setFilteredOrders(updatedOrders);
+                    setShowOrderDetails(false);
+                  }}
+                />
               </div>
             </div>
           </div>

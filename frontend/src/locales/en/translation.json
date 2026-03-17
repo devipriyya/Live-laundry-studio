@@ -1,4 +1,5 @@
 {
+  "dashboard_title": "Dashboard",
   "delivery_dashboard": "Delivery Dashboard",
   "welcome": "Welcome",
   "my_orders": "My Orders",
@@ -126,5 +127,417 @@
   "view_detailed_report": "View Detailed Report",
   "performance_summary": "Performance Summary",
   "view_detailed_analytics": "View Detailed Analytics",
-  "live_location_tracking": "Live Location Tracking"
+  "landing": {
+    "about": "About",
+    "services": "Services",
+    "pricing": "Pricing",
+    "stores": "Stores",
+    "contact": "Contact",
+    "book_now": "Book Now",
+    "hero_title_1": "Premium Laundry &",
+    "hero_title_2": "Dry Cleaning Services",
+    "hero_title_3": "Near You",
+    "hero_subtitle": "Trusted care for every garment — we pickup, clean and deliver to your doorstep with meticulous attention to detail.",
+    "schedule_pickup": "Schedule Your Pickup",
+    "see_pricing": "See Our Pricing",
+    "customer_support": "Customer Support",
+    "super_fast_delivery": "Super Fast Delivery",
+    "fresh_eco_friendly": "Fresh & Eco-Friendly",
+    "since_2010": "Since 2010",
+    "about_title": "Redefining Garment Care in Adimaly",
+    "about_p1": "WashLab started with a simple mission: to provide the highest quality laundry and dry cleaning services with unmatched convenience. Today, we are proud to be the trusted partner for thousands of households and businesses.",
+    "about_p2": "Our state-of-the-art facility combines modern technology with traditional care techniques to ensure every garment is returned in its best possible condition.",
+    "eco_friendly_100": "100% Eco-Friendly",
+    "expert_handling": "Expert Handling",
+    "our_expert_services": "Our Expert Services",
+    "complete_care_title": "Complete Care for Your Wardrobe",
+    "services_list": {
+      "wash_fold": {
+        "title": "Wash & Fold",
+        "desc": "Everyday laundry handled with care. We wash, dry, and neatly fold your clothes."
+      },
+      "dry_cleaning": {
+        "title": "Dry Cleaning",
+        "desc": "Professional cleaning for delicate fabrics and high-value garments."
+      },
+      "steam_ironing": {
+        "title": "Steam Ironing",
+        "desc": "Crisp, wrinkle-free clothes returned on hangers or neatly folded."
+      },
+      "stain_removal": {
+        "title": "Stain Removal",
+        "desc": "Specialized treatment for tough stains to give your clothes a new life."
+      },
+      "shoe_polishing": {
+        "title": "Shoe Polishing",
+        "desc": "Cleaning and conditioning for all types of footwear."
+      },
+      "blanket_cleaning": {
+        "title": "Blanket Cleaning",
+        "desc": "Deep cleaning for heavy blankets, duvets, and comforters."
+      }
+    },
+    "pricing_plans": "Pricing Plans",
+    "simple_transparent_pricing": "Simple & Transparent Pricing",
+    "pricing_subtitle": "No hidden fees, just professional care for your clothes. Choose the service that fits your needs.",
+    "most_popular": "Most Popular",
+    "item": "/ item",
+    "get_started_now": "Get Started Now",
+    "price_variation_note": "* Prices may vary based on fabric type and special requirements.",
+    "our_locations": "Our Locations",
+    "find_washlab_near_you": "Find a WashLab Near You",
+    "get_directions": "Get Directions",
+    "get_in_touch": "Get in Touch",
+    "contact_subtitle": "Have a question or need a special service? Our team is here to help you.",
+    "call_us": "Call Us",
+    "email_us": "Email Us",
+    "visit_us": "Visit Us",
+    "name_label": "Full Name",
+    "email_label": "Email Address",
+    "message_label": "Message",
+    "send_message": "Send Message",
+    "footer_desc": "Standardizing the laundry industry with technology and professional care. Premium services delivered right to your doorstep.",
+    "quick_links": "Quick Links",
+    "newsletter": "Newsletter",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service"
+  },
+  "auth": {
+    "create_account": "Create Account",
+    "join_revolution": "Join the laundry revolution",
+    "sign_in": "Sign In",
+    "sign_up": "Sign Up",
+    "login_title": "Welcome Back",
+    "email": "Email Address",
+    "email_label": "Email Address",
+    "password": "Password",
+    "password_label": "Password",
+    "confirm_password": "Confirm Password",
+    "already_have_account": "Already have an account?",
+    "dont_have_account": "Don't have an account?",
+    "google_account": "Google Account",
+    "or_sign_up_with": "Or sign up with",
+    "or_sign_in_with": "Or sign in with",
+    "welcome_back": "Welcome Back",
+    "sign_in_subtitle": "Sign in to your premium laundry workspace",
+    "email_placeholder": "name@company.com",
+    "password_placeholder": "••••••••",
+    "forgot_password": "Forgot Password?",
+    "remember_me": "Keep me signed in",
+    "new_to_washlab": "New to WashLab?",
+    "create_account_link": "Create account",
+    "reset_password": "Reset Password",
+    "reset_password_subtitle": "Enter your email and we'll send you a reset link.",
+    "reset_email_placeholder": "Email address",
+    "cancel": "Cancel",
+    "send_link": "Send Link",
+    "strength_label": "Strength",
+    "strength": {
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "registration_success_msg": "Registration successful! Please sign in to continue...",
+    "errors": {
+      "name_required": "Name is required",
+      "name_min_length": "Name must be at least 2 characters",
+      "name_letters_only": "Name can only contain letters and spaces",
+      "email_required": "Email is required",
+      "email_invalid": "Please enter a valid email address",
+      "email_exists": "An account with this email already exists. Please login instead.",
+      "password_required": "Password is required",
+      "password_min_length": "Password must be at least 6 characters",
+      "password_weak": "Password is too weak. Include uppercase, lowercase, numbers, and special characters",
+      "password_weak_firebase": "Password is too weak",
+      "confirm_password_required": "Please confirm your password",
+      "passwords_not_match": "Passwords do not match",
+      "registration_disabled": "Email/password registration is currently disabled.",
+      "network_error": "Network error. Please check your connection and try again.",
+      "login_failed": "Login failed. Please try again.",
+      "google_failure": "Google sign-up failed. Please try again.",
+      "reset_email_required": "Please enter your email address",
+      "reset_email_invalid": "Please enter a valid email address",
+      "reset_email_sent": "Password reset email sent! Please check your inbox.",
+      "user_not_found": "No account found with this email address",
+    "common_failure": "Something went wrong. Please try again."
+    }
+  },
+  "dashboard": {
+    "hero_title": "Stay fresh, stay organized with your laundry services",
+    "hero_subtitle_home": "Discover personalized services tailored to your preferences",
+    "nav": {
+      "home": "Home",
+      "laundry": "Laundry",
+      "schedule": "Schedule Wash",
+      "track": "Track Orders",
+      "payment": "Payment",
+      "payment_history": "Payment History",
+      "orders": "Order History",
+      "quality": "Quality Check",
+      "rate": "Get Rate Card",
+      "products": "WashLab Products",
+      "recommendations": "AI Recommendations",
+      "naive_bayes": "ML Comparison",
+      "store": "Store Locator",
+      "legal": "Legal Info",
+      "feedback": "Feedback & Support",
+      "lost_found": "Lost & Found",
+      "notifications": "Notifications"
+    },
+    "cards": {
+      "profile": {
+        "title": "My Profile",
+        "desc": "View and manage your personal information, addresses, and preferences",
+        "action": "View Profile"
+      },
+      "shoe_cleaning": {
+        "title": "Shoe Polishing",
+        "desc": "Professional shoe cleaning and polishing services",
+        "action": "Book Service"
+      },
+      "schedule": {
+        "title": "Schedule Wash",
+        "desc": "Book a pickup time that works best for your schedule",
+        "action": "Schedule Now"
+      },
+      "dry_cleaning": {
+        "title": "Dry Cleaning",
+        "desc": "Professional dry cleaning for delicate fabrics and formal wear",
+        "action": "Book Service"
+      },
+      "stain_removal": {
+        "title": "Stain Removal",
+        "desc": "Professional stain removal service for your clothes",
+        "action": "Remove Stains"
+      },
+      "steam_ironing": {
+        "title": "Steam Ironing",
+        "desc": "Professional steam ironing for crisp, wrinkle-free clothes",
+        "action": "Book Service"
+      },
+      "track": {
+        "title": "Track Orders",
+        "desc": "View real-time status of your active laundry orders",
+        "action": "Track Now"
+      },
+      "orders": {
+        "title": "Order History",
+        "desc": "View your past orders, receipts, and order details",
+        "action": "View History"
+      },
+      "payment_history": {
+        "title": "Payment History",
+        "desc": "View and track all your previous transaction records",
+        "action": "View History"
+      },
+      "rate": {
+        "title": "Get Rate Card",
+        "desc": "View pricing for all our services and special offers",
+        "action": "View Pricing"
+      },
+      "products": {
+        "title": "WashLab Products",
+        "desc": "Premium laundry care products and accessories",
+        "action": "Shop Now"
+      },
+      "store": {
+        "title": "Store Locator",
+        "desc": "Find our nearest service centers and drop-off points",
+        "action": "Find Stores"
+      },
+      "legal": {
+        "title": "Legal Information",
+        "desc": "Terms of service, privacy policy, and legal documents",
+        "action": "Read More"
+      },
+      "feedback": {
+        "title": "Feedback & Support",
+        "desc": "Submit your complaints or feedback and track their resolution status",
+        "action": "Get Support"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "desc": "Stay updated with your latest activities and important alerts",
+        "action": "View Notifications"
+      },
+      "lost_found": {
+        "title": "Lost & Found",
+        "desc": "Report missing items from your laundry orders and track their resolution status",
+        "action": "Report Item"
+      }
+    },
+    "stats": {
+      "satisfaction": "Your Satisfaction",
+      "services": "Services Available",
+      "team": "Expert Team",
+      "delivery": "Quick Delivery",
+      "quality_guaranteed": "Quality Guaranteed",
+      "comprehensive_care": "Comprehensive Care",
+      "fast_turnaround": "Fast Turnaround"
+    },
+    "faqs": {
+      "title": "Frequently Asked Questions",
+      "q1": "How do I schedule a laundry pickup?",
+      "a1": "Simply click on \"Schedule Pickup\" button, select your preferred date and time, and our team will arrive at your doorstep to collect your laundry. You can also track your order in real-time.",
+      "q2": "What are your service timings?",
+      "a2": "We operate 7 days a week from 8 AM to 8 PM. You can schedule pickups and deliveries within this time frame. Express services are available for urgent requirements.",
+      "q3": "Do you offer same-day service?",
+      "a3": "Yes! Our express service offers same-day delivery for orders placed before 10 AM. Additional charges may apply for express service.",
+      "q4": "What payment methods do you accept?",
+      "a4": "We accept all major payment methods including credit/debit cards, UPI, net banking, and cash on delivery. You can also maintain a wallet for faster checkout."
+    },
+    "testimonials": {
+      "title": "What Our Customers Say",
+      "t1": {
+        "name": "Priya Sharma",
+        "comment": "Excellent service! My clothes came back fresh and perfectly ironed.",
+        "location": "Mumbai"
+      },
+      "t2": {
+        "name": "Rahul Verma",
+        "comment": "Best laundry service in the city. Quick and reliable!",
+        "location": "Delhi"
+      },
+      "t3": {
+        "name": "Anjali Patel",
+        "comment": "Professional team and eco-friendly products. Highly recommended!",
+        "location": "Bangalore"
+      }
+    },
+    "features": {
+      "express": {
+        "title": "Express Service",
+        "desc": "Get your laundry done in as fast as 3 hours"
+      },
+      "quality": {
+        "title": "Quality Assurance",
+        "desc": "Premium detergents and careful handling guaranteed"
+      },
+      "pickup": {
+        "title": "Free Pickup & Delivery",
+        "desc": "Convenient doorstep service at no extra cost"
+      },
+      "eco": {
+        "title": "Eco-Friendly",
+        "desc": "Environment conscious cleaning solutions"
+      }
+    },
+    "services": {
+      "pickup": {
+        "name": "Laundry Pickup",
+        "desc": "Convenient pickup service from your doorstep at scheduled times"
+      },
+      "wash_fold": {
+        "name": "Wash And Fold",
+        "desc": "Professional washing, drying and folding service for everyday clothes"
+      },
+      "bulk": {
+        "name": "Bulk Discount",
+        "desc": "Save more with bulk orders and enjoy special pricing benefits"
+      },
+      "dry_cleaning": {
+        "name": "Dry Cleaning",
+        "desc": "Expert dry cleaning for delicate fabrics and formal wear"
+      }
+    },
+    "hero": {
+      "tired_title1": "Getting Tired With",
+      "tired_title2": "Your Laundry?",
+      "tired_desc": "It must take a lot of time to prepare before you go to town. After grocery shopping your hands are full, so you can't carry your laundry. Then you'll end up taking two trips to get your laundry done. We've got a hack! We'll pick-up & drop-off. We're here for you.",
+      "order_pickup": "Order Pickup",
+      "solutions_title": "Laundry Solutions For A Busy Life",
+      "solutions_desc": "When you need a laundry service that fits in with your busy life, you need Fabrico. We collect dirty laundry, clean it and deliver it back to you – all from your mobile or laptop.",
+      "learn_more": "Learn More"
+    },
+    "sidebar": {
+      "premium_perfume_title": "Premium Perfume",
+      "premium_perfume_desc": "Leave all the worry of your clothes smelling weird to us. With Fabrico, fresh is the only way your clothes get back to you.",
+      "trusted_detergent_title": "Trusted Detergent",
+      "trusted_detergent_desc": "Choose the right detergent that gives your clothes the perfect amount of care. Quality washing chemicals that don't harm your fabric."
+    },
+    "blog": {
+      "title": "News And",
+      "title_highlight": "Blog",
+      "subtitle": "Stay updated with our latest tips, guides, and news"
+    },
+    "newsletter": {
+      "title": "Join Our Newsletter",
+      "desc": "Get the scoop on discounts, pay on delivery, free delivery and the chance to win a gift for referring friends.",
+      "placeholder": "Your email address",
+      "subscribe": "Subscribe"
+    },
+    "footer_cta": {
+      "ready": "Ready to get started?",
+      "schedule": "Schedule Pickup",
+      "view_orders": "View Orders",
+      "view_pricing": "View Pricing"
+    },
+    "loyalty": {
+      "member": "{{tier}} Member",
+      "available_balance": "Available Balance",
+      "next_tier_progress": "Next Tier Progress",
+      "points_value": "100 pts = ₹50",
+      "details": "Details",
+      "pts": "Pts",
+      "loading": "Loading loyalty details..."
+    },
+    "ml_models": {
+      "title": "ML Model Predictions",
+      "loading": "Loading model predictions...",
+      "no_recommendations": "No recommendations available",
+      "no_segment": "No segment prediction available",
+      "confidence_level": "Confidence Level",
+      "comparison": "Model Comparison",
+      "knn": {
+        "name": "KNN Recommendations",
+        "desc": "Similarity-based suggestions",
+        "type": "Recommendations"
+      },
+      "svm": {
+        "name": "SVM Segment",
+        "desc": "Support Vector Machine classification",
+        "type": "Classification"
+      },
+      "dt": {
+        "name": "Decision Tree",
+        "desc": "Tree-based classification",
+        "type": "Classification"
+      },
+      "segments": {
+        "premium": "Premium",
+        "regular": "Regular",
+        "budget": "Budget",
+        "inactive": "Inactive",
+        "customer": "{{type}} Customer"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unread_msg": "You have {{count}} unread message",
+      "unread_msg_plural": "You have {{count}} unread messages",
+      "mark_all_read": "Mark all as read",
+      "clear_read": "Clear read",
+      "loading": "Loading your notifications...",
+      "mark_as_read": "Mark as read",
+      "delete": "Delete",
+      "view_details": "View Details",
+      "all_caught_up": "All caught up!",
+      "no_new": "You don't have any new notifications at the moment.",
+      "settings": {
+        "title": "Notification Settings",
+        "subtitle": "Stay updated with Fabrico",
+        "desc": "We'll send you updates about your order progress, payment confirmations, and responses to your support requests."
+      }
+    }
+  },
+  "common": {
+    "processing": "Processing...",
+    "authentication": "Authentication...",
+    "user": "User",
+    "privacy_policy": "Privacy Policy",
+    "terms_of_service": "Terms of Service",
+    "contact_support": "Contact Support",
+    "rights_reserved": "All rights reserved."
+  }
 }

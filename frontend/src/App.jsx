@@ -20,6 +20,7 @@ const DashboardPayment = React.lazy(() => import('./pages/dashboard/DashboardPay
 const DashboardQuality = React.lazy(() => import('./pages/dashboard/DashboardQuality'));
 const DashboardRate = React.lazy(() => import('./pages/dashboard/DashboardRate'));
 const DashboardProducts = React.lazy(() => import('./pages/dashboard/DashboardProductsEnhanced'));
+const DashboardPaymentHistory = React.lazy(() => import('./pages/dashboard/DashboardPaymentHistory'));
 const DashboardCart = React.lazy(() => import('./pages/dashboard/DashboardCart'));
 const DashboardWishlist = React.lazy(() => import('./pages/dashboard/DashboardWishlist'));
 const DashboardCheckout = React.lazy(() => import('./pages/dashboard/DashboardCheckout'));
@@ -32,9 +33,15 @@ const DashboardStainRemoval = React.lazy(() => import('./pages/dashboard/Dashboa
 const DashboardSteamIroning = React.lazy(() => import('./pages/dashboard/DashboardSteamIroning'));
 const DashboardDryCleaning = React.lazy(() => import('./pages/dashboard/DashboardDryCleaning'));
 const DashboardRecommendations = React.lazy(() => import('./pages/dashboard/DashboardRecommendations'));
+const DashboardFeedback = React.lazy(() => import('./pages/dashboard/DashboardFeedback'));
+const DashboardLostItems = React.lazy(() => import('./pages/dashboard/DashboardLostItems'));
+const DashboardLoyalty = React.lazy(() => import('./pages/dashboard/DashboardLoyalty'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const AdminDashboardModern = React.lazy(() => import('./pages/AdminDashboardModern'));
 const AdminOrderManagement = React.lazy(() => import('./pages/AdminOrderManagement'));
+const ServiceManagement = React.lazy(() => import('./components/ServiceManagement'));
+const ComplaintFeedbackManagement = React.lazy(() => import('./components/ComplaintFeedbackManagement'));
+const CouponManagement = React.lazy(() => import('./components/CouponManagement'));
 const AdminOrderManagementTest = React.lazy(() => import('./components/AdminOrderManagementTest'));
 const TestConnection = React.lazy(() => import('./test-connection'));
 const DeliveryBoyDashboard = React.lazy(() => import('./pages/DeliveryBoyDashboard'));
@@ -85,6 +92,35 @@ const TestDeliveryLogin = React.lazy(() => import('./TestDeliveryLogin'));
 const DeliveryBoyTest = React.lazy(() => import('./DeliveryBoyTest'));
 const DeliveryBoyLogin = React.lazy(() => import('./DeliveryBoyLogin'));
 const DebugDeliveryLogin = React.lazy(() => import('./DebugDeliveryLogin'));
+const LaundryStaffDashboard = React.lazy(() => import('./pages/LaundryStaffDashboard'));
+
+// Delivery Dashboard Components
+const DeliveryDashboardHome = React.lazy(() => import('./components/delivery-dashboard/DeliveryDashboardHome'));
+const DeliveryDashboardHomeWrapper = React.lazy(() => import('./components/delivery-dashboard/DeliveryDashboardHomeWrapper'));
+const EarningsWrapper = React.lazy(() => import('./components/delivery-dashboard/EarningsWrapper'));
+const HelpSupportWrapper = React.lazy(() => import('./components/delivery-dashboard/HelpSupportWrapper'));
+const DeliveryMyOrdersWrapper = React.lazy(() => import('./components/delivery-dashboard/DeliveryMyOrdersWrapper'));
+const DeliveryHistoryWrapper = React.lazy(() => import('./components/delivery-dashboard/DeliveryHistoryWrapper'));
+const PerformanceWrapper = React.lazy(() => import('./components/delivery-dashboard/PerformanceWrapper'));
+const ProfileSettingsWrapper = React.lazy(() => import('./components/delivery-dashboard/ProfileSettingsWrapper'));
+const ShiftManagementWrapper = React.lazy(() => import('./components/delivery-dashboard/ShiftManagementWrapper'));
+const OrderDetailsPageWrapper = React.lazy(() => import('./components/delivery-dashboard/OrderDetailsPageWrapper'));
+
+// Minimal Delivery Dashboard Components
+const DeliveryBoyDashboardMinimal = React.lazy(() => import('./pages/DeliveryBoyDashboardMinimal'));
+const DeliveryHomeMinimal = React.lazy(() => import('./components/delivery-minimal/DeliveryHomeMinimal'));
+const DeliveryOrdersMinimal = React.lazy(() => import('./components/delivery-minimal/DeliveryOrdersMinimal'));
+const DeliveryPerformanceMinimal = React.lazy(() => import('./components/delivery-minimal/DeliveryPerformanceMinimal'));
+const ProfileSettingsMinimal = React.lazy(() => import('./components/delivery-minimal/ProfileSettingsMinimal'));
+
+// Laundry Staff Dashboard Components
+const StaffDashboardHome = React.lazy(() => import('./components/laundry-staff-dashboard/StaffDashboardHome'));
+const StaffOrders = React.lazy(() => import('./components/laundry-staff-dashboard/StaffOrders'));
+const StaffSchedule = React.lazy(() => import('./components/laundry-staff-dashboard/StaffSchedule'));
+const StaffPerformance = React.lazy(() => import('./components/laundry-staff-dashboard/StaffPerformance'));
+const StaffProfile = React.lazy(() => import('./components/laundry-staff-dashboard/StaffProfile'));
+
+const Chatbot = React.lazy(() => import('./components/Chatbot'));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -105,6 +141,9 @@ function App() {
           <div className="min-h-screen bg-white">
             <Router>
               <AppRoutes />
+              <Suspense fallback={null}>
+                <Chatbot />
+              </Suspense>
             </Router>
           </div>
         </ChatProvider>
@@ -116,16 +155,16 @@ function App() {
 // Separate component for routes to handle authentication context
 const AppRoutes = () => {
   const { loading, user } = useContext(AuthContext);
-  
+
   // Debug logging
   console.log('AppRoutes: Rendering with loading:', loading, 'user:', user);
-  
+
   // Show loading spinner while authentication context is initializing
   if (loading) {
     console.log('AppRoutes: Showing loading spinner');
     return <LoadingSpinner />;
   }
-  
+
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
@@ -145,24 +184,24 @@ const AppRoutes = () => {
         <Route path="/register" element={<Register />} />
 
         {/* Enhanced Reports & Analytics */}
-        <Route 
-          path="/enhanced-analytics" 
+        <Route
+          path="/enhanced-analytics"
           element={
             <ProtectedRoute roles={['admin']}>
               <EnhancedReportsAnalytics />
             </ProtectedRoute>
-          } 
+          }
         />
-        
+
         {/* Redirect old reports route to enhanced version */}
-        <Route 
-          path="/reports" 
-          element={<Navigate to="/enhanced-analytics" replace />} 
+        <Route
+          path="/reports"
+          element={<Navigate to="/enhanced-analytics" replace />}
         />
 
         {/* Protected Dashboard with nested routes */}
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute roles={['customer']}>
               <DashboardLayout />
@@ -181,6 +220,7 @@ const AppRoutes = () => {
           <Route path="test-schedule" element={<TestSchedule />} />
           <Route path="orders" element={<DashboardOrders />} />
           <Route path="payment" element={<DashboardPayment />} />
+          <Route path="payment-history" element={<DashboardPaymentHistory />} />
           <Route path="quality" element={<DashboardQuality />} />
           <Route path="rate" element={<DashboardRate />} />
           <Route path="products" element={<DashboardProducts />} />
@@ -191,321 +231,390 @@ const AppRoutes = () => {
           <Route path="legal" element={<DashboardLegal />} />
           <Route path="notifications" element={<DashboardNotifications />} />
           <Route path="recommendations" element={<DashboardRecommendations />} />
+          <Route path="feedback" element={<DashboardFeedback />} />
+          <Route path="loyalty" element={<DashboardLoyalty />} />
+          <Route path="lost-items" element={<DashboardLostItems />} />
+          <Route path="track-order" element={<TrackOrder />} />
           <Route path="test-naive-bayes" element={<TestNaiveBayes />} />
         </Route>
 
         {/* Redirect old dashboard route to new dashboard */}
-        <Route 
-          path="/dashboard-old" 
-          element={<Navigate to="/dashboard/home" replace />} 
+        <Route
+          path="/dashboard-old"
+          element={<Navigate to="/dashboard/home" replace />}
         />
 
         {/* User Profile Page - accessible to all authenticated users */}
-        <Route 
-          path="/profile" 
+        <Route
+          path="/profile"
           element={
             <ProtectedRoute>
               <UserProfilePage />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Legacy Dashboard Route (for backward compatibility) */}
-        <Route 
-          path="/dashboard-old" 
+        <Route
+          path="/dashboard-old"
           element={
             <ProtectedRoute roles={['customer', 'delivery']}>
               <Dashboard />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Simplified Admin Dashboard Route */}
-        <Route 
-          path="/simplified-admin-dashboard" 
+        <Route
+          path="/simplified-admin-dashboard"
           element={
             <ProtectedRoute roles={['admin']}>
               <SimplifiedAdminDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Test Admin Dashboard Route */}
-        <Route 
-          path="/test-admin-dashboard" 
+        <Route
+          path="/test-admin-dashboard"
           element={
             <ProtectedRoute roles={['admin']}>
               <TestAdminDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Protected Admin Dashboard */}
-        <Route 
-          path="/admin-dashboard" 
+        <Route
+          path="/admin-dashboard"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['admin', 'assistant']}>
               <AdminDashboardModern />
             </ProtectedRoute>
-          } 
+          }
         />
-        
+
         {/* Original Admin Dashboard (for comparison) */}
-        <Route 
-          path="/admin-dashboard-original" 
+        <Route
+          path="/admin-dashboard-original"
           element={
             <ProtectedRoute roles={['admin']}>
               <AdminDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
-        
+
         {/* Admin Order Management */}
-        <Route 
-          path="/admin-orders" 
+        <Route
+          path="/admin-orders"
           element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['admin', 'assistant']}>
               <AdminOrderManagement />
             </ProtectedRoute>
-          } 
+          }
+        />
+
+        {/* Admin Service Management */}
+        <Route
+          path="/admin-services"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <ServiceManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Complaint Management */}
+        <Route
+          path="/admin-complaints"
+          element={
+            <ProtectedRoute roles={['admin', 'assistant']}>
+              <ComplaintFeedbackManagement />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Coupon Management */}
+        <Route
+          path="/admin-coupons"
+          element={
+            <ProtectedRoute roles={['admin']}>
+              <CouponManagement />
+            </ProtectedRoute>
+          }
         />
 
         {/* Customer Management - only for admin */}
-        <Route 
-          path="/customer-management" 
+        <Route
+          path="/customer-management"
           element={
             <ProtectedRoute roles={['admin']}>
               <CustomerManagementPage />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Inventory Management - only for admin */}
-        <Route 
-          path="/inventory" 
+        <Route
+          path="/inventory"
           element={
             <ProtectedRoute roles={['admin']}>
               <InventoryManagement />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Customer Management Test Page */}
-        <Route 
-          path="/customer-management-test" 
+        <Route
+          path="/customer-management-test"
           element={
             <ProtectedRoute roles={['admin']}>
               <CustomerManagementTestPage />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Customer Management Direct Page */}
-        <Route 
-          path="/customer-management-direct" 
+        <Route
+          path="/customer-management-direct"
           element={
             <ProtectedRoute roles={['admin']}>
               <CustomerManagementDirect />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Delivery Boy Management */}
-        <Route 
-          path="/delivery-boy-management" 
+        <Route
+          path="/delivery-boy-management"
           element={
             <ProtectedRoute roles={['admin']}>
               <DeliveryBoyManagementPage />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Admin Payment Management */}
-        <Route 
-          path="/admin-payments" 
+        <Route
+          path="/admin-payments"
           element={
             <ProtectedRoute roles={['admin']}>
               <PaymentManagementPage />
             </ProtectedRoute>
-          } 
+          }
         />
-        
+
         {/* Enhanced Payment Management */}
-        <Route 
-          path="/enhanced-payments" 
+        <Route
+          path="/enhanced-payments"
           element={
             <ProtectedRoute roles={['admin']}>
               <EnhancedPaymentManagement />
             </ProtectedRoute>
-          } 
-        />
-        
-        {/* Test Payment Management */}
-        <Route 
-          path="/test-payments" 
-          element={<TestPaymentManagement />} 
+          }
         />
 
-        {/* Delivery Boy Dashboard */}
-        <Route 
-          path="/delivery-dashboard" 
+        {/* Test Payment Management */}
+        <Route
+          path="/test-payments"
+          element={<TestPaymentManagement />}
+        />
+
+        {/* Delivery Boy Dashboard with nested routes */}
+        <Route
+          path="/delivery-dashboard"
           element={
             <ProtectedRoute roles={['deliveryBoy']}>
               <DeliveryBoyDashboard />
             </ProtectedRoute>
-          } 
-        />
+          }
+        >
+          <Route index element={<Navigate to="/delivery-dashboard/my-orders" replace />} />
+          <Route path="order/:orderId" element={<OrderDetailsPageWrapper />} />
+          <Route path="my-orders" element={<DeliveryMyOrdersWrapper />} />
+          <Route path="history" element={<DeliveryHistoryWrapper />} />
+          <Route path="earnings" element={<EarningsWrapper />} />
+          <Route path="performance" element={<PerformanceWrapper />} />
+          <Route path="shift-management" element={<ShiftManagementWrapper />} />
+          <Route path="help-support" element={<HelpSupportWrapper />} />
+          <Route path="profile-settings" element={<ProfileSettingsWrapper />} />
+        </Route>
+
+        {/* Minimal Delivery Boy Dashboard */}
+        <Route
+          path="/delivery-minimal"
+          element={
+            <ProtectedRoute roles={['deliveryBoy']}>
+              <DeliveryBoyDashboardMinimal />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DeliveryHomeMinimal />} />
+          <Route path="orders" element={<DeliveryOrdersMinimal />} />
+          <Route path="orders/:orderId" element={<OrderDetailsPageWrapper />} />
+          <Route path="performance" element={<DeliveryPerformanceMinimal />} />
+          <Route path="profile" element={<ProfileSettingsMinimal />} />
+        </Route>
+
+        {/* Laundry Staff Dashboard with nested routes */}
+        <Route
+          path="/laundry-staff-dashboard"
+          element={
+            <ProtectedRoute roles={['laundryStaff', 'staff']}>
+              <LaundryStaffDashboard />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/laundry-staff-dashboard/orders" replace />} />
+          <Route path="home" element={<StaffDashboardHome />} />
+          <Route path="orders" element={<StaffOrders />} />
+          <Route path="schedule" element={<StaffSchedule />} />
+          <Route path="performance" element={<StaffPerformance />} />
+          <Route path="profile" element={<StaffProfile />} />
+        </Route>
 
         {/* Protected New Order */}
-        <Route 
-          path="/new-order" 
+        <Route
+          path="/new-order"
           element={
             <ProtectedRoute>
               <NewOrder />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Protected Schedule Pickup */}
-        <Route 
-          path="/schedule-pickup" 
+        <Route
+          path="/schedule-pickup"
           element={
             <ProtectedRoute>
               <SchedulePickup />
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Protected Track Order */}
-        <Route 
-          path="/track-order" 
-          element={
-            <ProtectedRoute>
-              <TrackOrder />
-            </ProtectedRoute>
-          } 
-        />
 
         {/* Profile Test Route */}
-        <Route 
-          path="/profile-test" 
-          element={<ProfileTest />} 
+        <Route
+          path="/profile-test"
+          element={<ProfileTest />}
         />
 
         {/* Protected Laundry Segment */}
-        <Route 
-          path="/laundry-segment" 
+        <Route
+          path="/laundry-segment"
           element={
             <ProtectedRoute>
               <LaundrySegment />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Protected Order Success */}
-        <Route 
-          path="/order-success" 
+        <Route
+          path="/order-success"
           element={
             <ProtectedRoute>
               <OrderSuccess />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Protected Invoice */}
-        <Route 
-          path="/invoice/:orderId" 
+        <Route
+          path="/invoice/:orderId"
           element={
             <ProtectedRoute>
               <Invoice />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Protected My Orders */}
-        <Route 
-          path="/my-orders" 
+        <Route
+          path="/my-orders"
           element={
             <ProtectedRoute>
               <MyOrders />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Test Admin Order Management - for debugging */}
-        <Route 
-          path="/admin-orders-test" 
-          element={<AdminOrderManagementTest />} 
+        <Route
+          path="/admin-orders-test"
+          element={<AdminOrderManagementTest />}
         />
 
         {/* Protected Notifications Page */}
-        <Route 
-          path="/notifications" 
+        <Route
+          path="/notifications"
           element={
             <ProtectedRoute>
               <NotificationsPage />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Test Customer Segment Route */}
-        <Route 
-          path="/test-customer-segment" 
-          element={<TestCustomerSegment />} 
+        <Route
+          path="/test-customer-segment"
+          element={<TestCustomerSegment />}
         />
 
         {/* Customer Segment Details */}
-        <Route 
-          path="/customer-segment" 
+        <Route
+          path="/customer-segment"
           element={
             <ProtectedRoute roles={['customer']}>
               <CustomerSegmentDetails />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Test Protected Route */}
-        <Route 
-          path="/test-protected-route" 
+        <Route
+          path="/test-protected-route"
           element={
             <ProtectedRoute roles={['admin']}>
               <TestProtectedRoute />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Simplified Admin Dashboard Route */}
-        <Route 
-          path="/simplified-admin-dashboard" 
+        <Route
+          path="/simplified-admin-dashboard"
           element={
             <ProtectedRoute roles={['admin']}>
+
               <SimplifiedAdminDashboard />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Test Delivery Login Route */}
-        <Route 
-          path="/test-delivery-login" 
-          element={<TestDeliveryLogin />} 
+        <Route
+          path="/test-delivery-login"
+          element={<TestDeliveryLogin />}
         />
-        
+
         {/* Delivery Boy Test Route */}
-        <Route 
-          path="/delivery-boy-test" 
-          element={<DeliveryBoyTest />} 
+        <Route
+          path="/delivery-boy-test"
+          element={<DeliveryBoyTest />}
         />
-        
+
         {/* Delivery Boy Login Route */}
-        <Route 
-          path="/delivery-login" 
-          element={<DeliveryBoyLogin />} 
+        <Route
+          path="/delivery-login"
+          element={<DeliveryBoyLogin />}
         />
-        
+
         {/* Debug Delivery Boy Login Route */}
-        <Route 
-          path="/debug-delivery-login" 
-          element={<DebugDeliveryLogin />} 
+        <Route
+          path="/debug-delivery-login"
+          element={<DebugDeliveryLogin />}
         />
 
         {/* Catch-all redirect to home */}

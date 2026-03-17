@@ -98,14 +98,16 @@ const DashboardShoeCleaning = () => {
     { value: '8:00 AM', available: true, popular: false },
     { value: '9:00 AM', available: true, popular: true },
     { value: '10:00 AM', available: true, popular: true },
-    { value: '11:00 AM', available: false, popular: false },
+    { value: '11:00 AM', available: true, popular: false },
     { value: '12:00 PM', available: true, popular: false },
     { value: '1:00 PM', available: true, popular: true },
     { value: '2:00 PM', available: true, popular: true },
     { value: '3:00 PM', available: true, popular: false },
-    { value: '4:00 PM', available: false, popular: false },
+    { value: '4:00 PM', available: true, popular: false },
     { value: '5:00 PM', available: true, popular: false },
     { value: '6:00 PM', available: true, popular: false },
+    { value: '7:00 PM', available: true, popular: false },
+    { value: '8:00 PM', available: true, popular: false },
   ];
 
   // Calculate total price

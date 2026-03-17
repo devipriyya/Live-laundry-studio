@@ -6,13 +6,15 @@ import AdminOrderManagement from '../components/AdminOrderManagement';
 import CustomerManagement from '../components/CustomerManagement';
 import CustomerManagementFixed from '../components/CustomerManagementFixed';
 import CustomerManagementTest from '../components/CustomerManagementTest';
-import StaffManagement from '../components/StaffManagement';
+import StaffManagementDashboard from '../pages/StaffManagementDashboard';
 import InventoryManagement from '../components/InventoryManagement';
 import PaymentManagement from '../components/PaymentManagement';
 import DeliveryManagement from './DeliveryManagement';
+import AdvertisementManagement from '../components/AdvertisementManagement';
 import ReportsAnalytics from './ReportsAnalytics';
 import IncidentManagement from '../components/IncidentManagement';
 import LiveLocationMap from '../components/LiveLocationMap';
+import InsuranceClaimsManagement from '../components/InsuranceClaimsManagement';
 import {
   UserCircleIcon,
   ClockIcon,
@@ -51,6 +53,7 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
   CheckBadgeIcon,
+  UserPlusIcon,
   XMarkIcon,
   StarIcon,
   HeartIcon,
@@ -136,7 +139,7 @@ const AdminDashboard = () => {
     { 
       id: 'customer-test', 
       name: 'Customer Test', 
-      icon: UserIcon, 
+      icon: UserCircleIcon, 
       description: 'Test Customer Data',
       badge: null,
       activeClasses: 'bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 border-r-4 border-purple-500 shadow-sm',
@@ -159,6 +162,15 @@ const AdminDashboard = () => {
       badge: null,
       activeClasses: 'bg-gradient-to-r from-indigo-50 to-indigo-100 text-indigo-700 border-r-4 border-indigo-500 shadow-sm',
       iconActiveClass: 'text-indigo-600'
+    },
+    { 
+      id: 'advertisements', 
+      name: 'Advertisement Management', 
+      icon: MegaphoneIcon, 
+      description: 'Create & Manage Ads',
+      badge: null,
+      activeClasses: 'bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 border-r-4 border-orange-500 shadow-sm',
+      iconActiveClass: 'text-orange-600'
     },
     { 
       id: 'payments', 
@@ -219,6 +231,15 @@ const AdminDashboard = () => {
       name: 'Live Tracking', 
       icon: MapPinIcon, 
       description: 'Real-time Delivery Tracking',
+      badge: null,
+      activeClasses: 'bg-gradient-to-r from-green-50 to-green-100 text-green-700 border-r-4 border-green-500 shadow-sm',
+      iconActiveClass: 'text-green-600'
+    },
+    { 
+      id: 'insurance-claims', 
+      name: 'Insurance Claims', 
+      icon: ShieldCheckIcon, 
+      description: 'Cloth Damage Insurance Claims',
       badge: null,
       activeClasses: 'bg-gradient-to-r from-teal-50 to-teal-100 text-teal-700 border-r-4 border-teal-500 shadow-sm',
       iconActiveClass: 'text-teal-600'
@@ -335,6 +356,7 @@ const AdminDashboard = () => {
     ]);
 
     setQuickActions([
+      { id: 1, title: 'Add Staff', icon: UserPlusIcon, color: 'blue', action: () => setActiveSection('staff') },
       { id: 2, title: 'Add Customer', icon: UserCircleIcon, color: 'green', action: () => setActiveSection('customers') },
       { id: 3, title: 'Schedule Pickup', icon: CalendarDaysIcon, color: 'purple', action: () => setActiveSection('delivery') },
       { id: 4, title: 'Generate Report', icon: DocumentTextIcon, color: 'orange', action: () => setActiveSection('reports') },
@@ -785,13 +807,16 @@ const AdminDashboard = () => {
           {activeSection === 'orders' && <AdminOrderManagement />}
           {activeSection === 'customers' && <CustomerManagementFixed />}
           {activeSection === 'customer-test' && <CustomerManagementTest />}
-          {activeSection === 'staff' && <StaffManagement />}
+          {activeSection === 'staff' && <StaffManagementDashboard />}
+          {activeSection === 'advertisements' && <AdvertisementManagement />}
+          {activeSection === 'laundry-staff' && <StaffManagementDashboard />}
           {activeSection === 'inventory' && <InventoryManagement />}
           {activeSection === 'payments' && <PaymentManagement />}
           {activeSection === 'delivery' && <DeliveryManagement />}
           {activeSection === 'reports' && <ReportsAnalytics />}
           {activeSection === 'incidents' && <IncidentManagement />}
           {activeSection === 'live-tracking' && <LiveLocationMap />}
+          {activeSection === 'insurance-claims' && <InsuranceClaimsManagement />}
           
           {activeSection === 'services' && (
             <div className="p-6">

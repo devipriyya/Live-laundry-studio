@@ -8,7 +8,12 @@ const InventorySchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['detergent', 'softener', 'stain-remover', 'packaging', 'equipment', 'other'],
+    enum: [
+      'detergent', 'softener', 'stain-remover', 
+      'laundry-bag', 'hanger', 'garment-cover',
+      'bedsheet', 'towel', 'curtain', 'uniform',
+      'packaging', 'equipment', 'other'
+    ],
     required: true
   },
   sku: {
@@ -54,6 +59,14 @@ const InventorySchema = new mongoose.Schema({
     default: 'Main Storage'
   },
   notes: String,
+  image: {
+    type: String,
+    default: 'soap'
+  },
+  rating: {
+    type: Number,
+    default: 4.5
+  },
   status: {
     type: String,
     enum: ['in-stock', 'low-stock', 'out-of-stock', 'discontinued'],

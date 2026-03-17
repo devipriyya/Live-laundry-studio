@@ -1,15 +1,20 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import AdminOrderManagement from '../components/AdminOrderManagement';
 import CustomerManagement from '../components/CustomerManagement';
-import StaffManagement from '../components/StaffManagement';
+import StaffManagementDashboard from '../pages/StaffManagementDashboard';
 import InventoryManagement from '../components/InventoryManagement';
 import EnhancedPaymentManagement from '../components/EnhancedPaymentManagement';
 import EnhancedReportsAnalytics from './EnhancedReportsAnalytics'; // Changed to import EnhancedReportsAnalytics
 import Settings from '../components/Settings';
-import DeliveryManagement from './DeliveryManagement';
 import DeliveryBoyManagement from '../components/DeliveryBoyManagement';
+import ServiceManagement from '../components/ServiceManagement';
+import ComplaintFeedbackManagement from '../components/ComplaintFeedbackManagement';
+import CouponManagement from '../components/CouponManagement';
+import AssistantManagement from '../components/AssistantManagement';
+import AdvertisementManagement from '../components/AdvertisementManagement';
+import LostAndFoundManagement from '../components/LostAndFoundManagement';
 import api from '../api';
 import { dashboardService } from '../services/dashboardService';
 import {
@@ -23,9 +28,10 @@ import {
   CheckCircleIcon, ClockIcon, ExclamationTriangleIcon, CurrencyDollarIcon,
   TruckIcon, ShoppingBagIcon, CalendarDaysIcon, StarIcon, ChartBarIcon,
   UserCircleIcon, ShieldCheckIcon, BoltIcon, SunIcon, MoonIcon,
-  PlusIcon, DocumentChartBarIcon, InformationCircleIcon, RocketLaunchIcon,
+  PlusIcon, UserPlusIcon, DocumentChartBarIcon, InformationCircleIcon, RocketLaunchIcon,
   EyeIcon, PencilIcon, TrashIcon, FireIcon, LightBulbIcon, TagIcon,
-  ArrowTrendingUpIcon, ArrowTrendingDownIcon, ChatBubbleLeftRightIcon
+  ArrowTrendingUpIcon, ArrowTrendingDownIcon, ChatBubbleLeftRightIcon, TicketIcon, MegaphoneIcon,
+  ArchiveBoxIcon
 } from '@heroicons/react/24/outline';
 
 const AdminDashboardModern = () => {
@@ -83,15 +89,24 @@ const AdminDashboardModern = () => {
     { month: 'Jun', income: 0 }
   ]);
 
-  const menuItems = [
+  const menuItems = user?.role === 'assistant' ? [
     { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
     { id: 'orders', label: 'Orders', icon: ShoppingBagIcon },
     { id: 'customers', label: 'Customers', icon: UsersIcon },
+    { id: 'lost-found', label: 'Lost & Found', icon: ArchiveBoxIcon },
+    { id: 'complaints', label: 'Complaints & Feedback', icon: ChatBubbleLeftRightIcon },
+  ] : [
+    { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
     { id: 'staff', label: 'Staff', icon: UserGroupIcon },
     { id: 'delivery-boys', label: 'Delivery Boys', icon: TruckIcon },
+    { id: 'services', label: 'Services', icon: SparklesIcon },
+    { id: 'coupons', label: 'Coupons & Discounts', icon: TicketIcon },
+    { id: 'assistants', label: 'Assistant Management', icon: ShieldCheckIcon },
     { id: 'inventory', label: 'Inventory', icon: CubeIcon },
     { id: 'payments', label: 'Payment Management', icon: CreditCardIcon },
-    { id: 'reports', label: 'Reports', icon: ChartBarIcon }, // Changed this to stay within dashboard
+    { id: 'lost-found', label: 'Lost & Found', icon: ArchiveBoxIcon },
+    { id: 'reports', label: 'Reports', icon: ChartBarIcon },
+    { id: 'advertisements', label: 'Advertisements', icon: MegaphoneIcon },
     { id: 'settings', label: 'Settings', icon: Cog6ToothIcon },
   ];
 
@@ -101,12 +116,20 @@ const AdminDashboardModern = () => {
   // Recent activities data
   const [recentActivities, setRecentActivities] = useState([]);
 
-  const quickActions = [
-    { id: 2, title: 'Add Customer', description: 'Register new customer', icon: UserCircleIcon, color: 'purple', action: () => setActiveSection('customers') },
-    { id: 3, title: 'Schedule Pickup', description: 'Arrange delivery', icon: CalendarDaysIcon, color: 'orange', action: () => setActiveSection('delivery') },
-    { id: 4, title: 'Generate Report', description: 'View analytics', icon: DocumentChartBarIcon, color: 'teal', action: () => setActiveSection('reports') },
-    { id: 5, title: 'Customer Management', description: 'Manage all customers', icon: UsersIcon, color: 'indigo', action: () => setActiveSection('customers') }
-  ];
+  const quickActions = useMemo(() => {
+    const allActions = [
+      { id: 1, title: 'Add Staff', description: 'Manage employees', icon: UserPlusIcon, color: 'blue', action: () => setActiveSection('staff'), adminOnly: true },
+      { id: 2, title: 'Manage Services', description: 'Edit laundry services', icon: SparklesIcon, color: 'purple', action: () => setActiveSection('services'), adminOnly: true },
+      { id: 3, title: 'Manage Coupons', description: 'Create discount codes', icon: TicketIcon, color: 'orange', action: () => setActiveSection('coupons'), adminOnly: true },
+      { id: 4, title: 'Generate Report', description: 'View analytics', icon: DocumentChartBarIcon, color: 'teal', action: () => setActiveSection('reports'), adminOnly: false }, // Report is OK for assistant
+      { id: 5, title: 'Staff Overview', description: 'Manage all employees', icon: UserGroupIcon, color: 'indigo', action: () => setActiveSection('staff'), adminOnly: true }
+    ];
+    
+    if (user?.role === 'assistant') {
+      return allActions.filter(action => !action.adminOnly);
+    }
+    return allActions;
+  }, [user?.role]);
 
   // Recent orders data
   const [recentOrders, setRecentOrders] = useState([]);
@@ -273,13 +296,13 @@ const AdminDashboardModern = () => {
   console.log('AdminDashboardModern: User exists:', !!user);
   console.log('AdminDashboardModern: User role:', user ? user.role : 'no user');
   
-  if (!user || user.role !== 'admin') {
-    console.error('AdminDashboardModern: No admin user data available!');
+  if (!user || (user.role !== 'admin' && user.role !== 'assistant')) {
+    console.error('AdminDashboardModern: No authorized user data available!');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-4">You must be logged in as an administrator to access this dashboard.</p>
+          <p className="text-gray-600 mb-4">You must be logged in as an administrator or assistant to access this dashboard.</p>
           <p className="text-gray-500 mb-4">Current user role: {user ? user.role : 'none'}</p>
           <div className="space-y-3">
             <button
@@ -310,7 +333,7 @@ const AdminDashboardModern = () => {
       case 'customers':
         return <CustomerManagement isAdminView={true} />;
       case 'staff':
-        return <StaffManagement />;
+        return <StaffManagementDashboard />;
       case 'delivery-boys':
         return <DeliveryBoyManagement />;
       case 'inventory':
@@ -322,16 +345,31 @@ const AdminDashboardModern = () => {
         return <EnhancedReportsAnalytics inDashboard={true} />;
       case 'settings':
         return <Settings />;
-      case 'delivery':
-        return <DeliveryManagement />;
+      case 'services':
+        return <ServiceManagement />;
+      case 'complaints':
+        return <ComplaintFeedbackManagement />;
+      case 'coupons':
+        return <CouponManagement />;
+      case 'assistants':
+        return <AssistantManagement />;
+      case 'advertisements':
+        return <AdvertisementManagement />;
+      case 'lost-found':
+        return <LostAndFoundManagement />;
       default:
         return (
           <div className="p-6">
             {/* Dashboard Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-gray-600 mt-2">Welcome back, {user?.name || 'Admin'}!</p>
+              <div className="animate-fadeIn">
+                <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600">
+                  {user?.role === 'assistant' ? 'Assistant Dashboard' : 'Admin Dashboard'}
+                </h1>
+                <p className="text-gray-500 mt-2 flex items-center">
+                  <span className="w-8 h-px bg-blue-500 mr-2"></span>
+                  Welcome back, {user?.name || (user?.role === 'assistant' ? 'Assistant' : 'Admin')}!
+                </p>
               </div>
               <div className="mt-4 md:mt-0 flex items-center space-x-4">
                 <button
@@ -357,71 +395,83 @@ const AdminDashboardModern = () => {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-blue-50 to-blue-100'} border border-blue-200`}>
-                <div className="flex items-center justify-between">
+              <div className={`group rounded-3xl p-6 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ${darkMode ? 'bg-gray-800' : 'bg-white'} border border-gray-100 overflow-hidden relative`}>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 opacity-5 rounded-bl-full transform translate-x-8 -translate-y-8 group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="flex items-center justify-between relative z-10">
                   <div>
-                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-blue-600'}`}>Total Orders</p>
-                    <p className="text-3xl font-bold mt-2">{stats.totalOrders}</p>
+                    <p className={`text-sm font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-blue-500'}`}>Total Orders</p>
+                    <p className={`text-3xl font-black mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.totalOrders}</p>
                   </div>
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <ShoppingBagIcon className="h-8 w-8 text-blue-600" />
+                  <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg ring-4 ring-blue-50">
+                    <ShoppingBagIcon className="h-7 w-7 text-white" />
                   </div>
                 </div>
-                <div className="mt-4 flex items-center">
-                  <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-green-500 ml-1">{stats.orderGrowth}%</span>
-                  <span className={`text-sm ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>from last month</span>
+                <div className="mt-6 flex items-center relative z-10">
+                  <div className="flex items-center bg-green-50 px-2 py-1 rounded-full">
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />
+                    <span className="text-xs font-bold text-green-600 ml-1">{stats.orderGrowth}%</span>
+                  </div>
+                  <span className={`text-xs ml-3 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs last month</span>
                 </div>
               </div>
 
-              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-green-50 to-green-100'} border border-green-200`}>
-                <div className="flex items-center justify-between">
+              <div className={`group rounded-3xl p-6 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ${darkMode ? 'bg-gray-800' : 'bg-white'} border border-gray-100 overflow-hidden relative`}>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500 opacity-5 rounded-bl-full transform translate-x-8 -translate-y-8 group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="flex items-center justify-between relative z-10">
                   <div>
-                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-green-600'}`}>Total Revenue</p>
-                    <p className="text-3xl font-bold mt-2">₹{stats.totalRevenue.toLocaleString()}</p>
+                    <p className={`text-sm font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-emerald-500'}`}>Total Revenue</p>
+                    <p className={`text-3xl font-black mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>₹{stats.totalRevenue.toLocaleString()}</p>
                   </div>
-                  <div className="p-3 bg-green-100 rounded-full">
-                    <CurrencyDollarIcon className="h-8 w-8 text-green-600" />
+                  <div className="p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-lg ring-4 ring-emerald-50">
+                    <CurrencyDollarIcon className="h-7 w-7 text-white" />
                   </div>
                 </div>
-                <div className="mt-4 flex items-center">
-                  <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-green-500 ml-1">{stats.revenueGrowth}%</span>
-                  <span className={`text-sm ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>from last month</span>
+                <div className="mt-6 flex items-center relative z-10">
+                  <div className="flex items-center bg-green-50 px-2 py-1 rounded-full">
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />
+                    <span className="text-xs font-bold text-green-600 ml-1">{stats.revenueGrowth}%</span>
+                  </div>
+                  <span className={`text-xs ml-3 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs last month</span>
                 </div>
               </div>
 
-              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-purple-50 to-purple-100'} border border-purple-200`}>
-                <div className="flex items-center justify-between">
+              <div className={`group rounded-3xl p-6 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ${darkMode ? 'bg-gray-800' : 'bg-white'} border border-gray-100 overflow-hidden relative`}>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500 opacity-5 rounded-bl-full transform translate-x-8 -translate-y-8 group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="flex items-center justify-between relative z-10">
                   <div>
-                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-purple-600'}`}>Customers</p>
-                    <p className="text-3xl font-bold mt-2">{stats.totalCustomers}</p>
+                    <p className={`text-sm font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-purple-500'}`}>Customers</p>
+                    <p className={`text-3xl font-black mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.totalCustomers}</p>
                   </div>
-                  <div className="p-3 bg-purple-100 rounded-full">
-                    <UsersIcon className="h-8 w-8 text-purple-600" />
+                  <div className="p-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg ring-4 ring-purple-50">
+                    <UsersIcon className="h-7 w-7 text-white" />
                   </div>
                 </div>
-                <div className="mt-4 flex items-center">
-                  <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />
-                  <span className="text-sm text-green-500 ml-1">{stats.customerGrowth}%</span>
-                  <span className={`text-sm ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>from last month</span>
+                <div className="mt-6 flex items-center relative z-10">
+                  <div className="flex items-center bg-green-50 px-2 py-1 rounded-full">
+                    <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />
+                    <span className="text-xs font-bold text-green-600 ml-1">{stats.customerGrowth}%</span>
+                  </div>
+                  <span className={`text-xs ml-3 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs last month</span>
                 </div>
               </div>
 
-              <div className={`rounded-2xl p-6 shadow-lg ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-amber-50 to-amber-100'} border border-amber-200`}>
-                <div className="flex items-center justify-between">
+              <div className={`group rounded-3xl p-6 shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ${darkMode ? 'bg-gray-800' : 'bg-white'} border border-gray-100 overflow-hidden relative`}>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500 opacity-5 rounded-bl-full transform translate-x-8 -translate-y-8 group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="flex items-center justify-between relative z-10">
                   <div>
-                    <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-amber-600'}`}>Pending Orders</p>
-                    <p className="text-3xl font-bold mt-2">{stats.pendingOrders}</p>
+                    <p className={`text-sm font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-400' : 'text-amber-500'}`}>Pending Orders</p>
+                    <p className={`text-3xl font-black mt-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.pendingOrders}</p>
                   </div>
-                  <div className="p-3 bg-amber-100 rounded-full">
-                    <ClockIcon className="h-8 w-8 text-amber-600" />
+                  <div className="p-4 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl shadow-lg ring-4 ring-amber-50">
+                    <ClockIcon className="h-7 w-7 text-white" />
                   </div>
                 </div>
-                <div className="mt-4 flex items-center">
-                  <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />
-                  <span className="text-sm text-red-500 ml-1">2.5%</span>
-                  <span className={`text-sm ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>from last month</span>
+                <div className="mt-6 flex items-center relative z-10">
+                  <div className="flex items-center bg-red-50 px-2 py-1 rounded-full">
+                    <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />
+                    <span className="text-xs font-bold text-red-600 ml-1">2.5%</span>
+                  </div>
+                  <span className={`text-xs ml-3 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs last month</span>
                 </div>
               </div>
             </div>
@@ -554,19 +604,21 @@ const AdminDashboardModern = () => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-72 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-2xl transition-transform duration-300 ease-in-out flex flex-col`}>
         {/* Logo */}
-        <div className={`flex items-center justify-between h-20 px-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className={`flex items-center justify-between h-20 px-6 border-b shadow-sm ${darkMode ? 'border-gray-700 bg-gray-800' : 'border-gray-100 bg-white'}`}>
           <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="relative group">
+              <div className="w-12 h-12 bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform duration-300">
                 <SparklesIcon className="h-7 w-7 text-white" />
               </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white ring-2 ring-transparent group-hover:ring-green-100 transition-all duration-300"></div>
             </div>
             <div>
-              <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
+              <h1 className={`text-xl font-black tracking-tight ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
                 WashLab
               </h1>
-              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Admin Dashboard</p>
+              <p className={`text-[10px] font-bold uppercase tracking-widest ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                {user?.role === 'assistant' ? 'Assistant' : 'Administrator'}
+              </p>
             </div>
           </div>
           <button
@@ -654,8 +706,8 @@ const AdminDashboardModern = () => {
           >
             <Bars3Icon className="h-6 w-6 text-gray-600 dark:text-gray-300" />
           </button>
-          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            WashLab Admin
+          <h1 className={`text-xl font-extrabold ${darkMode ? 'text-white' : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'}`}>
+            WashLab {user?.role === 'assistant' ? 'Assistant' : 'Admin'}
           </h1>
           <button
             onClick={() => setShowNotifications(!showNotifications)}

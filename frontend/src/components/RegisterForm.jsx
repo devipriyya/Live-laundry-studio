@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -7,12 +8,12 @@ import {
 import { auth, googleProvider } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import {
-  EyeIcon,
-  EyeSlashIcon,
   UserIcon,
   EnvelopeIcon,
   LockClosedIcon,
   SparklesIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from "@heroicons/react/24/outline";
 import api from "../api";
 
@@ -27,6 +28,7 @@ const initialErrors = {
 };
 
 const RegisterForm = ({ onSwitchToLogin, onClose }) => {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -55,32 +57,31 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
     const validationErrors = { ...initialErrors };
 
     if (!form.name.trim()) {
-      validationErrors.name = "Name is required";
+      validationErrors.name = t('auth.errors.name_required');
     } else if (form.name.trim().length < 2) {
-      validationErrors.name = "Name must be at least 2 characters";
+      validationErrors.name = t('auth.errors.name_min_length');
     } else if (!/^[a-zA-Z\s]+$/.test(form.name.trim())) {
-      validationErrors.name = "Name can only contain letters and spaces";
+      validationErrors.name = t('auth.errors.name_letters_only');
     }
 
     if (!form.email.trim()) {
-      validationErrors.email = "Email is required";
+      validationErrors.email = t('auth.errors.email_required');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      validationErrors.email = "Please enter a valid email address";
+      validationErrors.email = t('auth.errors.email_invalid');
     }
 
     if (!form.password) {
-      validationErrors.password = "Password is required";
+      validationErrors.password = t('auth.errors.password_required');
     } else if (form.password.length < 8) {
-      validationErrors.password = "Password must be at least 8 characters";
+      validationErrors.password = t('auth.errors.password_min_length');
     } else if (calculatePasswordStrength(form.password) < 3) {
-      validationErrors.password =
-        "Password is too weak. Include uppercase, lowercase, numbers, and special characters";
+      validationErrors.password = t('auth.errors.password_weak');
     }
 
     if (!form.confirmPassword) {
-      validationErrors.confirmPassword = "Please confirm your password";
+      validationErrors.confirmPassword = t('auth.errors.confirm_password_required');
     } else if (form.password !== form.confirmPassword) {
-      validationErrors.confirmPassword = "Passwords do not match";
+      validationErrors.confirmPassword = t('auth.errors.passwords_not_match');
     }
 
     setErrors(validationErrors);
@@ -121,103 +122,73 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
     let firebaseUser = null;
 
     try {
-      // First, register with Firebase
-      console.log("Step 1: Registering with Firebase");
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         form.email,
         form.password
       );
       firebaseUser = userCredential.user;
-      console.log("Firebase registration successful:", firebaseUser.uid);
 
       await updateProfile(firebaseUser, { displayName: form.name });
-      console.log("Firebase profile updated");
 
-      // Then, register with our backend
       try {
-        console.log("Step 2: Registering with backend API");
         const backendResponse = await api.post("/auth/register", {
           name: form.name,
           email: form.email,
           password: form.password,
           role: "customer",
-          firebaseUid: firebaseUser.uid, // Pass Firebase UID to backend
+          firebaseUid: firebaseUser.uid,
         });
       
-        console.log("Backend registration successful:", backendResponse.data);
-      
-        // Registration successful
         setErrors((prev) => ({
           ...prev,
-          success: "Registration successful!",
+          success: t('auth.registration_success_msg'),
         }));
       
-        console.log("Registration completed successfully");
-      
-        // Close the modal after successful registration
         setTimeout(() => {
           onClose();
         }, 1000);
       } catch (backendError) {
-        console.error("Backend registration failed:", backendError);
-        console.log("Step 3: Cleaning up Firebase user after backend failure");
-      
-        // If backend registration fails, we should delete the Firebase user
-        // to avoid having a user in Firebase but not in our database
         try {
-          console.log("Attempting to delete Firebase user:", firebaseUser?.uid);
           if (firebaseUser) {
             await firebaseUser.delete();
-            console.log("Firebase user deleted successfully");
-          } else {
-            console.log("No Firebase user to delete");
           }
         } catch (deleteError) {
           console.error("Failed to delete Firebase user:", deleteError);
-          console.warn("User exists in Firebase but not in MongoDB - cleanup failed");
         }
       
-        // Throw error to be caught by outer catch block
-        const errorMessage = backendError.response?.data?.message || "Registration failed. Please try again.";
-        console.log("Throwing error with message:", errorMessage);
+        const errorMessage = backendError.response?.data?.message || t('auth.errors.generic_failure');
         throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error("Registration process error:", error);
-    
-      let errorMessage = "Registration failed. Please try again.";
+      let errorMessage = t('auth.errors.generic_failure');
 
-      // Handle Firebase-specific errors
       switch (error.code) {
         case "auth/email-already-in-use":
-          errorMessage = "An account with this email already exists";
+          errorMessage = t('auth.errors.email_exists');
           break;
         case "auth/invalid-email":
-          errorMessage = "Invalid email address";
+          errorMessage = t('auth.errors.email_invalid');
           break;
         case "auth/weak-password":
-          errorMessage = "Password is too weak";
+          errorMessage = t('auth.errors.password_weak_firebase');
           break;
         case "auth/operation-not-allowed":
-          errorMessage = "Email/password registration is currently disabled.";
+          errorMessage = t('auth.errors.registration_disabled');
           break;
         case "auth/network-request-failed":
-          errorMessage = "Network error. Please check your connection and try again.";
+          errorMessage = t('auth.errors.network_error');
           break;
         default:
-          // Handle our custom error from backend failure
           if (error.message) {
             errorMessage = error.message;
           }
           break;
       }
 
-      console.log("Setting error message for user:", errorMessage);
       setErrors((prev) => ({ ...prev, general: errorMessage }));
     } finally {
       setLoading(false);
-      console.log("Registration process completed");
     }
   };
 
@@ -226,67 +197,42 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
       setLoading(true);
       setErrors((prev) => ({ ...prev, general: "", success: "" }));
 
-      console.log("Step 1: Signing up with Google");
-      // First, sign up with Google
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("Google signup successful:", result.user.uid);
 
-      // Then, register with our backend
       try {
-        console.log("Step 2: Registering with backend API");
-        const backendResponse = await api.post("/auth/register", {
+        await api.post("/auth/register", {
           name: result.user.displayName,
           email: result.user.email,
           role: "customer",
-          firebaseUid: result.user.uid, // Pass Firebase UID to backend
+          firebaseUid: result.user.uid,
         });
       
-        console.log("Backend registration successful:", backendResponse.data);
-      
-        // Registration successful
         setErrors((prev) => ({
           ...prev,
-          success: "Registration successful!",
+          success: t('auth.registration_success_msg'),
         }));
     
-        console.log("Registration completed successfully");
-      
-        // Close the modal after successful registration
         setTimeout(() => {
           onClose();
         }, 1000);
       } catch (backendError) {
-        console.error("Backend registration failed:", backendError);
-        console.log("Step 3: Signing out user after backend failure");
-      
-        // If backend registration fails, we should sign out the user
-        // to avoid having a user signed in but not in our database
         try {
-          console.log("Attempting to sign out user:", result.user.uid);
           await auth.signOut();
-          console.log("User signed out successfully");
         } catch (signOutError) {
           console.error("Failed to sign out user:", signOutError);
-          console.warn("User signed in with Google but not registered in MongoDB - cleanup failed");
         }
       
-        // Throw error to be caught by outer catch block
-        const errorMessage = backendError.response?.data?.message || "Registration failed. Please try again.";
-        console.log("Throwing error with message:", errorMessage);
+        const errorMessage = backendError.response?.data?.message || t('auth.errors.google_failure');
         throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error("Google signup error:", error);
-    
-      const errorMessage = error.message || "Google sign-up failed. Please try again.";
-      console.log("Setting error message for user:", errorMessage);
+      const errorMessage = error.message || t('auth.errors.google_failure');
       setErrors((prev) => ({ 
         ...prev, 
         general: errorMessage
       }));
     } finally {
       setLoading(false);
-      console.log("Google signup process completed");
     }
   };
 
@@ -298,210 +244,190 @@ const RegisterForm = ({ onSwitchToLogin, onClose }) => {
   };
 
   const getPasswordStrengthText = () => {
-    if (passwordStrength <= 2) return "Weak";
-    if (passwordStrength <= 3) return "Fair";
-    if (passwordStrength <= 4) return "Good";
-    return "Strong";
+    if (passwordStrength <= 2) return t('auth.strength.weak');
+    if (passwordStrength <= 3) return t('auth.strength.fair');
+    if (passwordStrength <= 4) return t('auth.strength.good');
+    return t('auth.strength.strong');
   };
 
   return (
-    <>
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Register into WashLab</h2>
+    <div className="space-y-6 bg-transparent p-2 text-white">
+      <div className="space-y-3 text-center mb-10">
+        <div className="mx-auto h-14 w-14 flex items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 shadow-xl mb-6 group cursor-default">
+          <SparklesIcon className="h-8 w-8 text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]" />
+        </div>
+        <h2 className="text-3xl font-bold text-white tracking-tight">{t('auth.create_account')}</h2>
+        <p className="text-blue-100/60 font-medium">{t('auth.join_revolution')}</p>
       </div>
 
-      {/* Error Messages */}
       {errors.general && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+        <div className="p-4 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded-2xl text-red-100 text-sm animate-shake">
           {errors.general}
         </div>
       )}
 
       {errors.success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-600 text-sm">
+        <div className="p-4 bg-teal-500/20 backdrop-blur-md border border-teal-500/30 rounded-2xl text-teal-100 text-sm">
           {errors.success}
         </div>
       )}
 
-      {/* Registration Form */}
-      <form onSubmit={handleRegister} className="space-y-4">
-        {/* Name Field */}
-        <div>
-          <input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={form.name}
-            onChange={handleChange}
-            className="w-full px-4 py-4 bg-gray-100 border-0 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all duration-300"
-          />
-          {errors.name && (
-            <p className="mt-2 text-sm text-red-500">{errors.name}</p>
-          )}
+      <form onSubmit={handleRegister} className="space-y-5">
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-blue-100/90 ml-1">{t('auth.name_label') || t('full_name')}</label>
+          <div className="relative group/input">
+            <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" />
+            <input
+              type="text"
+              name="name"
+              placeholder={t('auth.name_placeholder') || t('full_name')}
+              value={form.name}
+              onChange={handleChange}
+              className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+            />
+          </div>
+          {errors.name && <p className="text-red-300 text-xs mt-1 ml-4 font-medium">{errors.name}</p>}
         </div>
 
-        {/* Email Field */}
-        <div>
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className="w-full px-4 py-4 bg-gray-100 border-0 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all duration-300"
-          />
-          {errors.email && (
-            <p className="mt-2 text-sm text-red-500">{errors.email}</p>
-          )}
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-blue-100/90 ml-1">{t('auth.email_label')}</label>
+          <div className="relative group/input">
+            <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" />
+            <input
+              type="email"
+              name="email"
+              placeholder={t('auth.email_placeholder')}
+              value={form.email}
+              onChange={handleChange}
+              className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+            />
+          </div>
+          {errors.email && <p className="text-red-300 text-xs mt-1 ml-4 font-medium">{errors.email}</p>}
         </div>
 
-        {/* Mobile Number Field */}
-        <div>
-          <input
-            type="tel"
-            name="mobile"
-            placeholder="Mobile Number"
-            value={form.mobile || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-4 bg-gray-100 border-0 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all duration-300"
-          />
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-blue-100/90 ml-1">{t('auth.mobile_label') || "Phone Number (Optional)"}</label>
+          <div className="relative group/input">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            <input
+              type="tel"
+              name="mobile"
+              placeholder={t('auth.mobile_placeholder') || "+1 (555) 000-0000"}
+              value={form.mobile || ''}
+              onChange={handleChange}
+              className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+            />
+          </div>
         </div>
 
-        {/* Password Field */}
-        <div>
-          <div className="relative">
+        <div className="space-y-1">
+          <div className="relative group/input">
+            <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" />
             <input
               type={showPassword ? "text" : "password"}
               name="password"
-              placeholder="Password"
+              placeholder={t('auth.password_placeholder')}
               value={form.password}
               onChange={handleChange}
-              className="w-full px-4 py-4 pr-12 bg-gray-100 border-0 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all duration-300"
+              className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 focus:bg-white/10 transition-all duration-300"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
             >
-              {showPassword ? (
-                <EyeSlashIcon className="w-5 h-5" />
-              ) : (
-                <EyeIcon className="w-5 h-5" />
-              )}
+              {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
             </button>
           </div>
           
-          {/* Password Strength Indicator */}
-          {form.password && (
-            <div className="mt-3">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 rounded-full bg-gray-200 h-2">
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${getPasswordStrengthColor()}`}
-                    style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium text-gray-600">
-                  {getPasswordStrengthText()}
-                </span>
+          {passwordStrength > 0 && (
+            <div className="mt-3 px-1">
+              <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-white/40 mb-2">
+                <span>{t('auth.strength_label')}</span>
+                <span className={passwordStrength > 3 ? "text-indigo-300" : "text-white/40"}>{getPasswordStrengthText()}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-700 ease-out ${getPasswordStrengthColor()}`}
+                  style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                />
               </div>
             </div>
           )}
-          
-          {errors.password && (
-            <p className="mt-2 text-sm text-red-500">{errors.password}</p>
-          )}
+          {errors.password && <p className="text-red-300 text-xs mt-2 ml-4 font-medium">{errors.password}</p>}
         </div>
 
-        {/* Confirm Password Field */}
-        <div>
-          <div className="relative">
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-blue-100/90 ml-1">{t('auth.confirm_password')}</label>
+          <div className="relative group/input">
+            <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" />
             <input
               type={showConfirmPassword ? "text" : "password"}
               name="confirmPassword"
-              placeholder="Confirm Password"
+              placeholder="••••••••"
               value={form.confirmPassword}
               onChange={handleChange}
-              className="w-full px-4 py-4 pr-12 bg-gray-100 border-0 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all duration-300"
+              className="w-full pl-12 pr-12 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
             >
-              {showConfirmPassword ? (
-                <EyeSlashIcon className="w-5 h-5" />
-              ) : (
-                <EyeIcon className="w-5 h-5" />
-              )}
+              {showConfirmPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="h-5 w-5" />}
             </button>
           </div>
-          {errors.confirmPassword && (
-            <p className="mt-2 text-sm text-red-500">{errors.confirmPassword}</p>
-          )}
+          {errors.confirmPassword && <p className="text-red-300 text-xs mt-1 ml-4 font-medium">{errors.confirmPassword}</p>}
         </div>
 
-        {/* Register Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white font-bold text-lg rounded-full hover:from-pink-600 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
+          className="w-full py-4 bg-white text-indigo-700 rounded-2xl font-black text-lg shadow-[0_20px_40px_-15px_rgba(255,255,255,0.3)] hover:shadow-[0_25px_50px_-10px_rgba(255,255,255,0.4)] hover:-translate-y-1 active:translate-y-0 active:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-6 uppercase tracking-wider"
         >
           {loading ? (
             <div className="flex items-center justify-center gap-3">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              REGISTERING...
+              <div className="w-6 h-6 border-[3px] border-indigo-700 border-t-transparent rounded-full animate-spin"></div>
+              <span>{t('common.processing')}</span>
             </div>
           ) : (
-            "REGISTER"
+            t('auth.sign_up')
           )}
         </button>
       </form>
 
-      {/* Switch to Login */}
-      <div className="mt-6 text-center">
+      <p className="text-center text-white/50 text-sm font-medium">
+        {t('auth.already_have_account')}{" "}
         <button 
           onClick={onSwitchToLogin}
-          className="text-pink-500 hover:text-pink-600 font-medium transition-colors"
+          className="text-white font-black hover:underline transition-colors decoration-blue-400 underline-offset-4"
         >
-          Want to Login?
+          {t('auth.sign_in')}
         </button>
+      </p>
+
+      <div className="mt-8 mb-6 flex items-center gap-4">
+        <div className="flex-1 h-px bg-white/10"></div>
+        <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">{t('auth.or_sign_up_with')}</span>
+        <div className="flex-1 h-px bg-white/10"></div>
       </div>
 
-      {/* Divider */}
-      <div className="my-6 text-center">
-        <p className="text-gray-500 text-sm">Login with your social media account</p>
-      </div>
-
-      {/* Social Login Buttons */}
-      <div className="flex justify-center gap-4">
-        {/* Facebook Button */}
-        <button
-          onClick={() => {/* Add Facebook login logic */}}
-          disabled={loading}
-          className="w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
-        >
-          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-          </svg>
-        </button>
-
-        {/* Google Button */}
-        <button
-          onClick={handleGoogleSignUp}
-          disabled={loading}
-          className="w-12 h-12 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-105"
-        >
-          <svg className="w-6 h-6 text-white" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66 2.84.81-.62z"/>
-            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-        </button>
-      </div>
-    </>
+      <button
+        onClick={handleGoogleSignUp}
+        disabled={loading}
+        className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 text-white font-semibold hover:bg-white/10 transition-all duration-300 active:scale-[0.98]"
+      >
+        <svg className="h-5 w-5" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-3.15.81-.62z" />
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+        </svg>
+        {t('auth.google_account')}
+      </button>
+    </div>
   );
 };
 

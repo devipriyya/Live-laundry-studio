@@ -93,10 +93,11 @@ The **Delivery Boy Role** is a complete workflow management system for delivery 
 - Provide admins with delivery tracking and assignment capabilities
 - Streamline the order fulfillment workflow
 
-### 👥 Three User Roles:
+### 👥 Four User Roles:
 1. **👤 Customer** - Places orders, tracks status
 2. **🚚 Delivery Boy** - Handles pickups & deliveries (NEW!)
-3. **👨‍💼 Admin** - Manages everything, assigns delivery boys
+3. **👕 Laundry Staff** - Manages laundry processing (NEW!)
+4. **👨‍💼 Admin** - Manages everything, assigns delivery boys and laundry staff
 
 ---
 

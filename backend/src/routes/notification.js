@@ -248,4 +248,60 @@ router.post('/', protect, isAdmin, async (req, res) => {
   }
 });
 
+// --- User Facing Routes ---
+
+// Get current user's notifications
+router.get('/my', protect, async (req, res) => {
+  try {
+    const { limit = 20, page = 1, read } = req.query;
+    const query = { userId: req.user._id };
+    
+    if (read !== undefined) query.read = read === 'true';
+    
+    const skip = (page - 1) * limit;
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    const total = await Notification.countDocuments(query);
+    const unreadCount = await Notification.countDocuments({ userId: req.user._id, read: false });
+    
+    res.json({
+      success: true,
+      notifications,
+      unreadCount,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Mark all as read for current user
+router.patch('/my/read-all', protect, async (req, res) => {
+  try {
+    const result = await Notification.updateMany(
+      { userId: req.user._id, read: false },
+      { read: true, readAt: new Date() }
+    );
+    res.json({ success: true, modifiedCount: result.modifiedCount });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Clear all read notifications for current user
+router.delete('/my/clear-all', protect, async (req, res) => {
+  try {
+    const result = await Notification.deleteMany({ userId: req.user._id, read: true });
+    res.json({ success: true, deletedCount: result.deletedCount });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

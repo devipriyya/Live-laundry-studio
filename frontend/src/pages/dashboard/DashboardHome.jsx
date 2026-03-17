@@ -1,4 +1,5 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import api from '../../api';
 import { AuthContext } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -36,24 +37,42 @@ import {
   UserIcon,
   ChatBubbleLeftRightIcon,
   BellIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import {
   StarIcon as StarIconSolid,
 } from '@heroicons/react/24/solid';
+import { useTranslation } from 'react-i18next';
 
 // Add the ServiceRecommendations import
 import ServiceRecommendations from '../../components/ServiceRecommendations';
 import CustomerSegment from '../../components/CustomerSegment';
-// Add MLComparison component import
-import MLComparison from '../../components/MLComparison';
+import LoyaltyCard from '../../components/loyalty/LoyaltyCard';
+import AdvertisementBanner from '../../components/AdvertisementBanner';
 
 const DashboardHome = () => {
+  const { t } = useTranslation();
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState(null);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [selectedPost, setSelectedPost] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await api.get('/notifications/my');
+        if (response.data.success) {
+          setUnreadCount(response.data.unreadCount);
+        }
+      } catch (error) {
+        console.error('Error fetching unread count:', error);
+      }
+    };
+    fetchUnreadCount();
+  }, []);
 
   // Mock order history for demonstration - in a real app, this would come from an API
   const mockOrderHistory = [
@@ -94,207 +113,240 @@ const DashboardHome = () => {
   const functionalityCards = [
     {
       id: 'profile',
-      title: 'My Profile',
-      description: 'View and manage your personal information, addresses, and preferences',
+      title: t('dashboard.cards.profile.title'),
+      description: t('dashboard.cards.profile.desc'),
       icon: UserCircleIcon,
       gradient: 'from-blue-500 to-cyan-500',
       bgColor: 'bg-gradient-to-br from-blue-100 to-cyan-200',
       path: '/dashboard/profile',
-      action: 'View Profile'
+      action: t('dashboard.cards.profile.action')
     },
     {
       id: 'shoe-cleaning',
-      title: 'Shoe Polishing',
-      description: 'Professional shoe cleaning and polishing services',
+      title: t('dashboard.cards.shoe_cleaning.title'),
+      description: t('dashboard.cards.shoe_cleaning.desc'),
       icon: SparklesIcon,
       gradient: 'from-yellow-500 to-amber-500',
       bgColor: 'bg-gradient-to-br from-yellow-100 to-amber-200',
       path: '/dashboard/shoe-cleaning',
-      action: 'Book Service',
+      action: t('dashboard.cards.shoe_cleaning.action'),
       badge: 'NEW'
     },
     {
       id: 'schedule',
-      title: 'Schedule Wash',
-      description: 'Book a pickup time that works best for your schedule',
+      title: t('dashboard.cards.schedule.title'),
+      description: t('dashboard.cards.schedule.desc'),
       icon: CalendarDaysIcon,
       gradient: 'from-green-500 to-emerald-500',
       bgColor: 'bg-gradient-to-br from-green-100 to-emerald-200',
       path: '/dashboard/schedule',
-      action: 'Schedule Now'
+      action: t('dashboard.cards.schedule.action')
     },
     {
       id: 'dry-cleaning',
-      title: 'Dry Cleaning',
-      description: 'Professional dry cleaning for delicate fabrics and formal wear',
+      title: t('dashboard.cards.dry_cleaning.title'),
+      description: t('dashboard.cards.dry_cleaning.desc'),
       icon: SparklesIcon,
       gradient: 'from-purple-500 to-indigo-500',
       bgColor: 'bg-gradient-to-br from-purple-100 to-indigo-200',
       path: '/dashboard/dry-cleaning',
-      action: 'Book Service',
+      action: t('dashboard.cards.dry_cleaning.action'),
       badge: 'PREMIUM'
     },
     {
       id: 'stain-removal',
-      title: 'Stain Removal',
-      description: 'Professional stain removal service for your clothes',
+      title: t('dashboard.cards.stain_removal.title'),
+      description: t('dashboard.cards.stain_removal.desc'),
       icon: BeakerIcon,
       gradient: 'from-purple-500 to-indigo-500',
       bgColor: 'bg-gradient-to-br from-purple-100 to-indigo-200',
       path: '/dashboard/stain-removal',
-      action: 'Remove Stains',
+      action: t('dashboard.cards.stain_removal.action'),
       badge: 'NEW'
     },
     {
       id: 'steam-ironing',
-      title: 'Steam Ironing',
-      description: 'Professional steam ironing for crisp, wrinkle-free clothes',
+      title: t('dashboard.cards.steam_ironing.title'),
+      description: t('dashboard.cards.steam_ironing.desc'),
       icon: HandRaisedIcon,
       gradient: 'from-cyan-500 to-teal-500',
       bgColor: 'bg-gradient-to-br from-cyan-100 to-teal-200',
       path: '/dashboard/steam-ironing',
-      action: 'Book Service',
+      action: t('dashboard.cards.steam_ironing.action'),
       badge: 'NEW'
     },
     {
+      id: 'track',
+      title: t('dashboard.cards.track.title'),
+      description: t('dashboard.cards.track.desc'),
+      icon: TruckIcon,
+      gradient: 'from-blue-600 to-indigo-600',
+      bgColor: 'bg-gradient-to-br from-blue-100 to-indigo-200',
+      path: '/dashboard/track-order',
+      action: t('dashboard.cards.track.action'),
+      badge: 'LIVE'
+    },
+    {
       id: 'orders',
-      title: 'My Orders',
-      description: 'Track your current orders and view order history',
+      title: t('dashboard.cards.orders.title'),
+      description: t('dashboard.cards.orders.desc'),
       icon: ShoppingBagIcon,
       gradient: 'from-orange-500 to-red-500',
       bgColor: 'bg-gradient-to-br from-orange-100 to-red-200',
       path: '/dashboard/orders',
-      action: 'View Orders'
+      action: t('dashboard.cards.orders.action')
     },
     {
-      id: 'quality',
-      title: 'Quality Approval',
-      description: 'Review and approve the quality of your cleaned items',
-      icon: CheckCircleIcon,
-      gradient: 'from-teal-500 to-cyan-500',
-      bgColor: 'bg-gradient-to-br from-teal-100 to-cyan-200',
-      path: '/dashboard/quality',
-      action: 'Check Quality'
+      id: 'history',
+      title: t('dashboard.cards.payment_history.title'),
+      description: t('dashboard.cards.payment_history.desc'),
+      icon: BanknotesIcon,
+      gradient: 'from-emerald-500 to-teal-500',
+      bgColor: 'bg-gradient-to-br from-emerald-100 to-teal-200',
+      path: '/dashboard/payment-history',
+      action: t('dashboard.cards.payment_history.action'),
+      badge: 'SECURE'
     },
     {
       id: 'rate',
-      title: 'Get Rate Card',
-      description: 'View pricing for all our services and special offers',
+      title: t('dashboard.cards.rate.title'),
+      description: t('dashboard.cards.rate.desc'),
       icon: DocumentTextIcon,
       gradient: 'from-indigo-500 to-purple-500',
       bgColor: 'bg-gradient-to-br from-indigo-100 to-purple-200',
       path: '/dashboard/rate',
-      action: 'View Pricing'
+      action: t('dashboard.cards.rate.action')
     },
     {
       id: 'products',
-      title: 'WashLab Products',
-      description: 'Premium laundry care products and accessories',
+      title: t('dashboard.cards.products.title'),
+      description: t('dashboard.cards.products.desc'),
       icon: TagIcon,
       gradient: 'from-pink-500 to-rose-500',
       bgColor: 'bg-gradient-to-br from-pink-100 to-rose-200',
       path: '/dashboard/products',
-      action: 'Shop Now',
+      action: t('dashboard.cards.products.action'),
       badge: 'NEW'
     },
     {
       id: 'store',
-      title: 'Store Locator',
-      description: 'Find our nearest service centers and drop-off points',
+      title: t('dashboard.cards.store.title'),
+      description: t('dashboard.cards.store.desc'),
       icon: BuildingStorefrontIcon,
       gradient: 'from-amber-500 to-orange-500',
       bgColor: 'bg-gradient-to-br from-amber-100 to-yellow-200',
       path: '/dashboard/store',
-      action: 'Find Stores'
+      action: t('dashboard.cards.store.action')
     },
     {
       id: 'legal',
-      title: 'Legal Information',
-      description: 'Terms of service, privacy policy, and legal documents',
+      title: t('dashboard.cards.legal.title'),
+      description: t('dashboard.cards.legal.desc'),
       icon: InformationCircleIcon,
       gradient: 'from-gray-600 to-gray-700',
       bgColor: 'bg-gradient-to-br from-slate-100 to-gray-200',
       path: '/dashboard/legal',
-      action: 'Read More'
+      action: t('dashboard.cards.legal.action')
+    },
+    {
+      id: 'feedback',
+      title: t('dashboard.cards.feedback.title'),
+      description: t('dashboard.cards.feedback.desc'),
+      icon: ChatBubbleLeftRightIcon,
+      gradient: 'from-blue-600 to-cyan-600',
+      bgColor: 'bg-gradient-to-br from-blue-100 to-cyan-200',
+      path: '/dashboard/feedback',
+      action: t('dashboard.cards.feedback.action')
     },
     {
       id: 'notifications',
-      title: 'Notifications',
-      description: 'Stay updated with your latest activities and important alerts',
+      title: t('dashboard.cards.notifications.title'),
+      description: t('dashboard.cards.notifications.desc'),
       icon: BellIcon,
       gradient: 'from-blue-600 to-indigo-600',
       bgColor: 'bg-gradient-to-br from-sky-100 to-indigo-200',
       path: '/dashboard/notifications',
-      action: 'View Notifications'
+      action: t('dashboard.cards.notifications.action'),
+      badge: unreadCount > 0 ? unreadCount : null
+    },
+    {
+      id: 'lost-found',
+      title: t('dashboard.cards.lost_found.title'),
+      description: t('dashboard.cards.lost_found.desc'),
+      icon: ExclamationTriangleIcon,
+      gradient: 'from-orange-500 to-red-500',
+      bgColor: 'bg-gradient-to-br from-orange-100 to-red-200',
+      path: '/dashboard/lost-items',
+      action: t('dashboard.cards.lost_found.action')
     }
   ];
 
   // Static data
   const staticStats = [
     {
-      label: 'Your Satisfaction',
+      label: t('dashboard.stats.satisfaction'),
       value: '100%',
       icon: StarIcon,
       color: 'from-yellow-400 to-orange-500',
       bgColor: 'bg-yellow-50',
       iconColor: 'text-yellow-600',
-      description: 'Quality Guaranteed'
+      description: t('dashboard.stats.quality_guaranteed')
     },
     {
-      label: 'Services Available',
+      label: t('dashboard.stats.services'),
       value: '20+',
       icon: CubeIcon,
       color: 'from-blue-400 to-cyan-500',
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
-      description: 'Comprehensive Care'
+      description: t('dashboard.stats.comprehensive_care')
     },
     {
-      label: 'Expert Team',
+      label: t('dashboard.stats.team'),
       value: '50+',
       icon: UserGroupIcon,
       color: 'from-purple-400 to-pink-500',
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-600',
-      description: 'Professional Staff'
+      description: t('dashboard.stats.professional_staff')
     },
     {
-      label: 'Quick Delivery',
+      label: t('dashboard.stats.delivery'),
       value: '24hrs',
       icon: TruckIcon,
       color: 'from-green-400 to-emerald-500',
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
-      description: 'Fast Turnaround'
+      description: t('dashboard.stats.fast_turnaround')
     }
   ];
 
   const features = [
     {
       icon: BoltIcon,
-      title: 'Express Service',
-      description: 'Get your laundry done in as fast as 3 hours',
+      title: t('dashboard.features.express.title'),
+      description: t('dashboard.features.express.desc'),
       color: 'from-yellow-400 to-orange-500',
       bgColor: 'bg-gradient-to-br from-yellow-50 to-orange-50'
     },
     {
       icon: ShieldCheckIcon,
-      title: 'Quality Assurance',
-      description: 'Premium detergents and careful handling guaranteed',
+      title: t('dashboard.features.quality.title'),
+      description: t('dashboard.features.quality.desc'),
       color: 'from-blue-400 to-cyan-500',
       bgColor: 'bg-gradient-to-br from-blue-50 to-cyan-50'
     },
     {
       icon: TruckIcon,
-      title: 'Free Pickup & Delivery',
-      description: 'Convenient doorstep service at no extra cost',
+      title: t('dashboard.features.pickup.title'),
+      description: t('dashboard.features.pickup.desc'),
       color: 'from-purple-400 to-pink-500',
       bgColor: 'bg-gradient-to-br from-purple-50 to-pink-50'
     },
     {
       icon: StarIcon,
-      title: 'Eco-Friendly',
-      description: 'Environment conscious cleaning solutions',
+      title: t('dashboard.features.eco.title'),
+      description: t('dashboard.features.eco.desc'),
       color: 'from-green-400 to-emerald-500',
       bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50'
     }
@@ -303,62 +355,62 @@ const DashboardHome = () => {
   const services = [
     {
       id: 1,
-      name: 'Laundry Pickup',
+      name: t('dashboard.services.pickup.name'),
       icon: ShoppingCartIcon,
       price: 'Free',
       time: '24 hours',
       popular: true,
-      description: 'Convenient pickup service from your doorstep at scheduled times'
+      description: t('dashboard.services.pickup.desc')
     },
     {
       id: 2,
-      name: 'Wash And Fold',
+      name: t('dashboard.services.wash_fold.name'),
       icon: CubeIcon,
       price: '₹49',
       time: '24 hours',
       popular: true,
-      description: 'Professional washing, drying and folding service for everyday clothes'
+      description: t('dashboard.services.wash_fold.desc')
     },
     {
       id: 3,
-      name: 'Bulk Discount',
+      name: t('dashboard.services.bulk.name'),
       icon: BanknotesIcon,
       price: '20% Off',
       time: 'Always',
       popular: true,
-      description: 'Save more with bulk orders and enjoy special pricing benefits'
+      description: t('dashboard.services.bulk.desc')
     },
     {
       id: 4,
-      name: 'Dry Cleaning',
+      name: t('dashboard.services.dry_cleaning.name'),
       icon: ScissorsIcon,
       price: '₹99',
       time: '48 hours',
       popular: true,
-      description: 'Expert dry cleaning for delicate fabrics and formal wear'
+      description: t('dashboard.services.dry_cleaning.desc')
     }
   ];
 
   const faqs = [
     {
       id: 1,
-      question: 'How do I schedule a laundry pickup?',
-      answer: 'Simply click on "Schedule Pickup" button, select your preferred date and time, and our team will arrive at your doorstep to collect your laundry. You can also track your order in real-time.'
+      question: t('dashboard.faqs.q1'),
+      answer: t('dashboard.faqs.a1')
     },
     {
       id: 2,
-      question: 'What are your service timings?',
-      answer: 'We operate 7 days a week from 8 AM to 8 PM. You can schedule pickups and deliveries within this time frame. Express services are available for urgent requirements.'
+      question: t('dashboard.faqs.q2'),
+      answer: t('dashboard.faqs.a2')
     },
     {
       id: 3,
-      question: 'Do you offer same-day service?',
-      answer: 'Yes! Our express service offers same-day delivery for orders placed before 10 AM. Additional charges may apply for express service.'
+      question: t('dashboard.faqs.q3'),
+      answer: t('dashboard.faqs.a3')
     },
     {
       id: 4,
-      question: 'What payment methods do you accept?',
-      answer: 'We accept all major payment methods including credit/debit cards, UPI, net banking, and cash on delivery. You can also maintain a wallet for faster checkout.'
+      question: t('dashboard.faqs.q4'),
+      answer: t('dashboard.faqs.a4')
     }
   ];
 
@@ -367,7 +419,7 @@ const DashboardHome = () => {
       id: 1,
       title: 'Choosing Fresh Laundry: My Tips',
       excerpt: 'Discover the secrets to keeping your clothes fresh and clean with our expert laundry tips and techniques...',
-      image: 'bg_image_2.png',
+      image: 'images/blog-tips.png',
       category: 'Tips',
       date: 'Oct 15, 2025',
       content: `Keeping your clothes fresh and clean doesn't have to be a chore. With the right techniques and a reliable laundry service like WashLab, you can ensure your wardrobe always looks and smells amazing.
@@ -392,7 +444,7 @@ For the best results, consider WashLab's professional laundry service. Our eco-f
       id: 2,
       title: 'Ironing Pro: Best Exercise',
       excerpt: 'Learn professional ironing techniques that will make your clothes look crisp and well-maintained...',
-      image: 'bg_image_3.png',
+      image: 'images/blog-ironing.png',
       category: 'Guide',
       date: 'Oct 12, 2025',
       content: `Professional ironing can transform the appearance of your clothes, making them look crisp, well-maintained, and ready to wear. Follow these expert techniques to achieve salon-quality results at home:
@@ -422,7 +474,7 @@ For time-saving convenience and professional results, WashLab offers expert pres
       id: 3,
       title: 'Your Clothes Deserve A Clean',
       excerpt: 'Understanding the importance of proper fabric care and why professional cleaning makes a difference...',
-      image: 'bg_image_4.png',
+      image: 'images/blog-cleaning.png',
       category: 'Care',
       date: 'Oct 10, 2025',
       content: `Proper fabric care is essential for maintaining the longevity, appearance, and value of your clothing. Understanding how different fabrics respond to various cleaning methods can save you money and keep your wardrobe looking its best.
@@ -459,24 +511,24 @@ Investing in professional fabric care extends the life of your clothing and ensu
   const testimonials = [
     {
       id: 1,
-      name: 'Priya Sharma',
+      name: t('dashboard.testimonials.t1.name'),
       rating: 5,
-      comment: 'Excellent service! My clothes came back fresh and perfectly ironed.',
-      location: 'Mumbai'
+      comment: t('dashboard.testimonials.t1.comment'),
+      location: t('dashboard.testimonials.t1.location')
     },
     {
       id: 2,
-      name: 'Rahul Verma',
+      name: t('dashboard.testimonials.t2.name'),
       rating: 5,
-      comment: 'Best laundry service in the city. Quick and reliable!',
-      location: 'Delhi'
+      comment: t('dashboard.testimonials.t2.comment'),
+      location: t('dashboard.testimonials.t2.location')
     },
     {
       id: 3,
-      name: 'Anjali Patel',
+      name: t('dashboard.testimonials.t3.name'),
       rating: 5,
-      comment: 'Professional team and eco-friendly products. Highly recommended!',
-      location: 'Bangalore'
+      comment: t('dashboard.testimonials.t3.comment'),
+      location: t('dashboard.testimonials.t3.location')
     }
   ];
 
@@ -491,8 +543,23 @@ Investing in professional fabric care extends the life of your clothing and ensu
       case 'orders':
         navigate('/dashboard/orders');
         break;
+      case 'track':
+        navigate('/dashboard/track-order');
+        break;
+      case 'history':
+        navigate('/dashboard/payment-history');
+        break;
       case 'rate':
         navigate('/dashboard/rate');
+        break;
+      case 'payment-history':
+        navigate('/dashboard/payment-history');
+        break;
+      case 'feedback':
+        navigate('/dashboard/feedback');
+        break;
+      case 'notifications':
+        navigate('/dashboard/notifications');
         break;
       default:
         break;
@@ -524,12 +591,13 @@ Investing in professional fabric care extends the life of your clothing and ensu
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Main Dashboard Functionalities Section - Starting directly without welcome section */}
       <div className="px-6 py-12 max-w-7xl mx-auto">
+        <AdvertisementBanner />
         <div className="mb-12 text-center">
           <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
-            <span className="text-cyan-500">Stay fresh, stay organized with your laundry services</span>
+            <span className="text-cyan-500">{t('dashboard.hero_title')}</span>
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Discover personalized services tailored to your preferences
+            {t('dashboard.hero_subtitle_home')}
           </p>
         </div>
 
@@ -595,6 +663,13 @@ Investing in professional fabric care extends the life of your clothing and ensu
           ))}
         </div>
 
+        {/* Loyalty Section */}
+        <div className="mb-16">
+          <div className="max-w-md">
+             <LoyaltyCard />
+          </div>
+        </div>
+
         {/* Add the ML Recommendations section after the functionality cards */}
         <div className="mb-12">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -608,7 +683,7 @@ Investing in professional fabric care extends the life of your clothing and ensu
                   <div className="relative">
                     <div className="bg-white/50 rounded-2xl p-8 backdrop-blur-sm shadow-xl">
                       <img 
-                        src="/bg_image_2.png" 
+                        src="/images/laundry-hero.png" 
                         alt="Person holding laundry basket"
                         className="w-full h-full object-cover rounded-xl shadow-lg"
                       />
@@ -618,17 +693,17 @@ Investing in professional fabric care extends the life of your clothing and ensu
                   {/* Content */}
                   <div>
                     <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
-                      <span className="text-cyan-500">Getting Tired With</span><br />
-                      <span className="text-gray-900">Your Laundry?</span>
+                      <span className="text-cyan-500">{t('dashboard.hero.tired_title1')}</span><br />
+                      <span className="text-gray-900">{t('dashboard.hero.tired_title2')}</span>
                     </h2>
                     <p className="text-gray-600 text-lg mb-8 leading-relaxed">
-                      It must take a lot of time to prepare before you go to town. After grocery shopping your hands are full, so you can't carry your laundry. Then you'll end up taking two trips to get your laundry done. We've got a hack! We'll pick-up & drop-off. We're here for you.
+                      {t('dashboard.hero.tired_desc')}
                     </p>
                     <button 
                       onClick={() => handleQuickAction('schedule')}
                       className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                     >
-                      Order Pickup →
+                      {t('dashboard.hero.order_pickup')} →
                     </button>
                   </div>
                 </div>
@@ -646,43 +721,39 @@ Investing in professional fabric care extends the life of your clothing and ensu
                 
                 <div className="relative z-10 text-center py-20 px-6">
                   <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
-                    Laundry Solutions For<br />A Busy Life
+                    {t('dashboard.hero.solutions_title').split(' ').slice(0, 3).join(' ')}<br />{t('dashboard.hero.solutions_title').split(' ').slice(3).join(' ')}
                   </h2>
                   <p className="text-white/90 text-lg mb-10 max-w-3xl mx-auto leading-relaxed">
-                    When you need a laundry service that fits in with your busy life, you need Fabrico. We collect dirty laundry, clean it and deliver it back to you – all from your mobile or laptop.
+                    {t('dashboard.hero.solutions_desc')}
                   </p>
                   <button 
                     onClick={() => handleQuickAction('laundry')}
                     className="bg-white hover:bg-gray-50 text-cyan-600 font-semibold py-3 px-10 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                   >
-                    Learn More
+                    {t('dashboard.hero.learn_more')}
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Sidebar with ML Recommendations */}
             <div className="space-y-8">
-              {/* ML Comparison Component - NEW */}
-              <MLComparison customerData={mockCustomerData} />
-              
               {/* No Fading, Only Cleaning section moved to sidebar */}
               <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-3xl p-6 hover:shadow-xl transition-all duration-300 shadow-lg">
                 <div className="p-3 bg-white rounded-xl w-fit mb-3 shadow-md">
                   <SparklesIcon className="h-8 w-8 text-yellow-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Premium Perfume</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{t('dashboard.sidebar.premium_perfume_title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Leave all the worry of your clothes smelling weird to us. With Fabrico, fresh is the only way your clothes get back to you.
+                  {t('dashboard.sidebar.premium_perfume_desc')}
                 </p>
               </div>
               <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-3xl p-6 hover:shadow-xl transition-all duration-300 shadow-lg">
                 <div className="p-3 bg-white rounded-xl w-fit mb-3 shadow-md">
                   <BeakerIcon className="h-8 w-8 text-cyan-600" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Trusted Detergent</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">{t('dashboard.sidebar.trusted_detergent_title')}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Choose the right detergent that gives your clothes the perfect amount of care. Quality washing chemicals that don't harm your fabric.
+                  {t('dashboard.sidebar.trusted_detergent_desc')}
                 </p>
               </div>
             </div>
@@ -720,10 +791,10 @@ Investing in professional fabric care extends the life of your clothing and ensu
         <div className="mb-20">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-              News And <span className="text-cyan-500">Blog</span>
+              {t('dashboard.blog.title')} <span className="text-cyan-500">{t('dashboard.blog.title_highlight')}</span>
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              Stay updated with our latest tips, guides, and news
+              {t('dashboard.blog.subtitle')}
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -751,7 +822,7 @@ Investing in professional fabric care extends the life of your clothing and ensu
                     onClick={() => handleReadMore(post)}
                     className="text-cyan-600 font-semibold text-sm hover:text-cyan-700 transition-colors"
                   >
-                    Read More →
+                    {t('dashboard.hero.learn_more')} →
                   </button>
                 </div>
               </div>
@@ -782,17 +853,17 @@ Investing in professional fabric care extends the life of your clothing and ensu
             {/* Newsletter Content */}
             <div className="order-1 lg:order-2">
               <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6">
-                Join Our Newsletter
+                {t('dashboard.newsletter.title')}
               </h2>
               <p className="text-white/90 text-lg mb-8 leading-relaxed">
-                Get the scoop on discounts, pay on delivery, free delivery and the chance to win a gift for referring friends.
+                {t('dashboard.newsletter.desc')}
               </p>
               <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4">
                 <input
                   type="email"
                   value={newsletterEmail}
                   onChange={(e) => setNewsletterEmail(e.target.value)}
-                  placeholder="Your email address"
+                  placeholder={t('dashboard.newsletter.placeholder')}
                   required
                   className="flex-1 px-6 py-4 rounded-full border-2 border-white/30 bg-white/20 backdrop-blur-sm text-white placeholder-white/70 focus:outline-none focus:border-white transition-all"
                 />
@@ -800,7 +871,7 @@ Investing in professional fabric care extends the life of your clothing and ensu
                   type="submit"
                   className="bg-white hover:bg-gray-50 text-cyan-600 font-semibold px-8 py-4 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 whitespace-nowrap"
                 >
-                  Subscribe
+                  {t('dashboard.newsletter.subscribe')}
                 </button>
               </form>
             </div>
@@ -810,7 +881,7 @@ Investing in professional fabric care extends the life of your clothing and ensu
         {/* Quick Actions Footer CTA */}
         <div className="bg-gradient-to-br from-gray-50 to-cyan-50 rounded-3xl p-8 text-center border-2 border-cyan-100">
           <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center justify-center gap-2">
-            Ready to get started? <SparklesIcon className="h-6 w-6 text-cyan-500" />
+            {t('dashboard.footer_cta.ready')} <SparklesIcon className="h-6 w-6 text-cyan-500" />
           </h3>
           <div className="flex flex-wrap justify-center gap-4">
             <button
@@ -818,21 +889,21 @@ Investing in professional fabric care extends the life of your clothing and ensu
               className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
             >
               <CalendarDaysIcon className="h-5 w-5" />
-              <span>Schedule Pickup</span>
+              <span>{t('dashboard.footer_cta.schedule')}</span>
             </button>
             <button
               onClick={() => handleQuickAction('orders')}
               className="bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-white font-semibold py-3 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
             >
               <ClipboardDocumentListIcon className="h-5 w-5" />
-              <span>View Orders</span>
+              <span>{t('dashboard.footer_cta.view_orders')}</span>
             </button>
             <button
               onClick={() => handleQuickAction('rate')}
               className="bg-white hover:bg-gray-50 text-gray-900 font-semibold py-3 px-8 rounded-full border-2 border-gray-300 hover:border-gray-400 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
             >
               <CubeIcon className="h-5 w-5" />
-              <span>View Pricing</span>
+              <span>{t('dashboard.footer_cta.view_pricing')}</span>
             </button>
           </div>
         </div>

@@ -51,9 +51,8 @@ import {
   EnvelopeIcon,
   DevicePhoneMobileIcon,
   PlayIcon,
-  XIcon,
-  ArrowRightIcon
-} from '@heroicons/react/24/outline';
+  XMarkIcon,
+  ArrowRightIcon} from '@heroicons/react/24/outline';
 import axios from 'axios';
 
 const DeliveryBoyDashboardModern = () => {
@@ -548,11 +547,15 @@ const DeliveryBoyDashboardModern = () => {
                 {shiftStatus === 'online' ? 'Online' : 'Offline'}
               </button>
               
-              <button className="p-1 rounded-full text-gray-600 hover:text-gray-900 hover:bg-gray-100 relative">
+              <button 
+                className="relative flex-shrink-0 p-2 rounded-xl text-gray-700 hover:text-blue-600 hover:bg-blue-100 bg-gray-100 border border-gray-200 transition-all duration-200 shadow-sm"
+                style={{ zIndex: 10 }}
+                title="Notifications"
+              >
                 <BellIcon className="h-6 w-6" />
                 {unreadNotifications > 0 && (
-                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
-                    {unreadNotifications}
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[1.25rem] h-5 px-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg ring-2 ring-white">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
                   </span>
                 )}
               </button>
@@ -1140,9 +1143,8 @@ const DeliveryBoyDashboardModern = () => {
                   onClick={() => setShowDetailModal(false)}
                   className="text-gray-400 hover:text-gray-500"
                 >
-                  <XIcon className="h-6 w-6" />
-                </button>
-              </div>
+                  <XMarkIcon className="h-6 w-6" />
+                </button>              </div>
               
               {/* Order Header */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5 mb-6">
@@ -1428,9 +1430,8 @@ const DeliveryBoyDashboardModern = () => {
                   onClick={() => setShowLocationModal(false)}
                   className="text-gray-400 hover:text-gray-500"
                 >
-                  <XIcon className="h-6 w-6" />
-                </button>
-              </div>
+                  <XMarkIcon className="h-6 w-6" />
+                </button>              </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1475,9 +1476,8 @@ const DeliveryBoyDashboardModern = () => {
                   onClick={() => setShowProfileSettings(false)}
                   className="text-gray-400 hover:text-gray-500"
                 >
-                  <XIcon className="h-6 w-6" />
-                </button>
-              </div>
+                  <XMarkIcon className="h-6 w-6" />
+                </button>              </div>
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

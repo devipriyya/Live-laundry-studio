@@ -5,7 +5,7 @@ const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
 
 // Create a new review
-router.post('/', async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const { 
       orderId, 
@@ -31,7 +31,7 @@ router.post('/', async (req, res) => {
 
     const review = new Review({
       orderId,
-      userId: req.user?._id,
+      userId: req.user._id,
       customerInfo: customerInfo || {
         name: order.customerInfo.name,
         email: order.customerInfo.email
@@ -45,6 +45,12 @@ router.post('/', async (req, res) => {
     });
 
     await review.save();
+
+    // Update order status
+    order.isReviewed = true;
+    order.rating = rating;
+    await order.save();
+
     res.status(201).json(review);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -58,10 +64,16 @@ router.get('/', async (req, res) => {
       page = 1, 
       limit = 10, 
       rating, 
-      sort = '-createdAt' 
+      sort = '-createdAt',
+      isAdminView = 'false'
     } = req.query;
 
-    let query = { status: 'approved' };
+    let query = {};
+    
+    // Only filter by approved if not in admin view
+    if (isAdminView !== 'true') {
+      query.status = 'approved';
+    }
     
     if (rating) {
       query.rating = parseInt(rating);

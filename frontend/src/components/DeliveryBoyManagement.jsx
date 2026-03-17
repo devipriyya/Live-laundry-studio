@@ -138,36 +138,7 @@ const DeliveryBoyManagement = () => {
 
     const handleSubmit = async (e) => {
       e.preventDefault();
-      try {
-        if (deliveryBoy) {
-          // Update existing delivery boy
-          await api.put(`/auth/delivery-boys/${deliveryBoy._id}`, {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone
-          });
-          
-          // If isBlocked status changed, update it separately
-          if (formData.isBlocked !== deliveryBoy.isBlocked) {
-            await api.patch(`/auth/delivery-boys/${deliveryBoy._id}/block`, { 
-              isBlocked: formData.isBlocked 
-            });
-          }
-        } else {
-          // Create new delivery boy - only send the required fields
-          await api.post('/auth/delivery-boys', {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            password: formData.password
-          });
-        }
-        await fetchDeliveryBoys();
-        onClose();
-      } catch (error) {
-        console.error('Error saving delivery boy:', error);
-        alert('Failed to save delivery boy');
-      }
+      await onSave(formData, deliveryBoy);
     };
 
     return (
@@ -583,7 +554,8 @@ const DeliveryBoyManagement = () => {
         });
       }
       await fetchDeliveryBoys();
-      onClose();
+      setShowAddModal(false);
+      setSelectedDeliveryBoy(null);
     } catch (error) {
       console.error('Error saving delivery boy:', error);
       

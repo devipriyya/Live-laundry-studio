@@ -31,6 +31,16 @@ const ProtectedRoute = ({ children, roles }) => {
   // Check role permissions
   if (roles && !roles.includes(user.role)) {
     console.log("ProtectedRoute: User role", user.role, "not in allowed roles", roles);
+    console.log("ProtectedRoute: User role type:", typeof user.role);
+    console.log("ProtectedRoute: Roles array:", roles);
+    console.log("ProtectedRoute: Roles array types:", roles.map(r => typeof r));
+    
+    // Additional debugging for laundry staff specifically
+    if (user.role === 'laundryStaff') {
+      console.log("ProtectedRoute: User has laundryStaff role but still being blocked");
+      console.log("ProtectedRoute: Checking if 'laundryStaff' is in roles array:", roles.includes('laundryStaff'));
+    }
+    
     return <Navigate to="/" replace />;
   }
   

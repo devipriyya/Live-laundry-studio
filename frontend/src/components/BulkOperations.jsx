@@ -292,6 +292,7 @@ const BulkOperations = ({
                 <option value="technician">Technician</option>
                 <option value="driver">Driver</option>
                 <option value="customer-service">Customer Service</option>
+                <option value="laundry-staff">Laundry Staff</option>
               </select>
             </div>
           );

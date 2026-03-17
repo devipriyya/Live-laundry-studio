@@ -218,6 +218,44 @@ const OrderDetailModal = ({ order, onClose, onUpdateStatus, getStatusColor, getP
                   </div>
                 </div>
 
+                {/* Service Proof */}
+                {(order.pickupNote || order.pickupPhoto || order.deliveryNote || order.deliveryPhoto) && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <StarIcon className="h-5 w-5 mr-2 text-emerald-600" />
+                      Service Proof
+                    </h3>
+                    <div className="space-y-6">
+                      {(order.pickupNote || order.pickupPhoto) && (
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                          <p className="text-xs font-bold text-gray-500 uppercase mb-2">Pickup Proof</p>
+                          {order.pickupPhoto && (
+                            <img 
+                              src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${order.pickupPhoto}`} 
+                              alt="Pickup" 
+                              className="w-full max-h-48 object-cover rounded-lg mb-2" 
+                            />
+                          )}
+                          {order.pickupNote && <p className="text-sm text-gray-700 italic">"{order.pickupNote}"</p>}
+                        </div>
+                      )}
+                      {(order.deliveryNote || order.deliveryPhoto) && (
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                          <p className="text-xs font-bold text-gray-500 uppercase mb-2">Delivery Proof</p>
+                          {order.deliveryPhoto && (
+                            <img 
+                              src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${order.deliveryPhoto}`} 
+                              alt="Delivery" 
+                              className="w-full max-h-48 object-cover rounded-lg mb-2" 
+                            />
+                          )}
+                          {order.deliveryNote && <p className="text-sm text-gray-700 italic">"{order.deliveryNote}"</p>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {order.notes && (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">

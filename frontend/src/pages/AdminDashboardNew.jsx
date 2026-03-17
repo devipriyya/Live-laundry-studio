@@ -3,7 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import OrderManagementNew from '../components/OrderManagementNew';
 import CustomerManagement from '../components/CustomerManagement';
-import StaffManagement from '../components/StaffManagement';
+import LaundryStaffManagement from '../components/LaundryStaffManagement';
 import InventoryManagement from '../components/InventoryManagement';
 import ReportsAnalytics from '../components/ReportsAnalytics';
 import PaymentManagement from '../components/PaymentManagement';
@@ -515,7 +515,7 @@ const AdminDashboardNew = () => {
             {/* Integrated Management Components */}
             {activeSection === 'orders' && <OrderManagementNew />}
             {activeSection === 'customers' && <CustomerManagement isAdminView={true} />}
-            {activeSection === 'staff' && <StaffManagement />}
+            {activeSection === 'staff' && <LaundryStaffManagement />}
             {activeSection === 'inventory' && <InventoryManagement />}
             {activeSection === 'reports' && <ReportsAnalytics />}
             {activeSection === 'payments' && <PaymentManagement />}

@@ -1,4 +1,4 @@
-require('dotenv').config({ path: __dirname + '/../.env' });
+require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const connectDB = require('./config/db');
 const cors = require('cors');
@@ -21,8 +21,20 @@ const notificationRoutes = require('./routes/notification');
 const productRoutes = require('./routes/product');
 const mlRoutes = require('./routes/mlRoutes');
 const chatRoutes = require('./routes/chat');
+const incidentRoutes = require('./routes/incident');
 const locationRoutes = require('./routes/location');
-
+const deliveryBoyRoutes = require('./routes/deliveryBoy');
+const laundryStaffRoutes = require('./routes/laundryStaff');
+const staffRoutes = require('./routes/staff');
+const insuranceRoutes = require('./routes/insurance');
+const assistantRoutes = require('./routes/assistant');
+const loyaltyRoutes = require('./routes/loyalty');
+const supportTicketRoutes = require('./routes/supportTicket');
+const couponRoutes = require('./routes/coupon');
+const advertisementRoutes = require('./routes/advertisement');
+const lostItemRoutes = require('./routes/lostItem');
+const upload = require('./middleware/upload');
+const path = require('path');
 // Connect to MongoDB
 connectDB();
 const app = express();
@@ -43,6 +55,19 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Static folder for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Image upload endpoint
+app.post('/api/upload', upload.single('photo'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded' });
+  }
+  
+  const fileUrl = `/uploads/${req.file.filename}`;
+  res.json({ success: true, url: fileUrl });
+});
+
 // ✅ Initialize Socket.IO
 const io = new Server(server, {
   cors: {
@@ -55,6 +80,8 @@ const io = new Server(server, {
     methods: ['GET', 'POST']
   }
 });
+
+app.set('io', io);
 
 // ✅ Store active users and rooms
 const activeUsers = new Map(); // userId -> socketId
@@ -163,31 +190,69 @@ io.on('connection', (socket) => {
     socket.to(roomId).emit('user-typing', { userId, userName, isTyping });
   });
   
-  // ✅ Handle location update
-  socket.on('location-update', (data) => {
-    const { orderId, deliveryBoyId, latitude, longitude, accuracy, altitude, speed, heading, timestamp } = data;
-    console.log(`Location update for order ${orderId} from delivery boy ${deliveryBoyId}`);
+  // ✅ Handle location updates
+  socket.on('location-update', async (data) => {
+    const { userId, orderId, latitude, longitude, accuracy, altitude, speed, heading, timestamp } = data;
+    console.log(`Location update from user ${userId} for order ${orderId}`);
     
-    // Broadcast location update to admins
-    socket.broadcast.emit('location-updated', data);
+    try {
+      // Import Location model here to avoid circular dependencies
+      const Location = require('./models/Location');
+      
+      // Save location to database
+      const location = new Location({
+        deliveryBoyId: userId,
+        orderId,
+        latitude,
+        longitude,
+        accuracy,
+        altitude,
+        speed,
+        heading,
+        timestamp: timestamp || new Date()
+      });
+      
+      await location.save();
+      
+      // Broadcast location to admin room for this order
+      io.to(`order-${orderId}`).emit('location-updated', {
+        userId,
+        orderId,
+        latitude,
+        longitude,
+        accuracy,
+        altitude,
+        speed,
+        heading,
+        timestamp: location.timestamp
+      });
+      
+      console.log(`Location saved and broadcast for user ${userId}`);
+    } catch (error) {
+      console.error('Error saving location:', error);
+    }
   });
   
-  // ✅ Handle join location tracking
+  // ✅ Handle delivery boy joining location tracking for an order
   socket.on('join-location-tracking', (data) => {
-    const { orderId, deliveryBoyId, deliveryBoyName } = data;
-    console.log(`Delivery boy ${deliveryBoyName} (${deliveryBoyId}) started tracking order ${orderId}`);
+    const { userId, orderId } = data;
+    const roomName = `order-${orderId}`;
     
-    // Broadcast to admins that tracking has started
-    socket.broadcast.emit('location-tracking-started', data);
+    // Join the location tracking room
+    socket.join(roomName);
+    
+    console.log(`User ${userId} joined location tracking for order ${orderId}`);
   });
   
-  // ✅ Handle leave location tracking
+  // ✅ Handle delivery boy leaving location tracking
   socket.on('leave-location-tracking', (data) => {
-    const { orderId, deliveryBoyId } = data;
-    console.log(`Delivery boy ${deliveryBoyId} stopped tracking order ${orderId}`);
+    const { userId, orderId } = data;
+    const roomName = `order-${orderId}`;
     
-    // Broadcast to admins that tracking has ended
-    socket.broadcast.emit('location-tracking-ended', data);
+    // Leave the location tracking room
+    socket.leave(roomName);
+    
+    console.log(`User ${userId} left location tracking for order ${orderId}`);
   });
   
   // ✅ Handle disconnect
@@ -274,8 +339,18 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/ml', mlRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/incidents', incidentRoutes);
 app.use('/api/locations', locationRoutes);
-
+app.use('/api/delivery-boy', deliveryBoyRoutes);
+app.use('/api/laundry-staff', laundryStaffRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/insurance', insuranceRoutes);
+app.use('/api/support-tickets', supportTicketRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/advertisements', advertisementRoutes);
+app.use('/api/assistants', assistantRoutes);
+app.use('/api/loyalty', loyaltyRoutes);
+app.use('/api/lost-items', lostItemRoutes);
 // ✅ Health check endpoint for Render
 app.get('/health', (req, res) => {
   res.status(200).json({ 

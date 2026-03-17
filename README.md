@@ -1,6 +1,6 @@
 # Fabrico - Laundry Service Application
 
-Fabrico is a comprehensive laundry service application with both frontend and backend components.
+Fabrico is a comprehensive laundry service application with four user roles: Customer, Admin, Delivery Boy, and Laundry Staff. The application includes both frontend and backend components.
 
 ## Project Structure
 

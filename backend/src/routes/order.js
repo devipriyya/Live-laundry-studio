@@ -3,11 +3,12 @@ const router = express.Router();
 const PDFDocument = require('pdfkit');
 const Order = require('../models/Order');
 const { protect, optionalAuth } = require('../middleware/auth');
-const { isAdmin, isDeliveryBoy, isAdminOrDeliveryBoy } = require('../middleware/role');
+const { isAdmin, isDeliveryBoy, isAdminOrDeliveryBoy, isAdminOrAssistant } = require('../middleware/role');
 const { sendOrderStatusUpdateEmail } = require('../utils/emailService');
+const { notifyCustomerOrderUpdate } = require('../utils/notificationService');
 
 // Admin: Get order trends (last 7 days)
-router.get('/analytics/orders', protect, isAdmin, async (req, res) => {
+router.get('/analytics/orders', protect, isAdminOrAssistant, async (req, res) => {
   try {
     const { days = 7 } = req.query;
     
@@ -77,7 +78,7 @@ router.get('/analytics/orders', protect, isAdmin, async (req, res) => {
 });
 
 // Admin: Get monthly income trends
-router.get('/analytics/income', protect, isAdmin, async (req, res) => {
+router.get('/analytics/income', protect, isAdminOrAssistant, async (req, res) => {
   try {
     const { months = 6 } = req.query;
     
@@ -234,6 +235,29 @@ router.post('/', optionalAuth, async (req, res) => {
         note: 'Order placed by customer'
       }]
     };
+
+    // Handle loyalty points redemption
+    if (authenticatedUserId && req.body.pointsRedeemed > 0) {
+      const User = require('../models/User');
+      const LoyaltyTransaction = require('../models/LoyaltyTransaction');
+      
+      const user = await User.findById(authenticatedUserId);
+      if (user && user.stats.loyaltyPoints >= req.body.pointsRedeemed) {
+        user.stats.loyaltyPoints -= req.body.pointsRedeemed;
+        await user.save();
+        
+        // Record the transaction
+        await LoyaltyTransaction.create({
+          userId: user._id,
+          type: 'redeemed',
+          points: req.body.pointsRedeemed,
+          amount: req.body.pointsRedeemed * 0.5, // 100 points = ₹50
+          description: `Redeemed for order #${orderNumber}`
+        });
+      } else {
+        return res.status(400).json({ message: 'Insufficient loyalty points' });
+      }
+    }
 
     const order = new Order(orderData);
     await order.save();
@@ -405,6 +429,26 @@ router.post('/dry-cleaning-clothes', optionalAuth, async (req, res) => {
   }
 });
 
+// public order tracking by orderNumber
+router.get('/track/:orderNumber', async (req, res) => {
+  try {
+    const { orderNumber } = req.params;
+    
+    const order = await Order.findOne({ orderNumber: orderNumber.toUpperCase() })
+      .select('orderNumber status customerInfo.name pickupDate deliveryDate totalItems totalAmount createdAt statusHistory')
+      .populate('statusHistory.updatedBy', 'name');
+      
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    
+    res.json(order);
+  } catch (error) {
+    console.error('Error tracking order:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // my orders - fetch by email (no auth required)
 router.get('/my', async (req, res) => {
   try {
@@ -455,7 +499,7 @@ router.get('/my-auth', protect, async (req, res) => {
 });
 
 // admin: get all orders with filtering and pagination
-router.get('/', protect, isAdmin, async (req, res) => {
+router.get('/', protect, isAdminOrAssistant, async (req, res) => {
   try {
     const { 
       status, 
@@ -539,7 +583,7 @@ router.get('/', protect, isAdmin, async (req, res) => {
 });
 
 // admin: get order statistics
-router.get('/stats', protect, isAdmin, async (req, res) => {
+router.get('/stats', protect, isAdminOrAssistant, async (req, res) => {
   try {
     const stats = await Order.aggregate([
       {
@@ -567,7 +611,7 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
 });
 
 // admin: get single order details
-router.get('/:id', protect, isAdmin, async (req, res) => {
+router.get('/:id', protect, isAdminOrAssistant, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate('userId', 'name email')
@@ -585,60 +629,80 @@ router.get('/:id', protect, isAdmin, async (req, res) => {
   }
 });
 
-// admin: assign to delivery boy
-router.patch('/:id/assign', protect, isAdmin, async (req, res) => {
+// admin: assign/reassign/unassign staff
+router.patch('/:id/assign', protect, isAdminOrAssistant, async (req, res) => {
   try {
-    const { deliveryBoyId } = req.body;
-    
-    // Check if the id is a valid MongoDB ObjectId or order number
-    let order;
-    if (req.params.id.length === 24 && /^[0-9a-fA-F]{24}$/.test(req.params.id)) {
-      // It's a valid ObjectId
-      order = await Order.findByIdAndUpdate(
-        req.params.id,
-        { 
-          deliveryBoyId,
-          $push: {
-            statusHistory: {
-              status: order.status,
-              timestamp: new Date(),
-              updatedBy: req.user._id,
-              note: `Assigned to delivery person`
-            }
-          }
-        }, 
-        { new: true }
-      );
+    const { deliveryBoyId, assignedLaundryStaff } = req.body;
+    const orderId = req.params.id;
+
+    let query = {};
+    if (orderId.length === 24 && /^[0-9a-fA-F]{24}$/.test(orderId)) {
+      query._id = orderId;
     } else {
-      // It's likely an order number
-      const foundOrder = await Order.findOne({ orderNumber: req.params.id });
-      if (!foundOrder) {
-        return res.status(404).json({ message: 'Order not found' });
-      }
-      
-      order = await Order.findByIdAndUpdate(
-        foundOrder._id,
-        { 
-          deliveryBoyId,
-          $push: {
-            statusHistory: {
-              status: foundOrder.status,
-              timestamp: new Date(),
-              updatedBy: req.user._id,
-              note: `Assigned to delivery person`
-            }
-          }
-        }, 
-        { new: true }
-      );
+      query.orderNumber = orderId;
     }
-    
+
+    const order = await Order.findOne(query);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
-    
-    res.json(order);
+
+    const updateData = {};
+    let noteParts = [];
+
+    // Handle Delivery Boy assignment
+    if (req.body.hasOwnProperty('deliveryBoyId')) {
+      if (deliveryBoyId) {
+        updateData.deliveryBoyId = deliveryBoyId;
+        updateData.deliveryBoyAssignedAt = new Date();
+        noteParts.push(`Assigned to delivery person`);
+      } else {
+        updateData.deliveryBoyId = null;
+        updateData.deliveryBoyAssignedAt = null;
+        noteParts.push(`Unassigned delivery person`);
+      }
+    }
+
+    // Handle Laundry Staff assignment
+    if (req.body.hasOwnProperty('assignedLaundryStaff')) {
+      if (assignedLaundryStaff) {
+        updateData.assignedLaundryStaff = assignedLaundryStaff;
+        updateData.laundryStaffAssignedAt = new Date();
+        noteParts.push(`Assigned to laundry staff`);
+      } else {
+        updateData.assignedLaundryStaff = null;
+        updateData.laundryStaffAssignedAt = null;
+        noteParts.push(`Unassigned laundry staff`);
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: 'No assignment data provided' });
+    }
+
+    const finalNote = noteParts.join(' and ');
+
+    const updatedOrder = await Order.findOneAndUpdate(
+      query,
+      {
+        $set: updateData,
+        $push: {
+          statusHistory: {
+            status: order.status,
+            timestamp: new Date(),
+            updatedBy: req.user._id,
+            note: finalNote
+          }
+        }
+      },
+      { new: true }
+    )
+    .populate('deliveryBoyId', 'name email phone')
+    .populate('assignedLaundryStaff', 'name email phone');
+
+    res.json(updatedOrder);
   } catch (error) {
+    console.error('Error assigning staff:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -664,10 +728,11 @@ router.patch('/:id/status', protect, async (req, res) => {
     
     // Check permissions
     const isAdminUser = req.user.role === 'admin';
+    const isAssistant = req.user.role === 'assistant';
     const isAssignedDeliveryBoy = req.user.role === 'deliveryBoy' && 
       order.deliveryBoyId?.toString() === req.user._id.toString();
     
-    if (!isAdminUser && !isAssignedDeliveryBoy) {
+    if (!isAdminUser && !isAssistant && !isAssignedDeliveryBoy) {
       return res.status(403).json({ message: 'Not authorized to update this order' });
     }
     
@@ -697,19 +762,26 @@ router.patch('/:id/status', protect, async (req, res) => {
       // Get the service name from the first item or default to 'Laundry Service'
       const serviceName = order.items && order.items.length > 0 ? order.items[0].name : 'Laundry Service';
       
-      // Send email notification
-      try {
-        const emailResult = await sendOrderStatusUpdateEmail(order, status, serviceName);
-        if (emailResult) {
-          console.log(`Email notification sent for order ${order.orderNumber}`);
-        } else {
-          console.warn(`Failed to send email notification for order ${order.orderNumber}`);
+        // Send email notification
+        try {
+          const emailResult = await sendOrderStatusUpdateEmail(order, status, serviceName);
+          if (emailResult) {
+            console.log(`Email notification sent for order ${order.orderNumber}`);
+          } else {
+            console.warn(`Failed to send email notification for order ${order.orderNumber}`);
+          }
+        } catch (emailError) {
+          console.error(`Error sending email notification for order ${order.orderNumber}:`, emailError);
+          // Don't fail the request if email sending fails
         }
-      } catch (emailError) {
-        console.error(`Error sending email notification for order ${order.orderNumber}:`, emailError);
-        // Don't fail the request if email sending fails
+
+        // Send in-app notification
+        try {
+          await notifyCustomerOrderUpdate(order, status);
+        } catch (notifError) {
+          console.error(`Error sending in-app notification for order ${order.orderNumber}:`, notifError);
+        }
       }
-    }
     
     // Populate the response
     await order.populate('userId', 'name email');
@@ -868,6 +940,15 @@ router.patch('/:id/cancel', async (req, res) => {
       // Don't fail the request if email sending fails
     }
     
+    // Send notification to customer
+    try {
+      if (order.userId) {
+        await notifyCustomerOrderUpdate(order, 'cancelled');
+      }
+    } catch (notifError) {
+      console.error('Failed to send in-app notification:', notifError);
+    }
+    
     res.json({ 
       message: 'Order cancelled successfully', 
       order 
@@ -931,7 +1012,7 @@ router.patch('/:id/refund', protect, isAdmin, async (req, res) => {
 // Delivery Boy Routes
 
 // Get all delivery boys (admin only)
-router.get('/delivery-boys/list', protect, isAdmin, async (req, res) => {
+router.get('/delivery-boys/list', protect, isAdminOrAssistant, async (req, res) => {
   try {
     const User = require('../models/User');
     const deliveryBoys = await User.find({ role: 'deliveryBoy' })
@@ -1073,15 +1154,57 @@ router.patch('/:id/delivery-status', protect, isDeliveryBoy, async (req, res) =>
       });
     }
     
+    const { photoUrl } = req.body;
+    
     order.status = status;
+    
+    // Save photo and note to specific fields
+    if (status === 'pickup-completed') {
+      order.pickupNote = note;
+      order.pickupPhoto = photoUrl;
+    } else if (status === 'delivery-completed') {
+      order.deliveryNote = note;
+      order.deliveryPhoto = photoUrl;
+    }
+
     order.statusHistory.push({
       status: status,
       timestamp: new Date(),
       updatedBy: req.user._id,
-      note: note || `Status updated to ${status} by delivery boy`
+      note: note || `Status updated to ${status} by delivery boy: ${req.user.name}`
     });
     
     await order.save();
+    
+    // Award loyalty points on delivery completion
+    if (status === 'delivery-completed' && order.userId) {
+      try {
+        const User = require('../models/User');
+        const LoyaltyTransaction = require('../models/LoyaltyTransaction');
+        
+        const pointsToAward = Math.floor(order.totalAmount / 10);
+        
+        if (pointsToAward > 0) {
+          const user = await User.findById(order.userId);
+          if (user) {
+            user.stats.loyaltyPoints = (user.stats.loyaltyPoints || 0) + pointsToAward;
+            await user.save();
+            
+            await LoyaltyTransaction.create({
+              userId: user._id,
+              orderId: order._id,
+              type: 'earned',
+              points: pointsToAward,
+              amount: order.totalAmount,
+              description: `Earned from order #${order.orderNumber}`
+            });
+            console.log(`Awarded ${pointsToAward} points to user ${user.email} for order ${order.orderNumber}`);
+          }
+        }
+      } catch (loyaltyError) {
+        console.error('Error awarding loyalty points:', loyaltyError);
+      }
+    }
     
     // Send email notification if status changed
     if (status && status !== oldStatus) {
@@ -1100,6 +1223,17 @@ router.patch('/:id/delivery-status', protect, isDeliveryBoy, async (req, res) =>
     await order.populate('userId', 'name email');
     await order.populate('serviceId');
     await order.populate('deliveryBoyId', 'name email');
+    
+    // Send notification to customer
+    if (status && status !== oldStatus) {
+      try {
+        if (order.userId) {
+          await notifyCustomerOrderUpdate(order, status);
+        }
+      } catch (notifError) {
+        console.error('Failed to send in-app notification:', notifError);
+      }
+    }
     
     res.json({ message: 'Status updated successfully', order });
   } catch (error) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCartIcon, StarIcon } from '@heroicons/react/24/outline';
 import api from '../../api';
+import AdvertisementBanner from '../../components/AdvertisementBanner';
 
 const DashboardProducts = () => {
   const [products, setProducts] = useState([]);
@@ -98,6 +99,7 @@ const DashboardProducts = () => {
 
   return (
     <div className="space-y-8">
+      <AdvertisementBanner />
       {/* Header */}
       <div>
         <div className="flex items-center space-x-3 mb-2">

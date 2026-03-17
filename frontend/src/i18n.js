@@ -23,8 +23,8 @@ i18n
     resources,
     fallbackLng: 'en',
     detection: {
-      // Use localStorage for language detection with custom key
-      lookupLocalStorage: 'deliveryDashboardLanguage',
+      // Use standard localStorage key for language detection
+      lookupLocalStorage: 'i18nextLng',
       // Cache the language in localStorage
       caches: ['localStorage']
     },

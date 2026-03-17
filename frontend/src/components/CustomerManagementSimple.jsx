@@ -264,6 +264,7 @@ const CustomerManagementSimple = () => {
                   <option value="customer">Customers</option>
                   <option value="admin">Admins</option>
                   <option value="delivery">Delivery Staff</option>
+                  <option value="laundryStaff">Laundry Staff</option>
                 </select>
 
                 <select

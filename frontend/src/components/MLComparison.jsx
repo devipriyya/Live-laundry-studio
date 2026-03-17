@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 
 const MLComparison = ({ customerData }) => {
+  const { t } = useTranslation();
   const [predictions, setPredictions] = useState({
     knn: null,
     svm: null,
@@ -89,35 +91,10 @@ const MLComparison = ({ customerData }) => {
     }
   };
 
-  const getModelInfo = (modelType) => {
-    const modelInfo = {
-      knn: {
-        name: 'KNN Recommendations',
-        icon: '🔍',
-        description: 'Similarity-based suggestions',
-        color: 'text-blue-500'
-      },
-      svm: {
-        name: 'SVM Segment',
-        icon: '🤖',
-        description: 'Support Vector Machine classification',
-        color: 'text-purple-500'
-      },
-      decisionTree: {
-        name: 'Decision Tree',
-        icon: '🌳',
-        description: 'Tree-based classification',
-        color: 'text-green-500'
-      }
-    };
-    
-    return modelInfo[modelType] || modelInfo.knn;
-  };
-
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">ML Model Predictions</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">{t('ml_models.title')}</h3>
         <div className="animate-pulse space-y-3">
           <div className="h-4 bg-gray-200 rounded"></div>
           <div className="h-4 bg-gray-200 rounded"></div>
@@ -129,7 +106,7 @@ const MLComparison = ({ customerData }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
-      <h3 className="text-lg font-bold text-gray-900 mb-4">ML Model Predictions</h3>
+      <h3 className="text-lg font-bold text-gray-900 mb-4">{t('ml_models.title')}</h3>
       
       {error && (
         <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg">
@@ -144,12 +121,12 @@ const MLComparison = ({ customerData }) => {
             <div className="flex items-center">
               <span className="text-lg mr-2">🔍</span>
               <div>
-                <h4 className="font-bold text-gray-900">KNN Recommendations</h4>
-                <p className="text-xs text-gray-500">Similarity-based suggestions</p>
+                <h4 className="font-bold text-gray-900">{t('ml_models.knn.name')}</h4>
+                <p className="text-xs text-gray-500">{t('ml_models.knn.desc')}</p>
               </div>
             </div>
             <span className="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
-              Recommendations
+              {t('ml_models.knn.type')}
             </span>
           </div>
           
@@ -159,7 +136,7 @@ const MLComparison = ({ customerData }) => {
                 <div key={index} className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                   <div>
                     <span className="text-sm font-medium text-gray-700 capitalize">{rec.service || 'N/A'}</span>
-                    <p className="text-xs text-gray-500 mt-1">{rec.reason || 'Recommended for you'}</p>
+                    <p className="text-xs text-gray-500 mt-1">{rec.reason || t('ml_models.knn.desc')}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded">
@@ -170,7 +147,7 @@ const MLComparison = ({ customerData }) => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-sm py-2">No recommendations available</p>
+            <p className="text-gray-500 text-sm py-2">{t('ml_models.no_recommendations')}</p>
           )}
         </div>
         
@@ -180,12 +157,12 @@ const MLComparison = ({ customerData }) => {
             <div className="flex items-center">
               <span className="text-lg mr-2">🤖</span>
               <div>
-                <h4 className="font-bold text-gray-900">SVM Segment</h4>
-                <p className="text-xs text-gray-500">Support Vector Machine classification</p>
+                <h4 className="font-bold text-gray-900">{t('ml_models.svm.name')}</h4>
+                <p className="text-xs text-gray-500">{t('ml_models.svm.desc')}</p>
               </div>
             </div>
             <span className="ml-auto bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
-              Classification
+              {t('ml_models.svm.type')}
             </span>
           </div>
           
@@ -195,7 +172,7 @@ const MLComparison = ({ customerData }) => {
                 {getSegmentIcon(predictions.svm.segment, 'svm')}
               </div>
               <h5 className="text-lg font-bold text-gray-900 capitalize">
-                {predictions.svm.segment} Customer
+                {t('ml_models.segments.customer', { type: t(`ml_models.segments.${predictions.svm.segment}`) })}
               </h5>
               <div className="flex items-center justify-center mt-2">
                 <div className="w-full bg-gray-200 rounded-full h-2 max-w-[120px]">
@@ -208,10 +185,10 @@ const MLComparison = ({ customerData }) => {
                   {Math.round(predictions.svm.confidence * 100)}%
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Confidence Level</p>
+              <p className="text-xs text-gray-500 mt-2">{t('ml_models.confidence_level')}</p>
             </div>
           ) : (
-            <p className="text-gray-500 text-sm py-2 text-center">No segment prediction available</p>
+            <p className="text-gray-500 text-sm py-2 text-center">{t('ml_models.no_segment')}</p>
           )}
         </div>
         
@@ -221,12 +198,12 @@ const MLComparison = ({ customerData }) => {
             <div className="flex items-center">
               <span className="text-lg mr-2">🌳</span>
               <div>
-                <h4 className="font-bold text-gray-900">Decision Tree</h4>
-                <p className="text-xs text-gray-500">Tree-based classification</p>
+                <h4 className="font-bold text-gray-900">{t('ml_models.dt.name')}</h4>
+                <p className="text-xs text-gray-500">{t('ml_models.dt.desc')}</p>
               </div>
             </div>
             <span className="ml-auto bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-              Classification
+              {t('ml_models.dt.type')}
             </span>
           </div>
           
@@ -236,7 +213,7 @@ const MLComparison = ({ customerData }) => {
                 {getSegmentIcon(predictions.decisionTree.segment, 'dt')}
               </div>
               <h5 className="text-lg font-bold text-gray-900 capitalize">
-                {predictions.decisionTree.segment} Customer
+                {t('ml_models.segments.customer', { type: t(`ml_models.segments.${predictions.decisionTree.segment}`) })}
               </h5>
               <div className="flex items-center justify-center mt-2">
                 <div className="w-full bg-gray-200 rounded-full h-2 max-w-[120px]">
@@ -249,28 +226,28 @@ const MLComparison = ({ customerData }) => {
                   {Math.round(predictions.decisionTree.confidence * 100)}%
                 </span>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Confidence Level</p>
+              <p className="text-xs text-gray-500 mt-2">{t('ml_models.confidence_level')}</p>
             </div>
           ) : (
-            <p className="text-gray-500 text-sm py-2 text-center">No segment prediction available</p>
+            <p className="text-gray-500 text-sm py-2 text-center">{t('ml_models.no_segment')}</p>
           )}
         </div>
       </div>
       
       <div className="mt-6 pt-4 border-t border-gray-100">
-        <h4 className="font-bold text-gray-900 mb-3">Model Comparison</h4>
+        <h4 className="font-bold text-gray-900 mb-3">{t('ml_models.comparison')}</h4>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="bg-blue-50 p-2 rounded">
             <div className="text-blue-500 font-bold text-sm">KNN</div>
-            <div className="text-xs text-gray-600">Recommendations</div>
+            <div className="text-xs text-gray-600">{t('ml_models.knn.type')}</div>
           </div>
           <div className="bg-purple-50 p-2 rounded">
             <div className="text-purple-500 font-bold text-sm">SVM</div>
-            <div className="text-xs text-gray-600">Classification</div>
+            <div className="text-xs text-gray-600">{t('ml_models.svm.type')}</div>
           </div>
           <div className="bg-green-50 p-2 rounded">
             <div className="text-green-500 font-bold text-sm">Tree</div>
-            <div className="text-xs text-gray-600">Classification</div>
+            <div className="text-xs text-gray-600">{t('ml_models.dt.type')}</div>
           </div>
         </div>
       </div>

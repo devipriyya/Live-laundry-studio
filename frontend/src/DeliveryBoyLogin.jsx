@@ -69,9 +69,17 @@ export default function DeliveryBoyLogin() {
       const result = await deliveryBoyLogin(form.email, form.password);
       
       if (result.success) {
-        console.log("DeliveryBoyLogin: Authentication successful, navigating to dashboard");
-        // Successfully logged in as delivery boy
-        navigate("/delivery-dashboard");
+        console.log("DeliveryBoyLogin: Authentication successful, navigating based on role:", result.role);
+        // Navigate based on role
+        if (result.role === 'deliveryBoy') {
+          navigate("/delivery-dashboard");
+        } else if (result.role === 'laundryStaff') {
+          navigate("/laundry-staff-dashboard");
+        } else if (result.role === 'admin') {
+          navigate("/admin-dashboard");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         console.log("DeliveryBoyLogin: Authentication failed with message:", result.error);
         // Delivery boy login failed

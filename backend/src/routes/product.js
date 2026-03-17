@@ -11,7 +11,11 @@ router.get('/', async (req, res) => {
     // Only get items that are in stock and are customer-facing categories
     const query = {
       status: { $in: ['in-stock', 'low-stock'] },
-      category: { $in: ['detergent', 'softener', 'stain-remover'] }
+      category: { $in: [
+        'detergent', 'softener', 'stain-remover', 
+        'laundry-bag', 'hanger', 'garment-cover',
+        'bedsheet', 'towel', 'curtain', 'uniform'
+      ] }
     };
 
     const items = await Inventory.find(query)
@@ -26,8 +30,8 @@ router.get('/', async (req, res) => {
       category: item.category,
       unit: item.unit,
       availability: item.status === 'in-stock' ? 'In Stock' : 'Low Stock',
-      image: getProductImage(item.category),
-      rating: getRatingForCategory(item.category)
+      image: item.image,
+      rating: item.rating
     }));
 
     res.json(products);
@@ -59,8 +63,8 @@ router.get('/:id', async (req, res) => {
       category: item.category,
       unit: item.unit,
       availability: item.status === 'in-stock' ? 'In Stock' : 'Low Stock',
-      image: getProductImage(item.category),
-      rating: getRatingForCategory(item.category)
+      image: item.image,
+      rating: item.rating
     };
 
     res.json(product);
@@ -68,32 +72,6 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
-// Helper function to get product image based on category
-function getProductImage(category) {
-  const images = {
-    'detergent': '🧼',
-    'softener': '🧴',
-    'stain-remover': '🧽',
-    'packaging': '📦',
-    'equipment': '⚙️',
-    'other': '🛍️'
-  };
-  return images[category] || '🛍️';
-}
-
-// Helper function to get rating based on category
-function getRatingForCategory(category) {
-  const ratings = {
-    'detergent': 4.8,
-    'softener': 4.7,
-    'stain-remover': 4.9,
-    'packaging': 4.5,
-    'equipment': 4.6,
-    'other': 4.4
-  };
-  return ratings[category] || 4.5;
-}
 
 // Get reviews for a specific product
 router.get('/:id/reviews', async (req, res) => {

@@ -132,7 +132,135 @@ const testEmailConfiguration = async () => {
   }
 };
 
+/**
+ * Send Delivery OTP email to customer
+ * @param {Object} order - The order object
+ * @param {String} otp - The plain text OTP to send
+ * @param {Number} expiryMinutes - OTP expiry time in minutes
+ */
+const sendDeliveryOTPEmail = async (order, otp, expiryMinutes = 30) => {
+  try {
+    // Format OTP for better readability
+    const formattedOTP = `${otp.slice(0, 3)} ${otp.slice(3)}`;
+    
+    const mailOptions = {
+      from: process.env.SMTP_FROM_EMAIL || process.env.EMAIL_USER || 'your-email@gmail.com',
+      to: order.customerInfo.email,
+      subject: `🔐 Delivery OTP for Order ${order.orderNumber} - Fabrico`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 20px;">
+          <div style="background-color: #ffffff; border-radius: 10px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #1f2937; margin: 0; font-size: 24px;">📦 Delivery Verification</h1>
+              <p style="color: #6b7280; margin-top: 10px;">Your order is ready for delivery!</p>
+            </div>
+            
+            <p style="color: #374151; font-size: 16px;">Hello <strong>${order.customerInfo.name}</strong>,</p>
+            
+            <p style="color: #374151; font-size: 16px;">
+              Your order <strong>#${order.orderNumber}</strong> is out for delivery. Please share the following OTP with our delivery partner to confirm receipt:
+            </p>
+            
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
+              <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                Your Delivery OTP
+              </p>
+              <div style="background: white; border-radius: 8px; padding: 15px 30px; display: inline-block;">
+                <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #1f2937; font-family: 'Courier New', monospace;">
+                  ${formattedOTP}
+                </span>
+              </div>
+              <p style="color: rgba(255,255,255,0.8); margin: 15px 0 0 0; font-size: 12px;">
+                ⏰ Valid for ${expiryMinutes} minutes
+              </p>
+            </div>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
+              <p style="color: #92400e; margin: 0; font-size: 14px;">
+                <strong>⚠️ Important Security Notice:</strong><br/>
+                Do not share this OTP with anyone except our authorized delivery partner. Our team will never call you asking for this OTP over phone.
+              </p>
+            </div>
+            
+            <div style="background-color: #f3f4f6; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h3 style="color: #374151; margin: 0 0 10px 0; font-size: 14px;">Order Summary:</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="color: #6b7280; padding: 5px 0;">Order Number:</td>
+                  <td style="color: #1f2937; text-align: right; font-weight: 500;">${order.orderNumber}</td>
+                </tr>
+                <tr>
+                  <td style="color: #6b7280; padding: 5px 0;">Total Amount:</td>
+                  <td style="color: #1f2937; text-align: right; font-weight: 500;">₹${order.totalAmount}</td>
+                </tr>
+                <tr>
+                  <td style="color: #6b7280; padding: 5px 0;">Items:</td>
+                  <td style="color: #1f2937; text-align: right; font-weight: 500;">${order.items?.length || 0} items</td>
+                </tr>
+              </table>
+            </div>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 25px; text-align: center;">
+              Thank you for choosing Fabrico Laundry Services!
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px;">
+            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+              This is an automated message. Please do not reply to this email.
+            </p>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Delivery OTP email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending delivery OTP email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Send OTP via SMS (placeholder for SMS integration)
+ * @param {String} phone - Customer phone number
+ * @param {String} otp - The OTP to send
+ * @param {String} orderNumber - Order number for reference
+ */
+const sendDeliveryOTPSMS = async (phone, otp, orderNumber) => {
+  try {
+    // TODO: Integrate with SMS provider (Twilio, MSG91, etc.)
+    // For now, log the OTP for testing purposes
+    console.log(`[SMS PLACEHOLDER] Sending OTP ${otp} to ${phone} for order ${orderNumber}`);
+    
+    // Uncomment and configure when SMS provider is set up:
+    /*
+    const twilioClient = require('twilio')(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_AUTH_TOKEN
+    );
+    
+    const message = await twilioClient.messages.create({
+      body: `Your Fabrico delivery OTP is: ${otp}. Share this with our delivery partner to confirm receipt of order #${orderNumber}. Valid for 30 mins.`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phone
+    });
+    
+    return { success: true, messageId: message.sid };
+    */
+    
+    return { success: true, messageId: 'sms-placeholder' };
+  } catch (error) {
+    console.error('Error sending delivery OTP SMS:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   sendOrderStatusUpdateEmail,
-  testEmailConfiguration
+  testEmailConfiguration,
+  sendDeliveryOTPEmail,
+  sendDeliveryOTPSMS
 };

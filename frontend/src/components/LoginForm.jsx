@@ -1,4 +1,5 @@
 import { useState, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -24,6 +25,7 @@ const initialErrors = {
 };
 
 export default function LoginForm({ onSwitchToRegister, onClose }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState(initialErrors);
   const [loading, setLoading] = useState(false);
@@ -38,15 +40,15 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
     const newErrors = { ...initialErrors };
 
     if (!form.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = t('auth.errors.email_required');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = "Please enter a valid email address";
+      newErrors.email = t('auth.errors.email_invalid');
     }
 
     if (!form.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = t('auth.errors.password_required');
     } else if (form.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = t('auth.errors.password_min_length');
     }
 
     setErrors(newErrors);
@@ -66,6 +68,24 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
     }
   };
 
+  const navigateBasedOnRole = (role) => {
+    switch (role) {
+      case 'deliveryBoy':
+        navigate("/delivery-dashboard");
+        break;
+      case 'laundryStaff':
+      case 'staff':
+        navigate("/laundry-staff-dashboard");
+        break;
+      case 'admin':
+      case 'assistant':
+        navigate("/admin-dashboard");
+        break;
+      default:
+        navigate("/dashboard");
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -74,41 +94,18 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
     setLoading(true);
     setErrors((prev) => ({ ...prev, general: "", success: "" }));
 
-    // Use universal login for all users
     try {
-      console.log("LoginForm: Attempting universal login with:", { email: form.email, password: form.password });
-      
       const result = await universalLogin(form.email, form.password);
-      console.log("LoginForm: Universal login result:", result);
       
       if (result.success) {
-        // Successfully authenticated
-        console.log("LoginForm: Authentication successful with role:", result.role);
-        
-        // Navigate based on role
-        switch (result.role) {
-          case 'deliveryBoy':
-            navigate("/delivery-dashboard");
-            break;
-          case 'admin':
-            navigate("/admin-dashboard");
-            break;
-          default:
-            navigate("/dashboard");
-        }
-        
-        if (onClose) {
-          onClose();
-        }
+        navigateBasedOnRole(result.role);
+        if (onClose) onClose();
         return;
       } else {
-        // Authentication failed
-        console.log("LoginForm: Authentication failed with message:", result.error);
-        setErrors((prev) => ({ ...prev, general: result.error, success: "" }));
+        setErrors((prev) => ({ ...prev, general: result.error || t('auth.errors.login_failed'), success: "" }));
       }
     } catch (error) {
-      console.log("LoginForm: Authentication exception:", error);
-      setErrors((prev) => ({ ...prev, general: "Login failed. Please try again.", success: "" }));
+      setErrors((prev) => ({ ...prev, general: t('auth.errors.login_failed'), success: "" }));
     } finally {
       setLoading(false);
     }
@@ -122,7 +119,8 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       const userCredential = await signInWithPopup(auth, googleProvider);
       const user = userCredential.user;
 
-      // Exchange Firebase token for backend JWT token
+      let role = 'customer';
+
       try {
         const response = await fetch('http://localhost:5000/api/auth/firebase-login', {
           method: 'POST',
@@ -139,31 +137,27 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
         if (response.ok) {
           const data = await response.json();
           localStorage.setItem('token', data.token);
-          // Set user in AuthContext
+          role = data.user.role;
           const userData = {
             uid: user.uid,
             email: user.email,
             name: user.displayName || user.email?.split('@')[0],
-            role: data.user.role
+            role: role
           };
           localStorage.setItem('user', JSON.stringify(userData));
           setUser(userData);
         }
       } catch (tokenError) {
         console.error('Failed to exchange Firebase token for JWT:', tokenError);
-        // Continue with login even if token exchange fails
+        if (user.email === "admin@gmail.com") {
+          role = 'admin';
+        }
       }
 
-      if (user.email === "admin@gmail.com") {
-        navigate("/admin-dashboard");
-      } else {
-        navigate("/dashboard");
-      }
-      if (onClose) {
-        onClose();
-      }
+      navigateBasedOnRole(role);
+      if (onClose) onClose();
     } catch (error) {
-      setErrors((prev) => ({ ...prev, general: "Google sign-in failed. Please try again." }));
+      setErrors((prev) => ({ ...prev, general: t('auth.errors.google_failure') }));
     } finally {
       setLoading(false);
     }
@@ -174,12 +168,12 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
     setErrors((prev) => ({ ...prev, reset: "", success: "", general: "" }));
 
     if (!resetEmail.trim()) {
-      setErrors((prev) => ({ ...prev, reset: "Please enter your email address" }));
+      setErrors((prev) => ({ ...prev, reset: t('auth.errors.reset_email_required') }));
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
-      setErrors((prev) => ({ ...prev, reset: "Please enter a valid email address" }));
+      setErrors((prev) => ({ ...prev, reset: t('auth.errors.reset_email_invalid') }));
       return;
     }
 
@@ -187,11 +181,11 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       await sendPasswordResetEmail(auth, resetEmail);
       setForgotPasswordModal(false);
       setResetEmail("");
-      setErrors({ ...initialErrors, success: "Password reset email sent! Please check your inbox." });
+      setErrors({ ...initialErrors, success: t('auth.errors.reset_email_sent') });
     } catch (error) {
-      let errorMessage = "Failed to send reset email";
+      let errorMessage = t('auth.errors.generic_failure');
       if (error.code === "auth/user-not-found") {
-        errorMessage = "No account found with this email address";
+        errorMessage = t('auth.errors.user_not_found');
       }
       setErrors((prev) => ({ ...prev, reset: errorMessage }));
     }
@@ -212,124 +206,120 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
   return (
     <>
-      <div className="space-y-6 rounded-3xl bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 p-6 text-white shadow-2xl">
-        <div className="space-y-3 text-center">
-          <span className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">
-            <SparklesIcon className="h-4 w-4" />
-            WashLab Access
-          </span>
-          <h2 className="text-3xl font-bold">Welcome back</h2>
-          <p className="text-sm text-emerald-100/80">
-            Sign in to pick up where you left off with eco-friendly scheduling and garment tracking.
+      <div className="space-y-8 bg-transparent p-2 text-white">
+        <div className="space-y-3 text-center mb-10">
+          <div className="mx-auto h-14 w-14 flex items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 shadow-xl mb-6 group cursor-default">
+            <SparklesIcon className="h-8 w-8 text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]" />
+          </div>
+          <h2 className="text-3xl font-bold text-white tracking-tight">{t('auth.welcome_back')}</h2>
+          <p className="text-blue-100/60 font-medium">
+            {t('auth.sign_in_subtitle')}
           </p>
         </div>
+
         {errors.general && (
-          <div className="rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded-2xl text-red-100 text-sm animate-shake">
             {errors.general}
           </div>
         )}
         {errors.success && (
-          <div className="rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          <div className="mb-6 p-4 bg-teal-500/20 backdrop-blur-md border border-teal-500/30 rounded-2xl text-teal-100 text-sm">
             {errors.success}
           </div>
         )}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <div className="relative">
-              <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-blue-100/90 ml-1">{t('auth.email_label')}</label>
+            <div className="relative group/input">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <EnvelopeIcon className="h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" />
+              </div>
               <input
                 type="email"
                 name="email"
-                placeholder="Email address"
                 value={form.email}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/60 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+                className="block w-full pl-12 pr-4 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+                placeholder={t('auth.email_placeholder')}
               />
             </div>
-            {errors.email && (
-              <p className="mt-2 text-xs text-red-200">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-red-300 text-xs mt-1 ml-4 font-medium">{errors.email}</p>}
           </div>
-          <div>
-            <div className="relative">
-              <LockClosedIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <label className="text-sm font-semibold text-blue-100/90">{t('auth.password_label')}</label>
+              <button
+                type="button"
+                onClick={() => setForgotPasswordModal(true)}
+                className="text-xs font-bold text-white/60 hover:text-white transition-colors"
+              >
+                {t('auth.forgot_password')}
+              </button>
+            </div>
+            <div className="relative group/input">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <LockClosedIcon className="h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" />
+              </div>
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
-                placeholder="Password"
                 value={form.password}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 pr-14 text-white placeholder:text-emerald-100/60 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+                className="block w-full pl-12 pr-12 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
+                placeholder={t('auth.password_placeholder')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-100/70 transition hover:text-white"
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/40 hover:text-white transition-colors"
               >
-                {showPassword ? (
-                  <EyeSlashIcon className="h-5 w-5" />
-                ) : (
-                  <EyeIcon className="h-5 w-5" />
-                )}
+                {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
               </button>
             </div>
-            {errors.password && (
-              <p className="mt-2 text-xs text-red-200">{errors.password}</p>
-            )}
+            {errors.password && <p className="text-red-300 text-xs mt-1 ml-4 font-medium">{errors.password}</p>}
           </div>
-          <div className="flex items-center justify-between text-sm text-emerald-100/80">
-            <label className="flex items-center gap-3">
-              <span className="relative">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(event) => setRememberMe(event.target.checked)}
-                  className="sr-only"
-                />
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded border transition ${rememberMe ? "border-emerald-400 bg-emerald-500" : "border-white/30 bg-white/5"}`}
-                >
-                  {rememberMe && (
-                    <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </span>
-              </span>
-              Remember me
+
+          <div className="flex items-center px-1">
+            <input
+              id="modal-remember-me"
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(event) => setRememberMe(event.target.checked)}
+              className="h-4 w-4 rounded bg-white/10 border-white/20 text-blue-500 focus:ring-blue-500 transition-colors"
+            />
+            <label htmlFor="modal-remember-me" className="ml-2 block text-sm text-white/60 font-medium">
+              {t('auth.remember_me')}
             </label>
-            <button
-              type="button"
-              onClick={() => setForgotPasswordModal(true)}
-              className="font-semibold text-emerald-200 transition hover:text-white"
-            >
-              Forgot password?
-            </button>
           </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-4 text-sm font-semibold text-white shadow-xl transition hover:from-emerald-400 hover:to-teal-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/60 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full py-4 bg-white text-indigo-700 rounded-2xl font-black text-lg shadow-[0_20px_40px_-15px_rgba(255,255,255,0.3)] hover:shadow-[0_25px_50px_-10px_rgba(255,255,255,0.4)] hover:-translate-y-1 active:translate-y-0 active:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
           >
             {loading ? (
-              <>
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                Signing in...
-              </>
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-6 h-6 border-[3px] border-indigo-700 border-t-transparent rounded-full animate-spin"></div>
+                <span>{t('common.authentication')}</span>
+              </div>
             ) : (
-              "Sign in"
+              t('auth.sign_in')
             )}
           </button>
         </form>
-        <div className="my-6 flex items-center gap-4">
-          <div className="h-px flex-1 bg-white/10"></div>
-          <span className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-100/60">or</span>
-          <div className="h-px flex-1 bg-white/10"></div>
+
+        <div className="mt-8 mb-6 flex items-center gap-4">
+          <div className="flex-1 h-px bg-white/10"></div>
+          <span className="text-white/40 text-xs font-bold uppercase tracking-widest">{t('auth.or_sign_in_with')}</span>
+          <div className="flex-1 h-px bg-white/10"></div>
         </div>
+
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/15 bg-white/10 py-4 text-sm font-semibold text-white transition hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 text-white font-semibold hover:bg-white/10 transition-all duration-300 active:scale-[0.98]"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -337,55 +327,62 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-3.15.81-.62z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
-          Continue with Google
+          {t('auth.google_account')}
         </button>
-        <div className="text-center text-sm text-emerald-100/80">
-          Need an account?{" "}
+
+        <p className="mt-8 text-center text-white/50 text-sm font-medium">
+          {t('auth.new_to_washlab')}{" "}
           <button
             type="button"
             onClick={onSwitchToRegister}
-            className="font-semibold text-white transition hover:text-emerald-200"
+            className="text-white font-black hover:underline transition-colors decoration-blue-400 underline-offset-4"
           >
-            Create one
+            {t('auth.create_account_link')}
           </button>
-        </div>
+        </p>
       </div>
+
+      {/* Forgot Password Modal */}
       {forgotPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 px-4 py-6">
-          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-8 text-white shadow-2xl backdrop-blur-xl">
-            <h3 className="text-2xl font-semibold">Reset password</h3>
-            <p className="mt-2 text-sm text-emerald-100/80">
-              Enter your email address and we'll send you a secure reset link.
-            </p>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
+          <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 backdrop-blur-3xl border border-white/20 rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-scaleIn">
+            <h3 className="text-2xl font-bold text-white mb-2">{t('auth.reset_password')}</h3>
+            <p className="text-white/60 mb-6">{t('auth.reset_password_subtitle')}</p>
+            
             {errors.reset && (
-              <div className="mt-6 rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded-2xl text-red-100 text-sm">
                 {errors.reset}
               </div>
             )}
-            <form onSubmit={handleForgotPassword} className="mt-6 space-y-6">
-              <div className="relative">
-                <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
+
+            <form onSubmit={handleForgotPassword} className="space-y-6">
+              <div className="relative group/input">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <EnvelopeIcon className="h-5 w-5 text-white/40 group-focus-within/input:text-white" />
+                </div>
                 <input
                   type="email"
                   value={resetEmail}
                   onChange={handleResetEmailChange}
-                  placeholder="Your email address"
-                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/60 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+                  className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
+                  placeholder={t('auth.reset_email_placeholder')}
+                  required
                 />
               </div>
-              <div className="flex items-center gap-3">
+
+              <div className="flex gap-4">
                 <button
                   type="button"
                   onClick={closeForgotPassword}
-                  className="flex-1 rounded-2xl border border-white/15 bg-white/10 py-3 text-sm font-semibold text-emerald-100/80 transition hover:bg-white/15"
+                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-semibold hover:bg-white/10 transition-colors"
                 >
-                  Cancel
+                  {t('auth.cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3 text-sm font-semibold text-white transition hover:from-emerald-400 hover:to-teal-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+                  className="flex-1 py-4 bg-white text-indigo-600 rounded-2xl font-bold hover:shadow-lg transition-all"
                 >
-                  Send email
+                  {t('auth.send_link')}
                 </button>
               </div>
             </form>

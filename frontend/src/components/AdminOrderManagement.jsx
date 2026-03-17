@@ -16,7 +16,9 @@ import {
   ChevronDownIcon,
   ExclamationTriangleIcon,
   SparklesIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  UserPlusIcon,
+  UsersIcon
 } from '@heroicons/react/24/outline';
 import api from '../api';
 
@@ -29,6 +31,12 @@ const AdminOrderManagement = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showStaffAssignModal, setShowStaffAssignModal] = useState(false);
+  const [deliveryBoys, setDeliveryBoys] = useState([]);
+  const [laundryStaff, setLaundryStaff] = useState([]);
+  const [selectedDeliveryBoy, setSelectedDeliveryBoy] = useState('');
+  const [selectedLaundryStaff, setSelectedLaundryStaff] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState([]);
 
@@ -102,7 +110,83 @@ const AdminOrderManagement = () => {
 
   useEffect(() => {
     fetchOrders();
+    fetchDeliveryBoys();
+    fetchLaundryStaff();
   }, [statusFilter, priorityFilter, paymentStatusFilter]);
+
+  // Fetch delivery boys for assignment
+  const fetchDeliveryBoys = async () => {
+    try {
+      const response = await api.get('/auth/delivery-boys');
+      if (response.data.deliveryBoys && Array.isArray(response.data.deliveryBoys)) {
+        setDeliveryBoys(response.data.deliveryBoys);
+      }
+    } catch (error) {
+      console.error('Error fetching delivery boys:', error);
+      setDeliveryBoys([]);
+    }
+  };
+
+  // Fetch laundry staff for assignment
+  const fetchLaundryStaff = async () => {
+    try {
+      const response = await api.get('/auth/laundry-staff');
+      if (response.data.laundryStaff && Array.isArray(response.data.laundryStaff)) {
+        setLaundryStaff(response.data.laundryStaff);
+      }
+    } catch (error) {
+      console.error('Error fetching laundry staff:', error);
+      setLaundryStaff([]);
+    }
+  };
+
+  // Assign delivery boy to order
+  const assignDeliveryBoy = async (orderId) => {
+    if (!selectedDeliveryBoy) {
+      alert('Please select a delivery boy');
+      return;
+    }
+    try {
+      setLoading(true);
+      await api.patch(`/orders/${orderId}/assign`, {
+        deliveryBoyId: selectedDeliveryBoy
+      });
+      await fetchOrders();
+      setShowAssignModal(false);
+      setSelectedDeliveryBoy('');
+      setSelectedOrder(null);
+      alert('Delivery boy assigned successfully!');
+    } catch (error) {
+      console.error('Error assigning delivery boy:', error);
+      alert('Failed to assign delivery boy');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Assign laundry staff to order
+  const assignLaundryStaff = async (orderId) => {
+    if (!selectedLaundryStaff) {
+      alert('Please select a laundry staff member');
+      return;
+    }
+    try {
+      setLoading(true);
+      await api.patch(`/orders/${orderId}/assign`, {
+        assignedLaundryStaff: selectedLaundryStaff
+      });
+      await fetchOrders();
+      setShowStaffAssignModal(false);
+      setSelectedLaundryStaff('');
+      setSelectedOrder(null);
+      alert('Laundry staff assigned successfully!');
+    } catch (error) {
+      console.error('Error assigning laundry staff:', error);
+      alert('Failed to assign laundry staff');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Debounced search effect
   useEffect(() => {
@@ -547,6 +631,26 @@ const AdminOrderManagement = () => {
                           >
                             <EyeIcon className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowAssignModal(true);
+                            }}
+                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            title="Assign Delivery Boy"
+                          >
+                            <UserPlusIcon className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowStaffAssignModal(true);
+                            }}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Assign Laundry Staff"
+                          >
+                            <UsersIcon className="w-4 h-4" />
+                          </button>
                           <StatusUpdateDropdown order={order} />
                         </div>
                       </td>
@@ -582,6 +686,168 @@ const AdminOrderManagement = () => {
             setSelectedOrder(null);
           }}
         />
+      )}
+
+      {/* Assign Delivery Boy Modal */}
+      {showAssignModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Assign Delivery Boy</h2>
+              <button 
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedOrder(null);
+                  setSelectedDeliveryBoy('');
+                }} 
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <XMarkIcon className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-600 mb-2">
+                Order: <span className="font-bold">{selectedOrder.orderNumber}</span>
+              </p>
+              <p className="text-gray-600 mb-4">
+                Customer: <span className="font-medium">{selectedOrder.customerInfo?.name}</span>
+              </p>
+              
+              {selectedOrder.deliveryBoyId && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Currently Assigned:</span> {selectedOrder.deliveryBoyId.name || 'Unknown'}
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Delivery Boy
+              </label>
+              <select
+                value={selectedDeliveryBoy}
+                onChange={(e) => setSelectedDeliveryBoy(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">Select a delivery boy...</option>
+                {deliveryBoys.map((db) => (
+                  <option key={db._id} value={db._id}>
+                    {db.name} {db.phone ? `(${db.phone})` : ''} - {db.isBlocked ? '🔴 Blocked' : '🟢 Active'}
+                  </option>
+                ))}
+              </select>
+              {deliveryBoys.length === 0 && (
+                <p className="text-sm text-orange-600 mt-2">
+                  No delivery boys found. Please add delivery boys first.
+                </p>
+              )}
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => assignDeliveryBoy(selectedOrder._id)}
+                disabled={!selectedDeliveryBoy || loading}
+                className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? 'Assigning...' : 'Assign Delivery Boy'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setSelectedOrder(null);
+                  setSelectedDeliveryBoy('');
+                }}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Laundry Staff Modal */}
+      {showStaffAssignModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Assign Laundry Staff</h2>
+              <button 
+                onClick={() => {
+                  setShowStaffAssignModal(false);
+                  setSelectedOrder(null);
+                  setSelectedLaundryStaff('');
+                }} 
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <XMarkIcon className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-600 mb-2">
+                Order: <span className="font-bold">{selectedOrder.orderNumber}</span>
+              </p>
+              <p className="text-gray-600 mb-4">
+                Customer: <span className="font-medium">{selectedOrder.customerInfo?.name}</span>
+              </p>
+              
+              {selectedOrder.assignedLaundryStaff && (
+                <div className="mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                  <p className="text-sm text-indigo-800">
+                    <span className="font-semibold">Currently Assigned:</span> {selectedOrder.assignedLaundryStaff.name || 'Unknown'}
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Laundry Staff
+              </label>
+              <select
+                value={selectedLaundryStaff}
+                onChange={(e) => setSelectedLaundryStaff(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">Select a staff member...</option>
+                {laundryStaff.map((staff) => (
+                  <option key={staff._id} value={staff._id}>
+                    {staff.name} {staff.phone ? `(${staff.phone})` : ''}
+                  </option>
+                ))}
+              </select>
+              {laundryStaff.length === 0 && (
+                <p className="text-sm text-orange-600 mt-2">
+                  No laundry staff found. Please add laundry staff first.
+                </p>
+              )}
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => assignLaundryStaff(selectedOrder._id)}
+                disabled={!selectedLaundryStaff || loading}
+                className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {loading ? 'Assigning...' : 'Assign Staff'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowStaffAssignModal(false);
+                  setSelectedOrder(null);
+                  setSelectedLaundryStaff('');
+                }}
+                className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

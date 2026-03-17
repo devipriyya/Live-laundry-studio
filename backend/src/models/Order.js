@@ -4,6 +4,9 @@ const OrderSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false }, // Changed to false to allow null values during migration
   serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' },
   deliveryBoyId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  deliveryBoyAssignedAt: Date,
+  assignedLaundryStaff: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  laundryStaffAssignedAt: Date,
   orderNumber: { type: String, unique: true, required: true },
   
   // Customer Details
@@ -48,12 +51,19 @@ const OrderSchema = new mongoose.Schema({
       'order-accepted', 
       'out-for-pickup',
       'pickup-completed',
+      'received-at-facility',
+      'washing',
       'wash-in-progress',
       'wash-completed',
       'drying',
+      'cleaning',
+      'pressing',
       'quality-check',
+      'ready-for-pickup',
+      'ready-for-delivery',
       'out-for-delivery',
       'delivery-completed',
+      'delivered',
       'cancelled'
     ],
     default: 'order-placed'
@@ -85,8 +95,31 @@ const OrderSchema = new mongoose.Schema({
   },
   specialInstructions: String,
   notes: String,
+  pickupNote: String,
+  pickupPhoto: String,
+  deliveryNote: String,
+  deliveryPhoto: String,
   recurring: { type: Boolean, default: false },
   frequency: String,
+  
+  // Cloth Damage Insurance
+  insurance: {
+    enabled: { type: Boolean, default: false },
+    cost: { type: Number, default: 0 },
+    coverageAmount: { type: Number, default: 0 },
+    policyType: { type: String, enum: ['none', 'basic', 'premium'], default: 'none' }
+  },
+
+  // Delivery OTP Verification
+  deliveryOTP: {
+    code: { type: String }, // Hashed OTP code
+    generatedAt: { type: Date },
+    expiresAt: { type: Date },
+    attempts: { type: Number, default: 0 },
+    maxAttempts: { type: Number, default: 3 },
+    verified: { type: Boolean, default: false },
+    verifiedAt: { type: Date }
+  },
   
   // Status History
   statusHistory: [{
@@ -94,7 +127,9 @@ const OrderSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     note: String
-  }]
+  }],
+  isReviewed: { type: Boolean, default: false },
+  rating: { type: Number, min: 1, max: 5 }
 }, { timestamps: true });
 
 // Add index for faster queries (removed duplicate orderNumber index)

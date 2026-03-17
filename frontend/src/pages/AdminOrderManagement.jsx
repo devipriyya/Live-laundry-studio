@@ -15,7 +15,9 @@ import {
   EnvelopeIcon,
   MapPinIcon,
   TruckIcon,
-  ArrowDownTrayIcon
+  ArrowDownTrayIcon,
+  PhotoIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api';
@@ -32,7 +34,9 @@ const AdminOrderManagement = () => {
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [staffMembers, setStaffMembers] = useState([]);
+  const [laundryStaffMembers, setLaundryStaffMembers] = useState([]);
   const [selectedStaff, setSelectedStaff] = useState('');
+  const [staffType, setStaffType] = useState('delivery'); // 'delivery' or 'laundry'
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [authRetryAttempted, setAuthRetryAttempted] = useState(false);
@@ -253,10 +257,10 @@ const AdminOrderManagement = () => {
           search: searchTerm || undefined
         }
       });
-      
+
       // Correctly extract orders from the paginated response
       const ordersData = response.data.orders || [];
-      
+
       // Ensure ordersData is an array
       if (Array.isArray(ordersData)) {
         setOrders(ordersData);
@@ -303,11 +307,24 @@ const AdminOrderManagement = () => {
         return;
       }
       console.error('Error fetching delivery boys:', error);
-      setStaffMembers([
-        { _id: '1', name: 'Mike Johnson', email: 'mike@fabrico.com' },
-        { _id: '2', name: 'Sarah Wilson', email: 'sarah@fabrico.com' },
-        { _id: '3', name: 'Tom Parker', email: 'tom@fabrico.com' }
-      ]);
+      setStaffMembers([]);
+    }
+  };
+
+  const fetchLaundryStaff = async () => {
+    if (!isAuthorized) {
+      return;
+    }
+    try {
+      const response = await api.get('/auth/laundry-staff');
+      if (response.data.laundryStaff && Array.isArray(response.data.laundryStaff)) {
+        setLaundryStaffMembers(response.data.laundryStaff);
+      } else {
+        setLaundryStaffMembers([]);
+      }
+    } catch (error) {
+      console.error('Error fetching laundry staff:', error);
+      setLaundryStaffMembers([]);
     }
   };
 
@@ -317,6 +334,7 @@ const AdminOrderManagement = () => {
     }
     fetchOrders();
     fetchDeliveryBoys();
+    fetchLaundryStaff();
   }, [statusFilter, isAuthorized]);
 
   useEffect(() => {
@@ -402,7 +420,7 @@ const AdminOrderManagement = () => {
         },
         items: [{ name: 'Test Service' }]
       };
-      
+
       const response = await api.post('/notifications/test-order-email', {
         order: testOrder,
         status: 'order-accepted',
@@ -417,20 +435,26 @@ const AdminOrderManagement = () => {
     }
   };
 
-  const assignStaffToOrder = async (orderId) => {
-    if (!selectedStaff) {
+  const assignStaffToOrder = async (orderId, unassign = false) => {
+    if (!selectedStaff && !unassign) {
       alert('Please select a staff member');
       return;
     }
     try {
       setLoading(true);
-      await api.patch(`/orders/${orderId}/assign`, {
-        deliveryBoyId: selectedStaff
-      });
+
+      const payload = {};
+      if (staffType === 'delivery') {
+        payload.deliveryBoyId = unassign ? null : selectedStaff;
+      } else {
+        payload.assignedLaundryStaff = unassign ? null : selectedStaff;
+      }
+
+      await api.patch(`/orders/${orderId}/assign`, payload);
       await fetchOrders();
       setShowStaffModal(false);
       setSelectedStaff('');
-      alert('Staff assigned successfully');
+      alert(unassign ? 'Staff unassigned successfully' : 'Staff assigned successfully');
     } catch (error) {
       console.error('Error assigning staff:', error);
       alert('Failed to assign staff');
@@ -570,9 +594,8 @@ const AdminOrderManagement = () => {
                 {workflowStatuses.filter(s => s.step > 0 && s.step < 9).map((status, idx) => (
                   <div key={status.value} className="flex items-center">
                     <div className="flex flex-col items-center">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${
-                        status.step <= currentStatus.step ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
-                      }`}>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${status.step <= currentStatus.step ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
+                        }`}>
                         {status.icon}
                       </div>
                       <span className="text-xs mt-2 text-center font-medium">{status.label}</span>
@@ -635,13 +658,67 @@ const AdminOrderManagement = () => {
                     <div className="flex items-center gap-3">
                       <TruckIcon className="w-5 h-5 text-green-700" />
                       <div>
-                        <p className="text-sm text-green-700">Assigned Staff</p>
-                        <p className="font-bold text-green-900">{order.deliveryBoyId.name || 'Staff Member'}</p>
+                        <p className="text-sm text-green-700">Delivery Boy</p>
+                        <p className="font-bold text-green-900">{order.deliveryBoyId.name}</p>
+                        {order.deliveryBoyAssignedAt && (
+                          <p className="text-xs text-green-600">Assigned: {formatDate(order.deliveryBoyAssignedAt)}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {order.assignedLaundryStaff && (
+                    <div className="flex items-center gap-3">
+                      <UserPlusIcon className="w-5 h-5 text-green-700" />
+                      <div>
+                        <p className="text-sm text-green-700">Laundry Staff</p>
+                        <p className="font-bold text-green-900">{order.assignedLaundryStaff.name}</p>
+                        {order.laundryStaffAssignedAt && (
+                          <p className="text-xs text-green-600">Assigned: {formatDate(order.laundryStaffAssignedAt)}</p>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* Delivery Proof for Admin */}
+              {order.status === 'delivery-completed' && (order.deliveryNote || order.deliveryPhoto) && (
+                <div className="bg-orange-50 rounded-xl p-6 border border-orange-200 mb-6">
+                  <h3 className="text-lg font-bold text-orange-900 mb-4 flex items-center gap-2">
+                    <CheckCircleIcon className="w-5 h-5" />
+                    Proof of Delivery Confirmation
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {order.deliveryNote && (
+                      <div>
+                        <p className="text-sm text-orange-700 font-medium mb-1 flex items-center gap-1">
+                          <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                          Delivery Note
+                        </p>
+                        <div className="bg-white/50 rounded-lg p-4 border border-orange-100 h-full">
+                          <p className="text-orange-900 italic">"{order.deliveryNote}"</p>
+                        </div>
+                      </div>
+                    )}
+                    {order.deliveryPhoto && (
+                      <div>
+                        <p className="text-sm text-orange-700 font-medium mb-1 flex items-center gap-1">
+                          <PhotoIcon className="w-4 h-4" />
+                          Delivery Proof Photo
+                        </p>
+                        <div className="rounded-xl overflow-hidden border-2 border-orange-200 shadow-sm bg-white p-1">
+                          <img 
+                            src={order.deliveryPhoto} 
+                            alt="Proof of Delivery" 
+                            className="w-full h-auto max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => window.open(order.deliveryPhoto, '_blank')}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mb-6">
@@ -688,7 +765,18 @@ const AdminOrderManagement = () => {
                 className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700"
               >
                 <UserPlusIcon className="w-5 h-5" />
-                Assign Delivery Boy
+                Assign Staff
+              </button>
+              <button
+                onClick={() => {
+                  setStaffType('laundry');
+                  setShowStaffModal(true);
+                  setShowOrderModal(false);
+                }}
+                className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+              >
+                <UserPlusIcon className="w-5 h-5" />
+                Assign Laundry Staff
               </button>
               <button
                 onClick={() => generateInvoice(order._id)}
@@ -739,22 +827,50 @@ const AdminOrderManagement = () => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Assign Delivery Boy</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Assign Staff</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
             <XCircleIcon className="w-6 h-6 text-gray-600" />
           </button>
         </div>
+
+        <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg">
+          <button
+            onClick={() => {
+              setStaffType('delivery');
+              setSelectedStaff('');
+            }}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${staffType === 'delivery'
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+              }`}
+          >
+            Delivery Staff
+          </button>
+          <button
+            onClick={() => {
+              setStaffType('laundry');
+              setSelectedStaff('');
+            }}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${staffType === 'laundry'
+                ? 'bg-white text-indigo-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+              }`}
+          >
+            Laundry Staff
+          </button>
+        </div>
+
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Delivery Boy
+            Select {staffType === 'delivery' ? 'Delivery Staff' : 'Laundry Staff'}
           </label>
           <select
             value={selectedStaff}
             onChange={(e) => setSelectedStaff(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           >
-            <option value="">Select a delivery boy...</option>
-            {staffMembers.map((staff) => (
+            <option value="">Select a person...</option>
+            {(staffType === 'delivery' ? staffMembers : laundryStaffMembers).map((staff) => (
               <option key={staff._id} value={staff._id}>
                 {staff.name} ({staff.activeOrders || 0} active orders)
               </option>
@@ -764,14 +880,22 @@ const AdminOrderManagement = () => {
         <div className="flex gap-3">
           <button
             onClick={() => assignStaffToOrder(selectedOrder._id)}
-            className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+            className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50"
             disabled={!selectedStaff}
           >
-            Assign Delivery Boy
+            { (staffType === 'delivery' ? selectedOrder.deliveryBoyId : selectedOrder.assignedLaundryStaff) ? 'Reassign' : 'Assign' }
           </button>
+          { (staffType === 'delivery' ? selectedOrder.deliveryBoyId : selectedOrder.assignedLaundryStaff) && (
+            <button
+              onClick={() => assignStaffToOrder(selectedOrder._id, true)}
+              className="flex-1 px-6 py-3 bg-red-100 text-red-600 rounded-xl hover:bg-red-200"
+            >
+              Unassign
+            </button>
+          )}
           <button
             onClick={onClose}
-            className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300"
+            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300"
           >
             Cancel
           </button>
@@ -786,7 +910,7 @@ const AdminOrderManagement = () => {
       const response = await api.get(`/orders/export/${format}`, {
         responseType: 'blob'
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -794,7 +918,7 @@ const AdminOrderManagement = () => {
       link.setAttribute('download', `orders-export.${format}`);
       document.body.appendChild(link);
       link.click();
-      
+
       // Clean up
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
@@ -943,6 +1067,7 @@ const AdminOrderManagement = () => {
                     <th className="px-6 py-4 text-left text-sm font-bold">Order ID</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Customer</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Status</th>
+                    <th className="px-6 py-4 text-left text-sm font-bold">Staff</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Items</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Amount</th>
                     <th className="px-6 py-4 text-left text-sm font-bold">Date</th>
@@ -965,6 +1090,29 @@ const AdminOrderManagement = () => {
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusInfo(order.status).color}`}>
                           {getStatusInfo(order.status).icon} {getStatusInfo(order.status).label}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm">
+                          {order.deliveryBoyId ? (
+                            <div className="mb-1">
+                              <span className="font-medium text-gray-900">🚚 {order.deliveryBoyId.name}</span>
+                              {order.deliveryBoyAssignedAt && (
+                                <div className="text-xs text-gray-500">{formatDate(order.deliveryBoyAssignedAt)}</div>
+                              )}
+                            </div>
+                          ) : null}
+                          {order.assignedLaundryStaff ? (
+                            <div>
+                              <span className="font-medium text-gray-900">🧼 {order.assignedLaundryStaff.name}</span>
+                              {order.laundryStaffAssignedAt && (
+                                <div className="text-xs text-gray-500">{formatDate(order.laundryStaffAssignedAt)}</div>
+                              )}
+                            </div>
+                          ) : null}
+                          {!order.deliveryBoyId && !order.assignedLaundryStaff && (
+                            <span className="text-gray-400 italic">Not assigned</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900 font-medium">
@@ -996,6 +1144,17 @@ const AdminOrderManagement = () => {
                             }}
                             className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                             title="Assign Staff"
+                          >
+                            <UserPlusIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setStaffType('laundry');
+                              setShowStaffModal(true);
+                            }}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Assign Laundry Staff"
                           >
                             <UserPlusIcon className="w-5 h-5" />
                           </button>

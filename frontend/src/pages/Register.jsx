@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -6,6 +7,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
+import LanguageToggle from "../components/LanguageToggle";
 import {
   EyeIcon,
   EyeSlashIcon,
@@ -17,16 +19,17 @@ import {
 } from "@heroicons/react/24/outline";
 import api from "../api";
 
-const initialErrors = {
-  name: "",
-  email: "",
-  password: "",
-  confirmPassword: "",
-  general: "",
-  success: "",
-};
-
 const Register = () => {
+  const { t } = useTranslation();
+  const initialErrors = {
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    general: "",
+    success: "",
+  };
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -54,32 +57,31 @@ const Register = () => {
     const validationErrors = { ...initialErrors };
 
     if (!form.name.trim()) {
-      validationErrors.name = "Name is required";
+      validationErrors.name = t('auth.errors.name_required');
     } else if (form.name.trim().length < 2) {
-      validationErrors.name = "Name must be at least 2 characters";
+      validationErrors.name = t('auth.errors.name_min_length');
     } else if (!/^[a-zA-Z\s]+$/.test(form.name.trim())) {
-      validationErrors.name = "Name can only contain letters and spaces";
+      validationErrors.name = t('auth.errors.name_letters_only');
     }
 
     if (!form.email.trim()) {
-      validationErrors.email = "Email is required";
+      validationErrors.email = t('auth.errors.email_required');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      validationErrors.email = "Please enter a valid email address";
+      validationErrors.email = t('auth.errors.email_invalid');
     }
 
     if (!form.password) {
-      validationErrors.password = "Password is required";
+      validationErrors.password = t('auth.errors.password_required');
     } else if (form.password.length < 8) {
-      validationErrors.password = "Password must be at least 8 characters";
+      validationErrors.password = t('auth.errors.password_min_length');
     } else if (calculatePasswordStrength(form.password) < 3) {
-      validationErrors.password =
-        "Password is too weak. Include uppercase, lowercase, numbers, and special characters";
+      validationErrors.password = t('auth.errors.password_weak');
     }
 
     if (!form.confirmPassword) {
-      validationErrors.confirmPassword = "Please confirm your password";
+      validationErrors.confirmPassword = t('auth.errors.confirm_password_required');
     } else if (form.password !== form.confirmPassword) {
-      validationErrors.confirmPassword = "Passwords do not match";
+      validationErrors.confirmPassword = t('auth.errors.passwords_not_match');
     }
 
     setErrors(validationErrors);
@@ -120,21 +122,17 @@ const Register = () => {
     let firebaseUser = null;
 
     try {
-      console.log("Step 1: Registering with Firebase");
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         form.email,
         form.password
       );
       firebaseUser = userCredential.user;
-      console.log("Firebase registration successful:", firebaseUser.uid);
 
       await updateProfile(firebaseUser, { displayName: form.name });
-      console.log("Firebase profile updated");
 
       try {
-        console.log("Step 2: Registering with backend API");
-        const backendResponse = await api.post("/auth/register", {
+        await api.post("/auth/register", {
           name: form.name,
           email: form.email,
           password: form.password,
@@ -142,70 +140,48 @@ const Register = () => {
           firebaseUid: firebaseUser.uid,
         });
 
-        console.log("Backend registration successful:", backendResponse.data);
-
         setErrors((prev) => ({
           ...prev,
-          success: "Registration successful! Please sign in to continue...",
+          success: t('auth.registration_success_msg'),
         }));
-
-        console.log("Registration completed successfully");
 
         setTimeout(() => navigate("/login"), 2000);
       } catch (backendError) {
-        console.error("Backend registration failed:", backendError);
-        console.log("Step 3: Cleaning up Firebase user after backend failure");
-
-        // Check if it's a "User already exists" error
         if (backendError.response?.data?.message?.includes("User already exists")) {
-          // In this case, we don't need to delete the Firebase user
-          // The user should just login instead
-          console.log("User already exists in backend. Redirecting to login.");
           setErrors((prev) => ({ 
             ...prev, 
-            general: "An account with this email already exists. Please login instead.",
+            general: t('auth.errors.email_exists'),
             success: ""
           }));
         } else {
-          // For other errors, try to clean up the Firebase user
           try {
-            console.log("Attempting to delete Firebase user:", firebaseUser?.uid);
-            if (firebaseUser) {
-              await firebaseUser.delete();
-              console.log("Firebase user deleted successfully");
-            } else {
-              console.log("No Firebase user to delete");
-            }
+            if (firebaseUser) await firebaseUser.delete();
           } catch (deleteError) {
             console.error("Failed to delete Firebase user:", deleteError);
-            console.warn("User exists in Firebase but not in MongoDB - cleanup failed");
           }
 
-          const errorMessage = backendError.response?.data?.message || "Registration failed. Please try again.";
-          console.log("Throwing error with message:", errorMessage);
+          const errorMessage = backendError.response?.data?.message || t('auth.errors.generic_failure');
           throw new Error(errorMessage);
         }
       }
     } catch (error) {
-      console.error("Registration process error:", error);
-
-      let errorMessage = "Registration failed. Please try again.";
+      let errorMessage = t('auth.errors.generic_failure');
 
       switch (error.code) {
         case "auth/email-already-in-use":
-          errorMessage = "An account with this email already exists. Please login instead.";
+          errorMessage = t('auth.errors.email_exists');
           break;
         case "auth/invalid-email":
-          errorMessage = "Invalid email address";
+          errorMessage = t('auth.errors.email_invalid');
           break;
         case "auth/weak-password":
-          errorMessage = "Password is too weak";
+          errorMessage = t('auth.errors.password_weak_firebase');
           break;
         case "auth/operation-not-allowed":
-          errorMessage = "Email/password registration is currently disabled.";
+          errorMessage = t('auth.errors.registration_disabled');
           break;
         case "auth/network-request-failed":
-          errorMessage = "Network error. Please check your connection and try again.";
+          errorMessage = t('auth.errors.network_error');
           break;
         default:
           if (error.message) {
@@ -213,12 +189,9 @@ const Register = () => {
           }
           break;
       }
-
-      console.log("Setting error message for user:", errorMessage);
       setErrors((prev) => ({ ...prev, general: errorMessage }));
     } finally {
       setLoading(false);
-      console.log("Registration process completed");
     }
   };
 
@@ -241,7 +214,7 @@ const Register = () => {
 
       navigate("/dashboard");
     } catch (error) {
-      setErrors((prev) => ({ ...prev, general: "Google sign-up failed. Please try again." }));
+      setErrors((prev) => ({ ...prev, general: t('auth.errors.google_failure') }));
     } finally {
       setLoading(false);
     }
@@ -255,225 +228,194 @@ const Register = () => {
   };
 
   const getPasswordStrengthText = () => {
-    if (passwordStrength <= 2) return "Weak";
-    if (passwordStrength <= 3) return "Fair";
-    if (passwordStrength <= 4) return "Good";
-    return "Strong";
+    if (passwordStrength <= 2) return t('auth.strength.weak');
+    if (passwordStrength <= 3) return t('auth.strength.fair');
+    if (passwordStrength <= 4) return t('auth.strength.good');
+    return t('auth.strength.strong');
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900">
-      <div className="absolute inset-0">
-        <div className="absolute -top-20 -left-16 h-96 w-96 rounded-full bg-emerald-500/40 blur-3xl"></div>
-        <div className="absolute top-10 -right-32 h-[28rem] w-[28rem] rounded-full bg-cyan-500/30 blur-3xl"></div>
-        <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-teal-500/20 blur-3xl"></div>
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:60px_60px]"></div>
-      </div>
-
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-16 sm:px-8">
-        <div className="grid w-full max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
-          <div className="space-y-10 text-white">
-            <div className="space-y-4">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-emerald-200">
-                <SparklesIcon className="h-4 w-4" />
-                Premium Eco Laundry
-              </span>
-              <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
-                Reimagine laundry care with WashLab
-              </h1>
-              <p className="max-w-lg text-lg text-emerald-100/80">
-                Create an account to unlock zero-contact pickups, smart scheduling, and detailed garment tracking crafted for modern households.
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition duration-300 hover:border-emerald-300/40 hover:bg-white/10">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500">
-                  <ShieldCheckIcon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Trusted garment care</p>
-                  <p className="text-xs text-emerald-100/80">Dedicated fabric specialists for every order</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-5 transition duration-300 hover:border-emerald-300/40 hover:bg-white/10">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500">
-                  <LockClosedIcon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Protected & private</p>
-                  <p className="text-xs text-emerald-100/80">Secure account creation with real-time sync</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-emerald-100/80">
-              Enjoy personalized recommendations, priority express slots, loyalty perks, and more inside your WashLab dashboard.
-            </div>
+    <div className="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-[#FFFBEB] via-white to-[#FEF3C7] overflow-hidden px-4 py-12 font-sans">
+      <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[#FBBF24]/5 blur-[100px] animate-pulse"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-amber-200/10 blur-[100px] animate-pulse delay-1000"></div>
+      
+      <div className="relative w-full max-w-[480px] animate-fadeIn">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center p-5 rounded-[2rem] bg-white shadow-xl shadow-amber-100/50 mb-6 group transition-all duration-500 hover:rotate-6">
+            <SparklesIcon className="h-10 w-10 text-[#FBBF24]" />
           </div>
+          <h1 className="text-4xl font-black text-[#0F172A] tracking-tight mb-2">WashLab</h1>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-[0.2em]">{t('dashboard.hero_subtitle')}</p>
+        </div>
 
-          <div className="w-full">
-            <div className="mx-auto w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
-              <div className="mb-8 space-y-2 text-center">
-                <h2 className="text-3xl font-bold text-white">Register into WashLab</h2>
-                <p className="text-sm text-emerald-100/80">Sign up to schedule your first pickup in minutes</p>
-              </div>
-
-              {errors.general && (
-                <div className="mb-6 rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                  {errors.general}
-                </div>
-              )}
-
-              {errors.success && (
-                <div className="mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                  {errors.success}
-                </div>
-              )}
-
-              <form onSubmit={handleRegister} className="space-y-5">
-                <div>
-                  <div className="relative">
-                    <UserIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
-                    <input
-                      type="text"
-                      name="name"
-                      value={form.name}
-                      onChange={handleChange}
-                      placeholder="Full name"
-                      className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/50 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
-                    />
-                  </div>
-                  {errors.name && (
-                    <p className="mt-2 text-xs text-red-200">{errors.name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="relative">
-                    <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="Email address"
-                      className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/50 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="mt-2 text-xs text-red-200">{errors.email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="relative">
-                    <LockClosedIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="password"
-                      value={form.password}
-                      onChange={handleChange}
-                      placeholder="Create password"
-                      className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 pr-14 text-white placeholder:text-emerald-100/50 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-100/70 transition hover:text-white"
-                    >
-                      {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {form.password && (
-                    <div className="mt-3 space-y-2">
-                      <div className="flex items-center justify-between text-xs text-emerald-100/70">
-                        <span>Password strength</span>
-                        <span className="font-semibold text-white">{getPasswordStrengthText()}</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-white/10">
-                        <div
-                          className={`h-full rounded-full ${getPasswordStrengthColor()}`}
-                          style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-                  {errors.password && (
-                    <p className="mt-2 text-xs text-red-200">{errors.password}</p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="relative">
-                    <LockClosedIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-200/70" />
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      name="confirmPassword"
-                      value={form.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="Confirm password"
-                      className="w-full rounded-2xl border border-white/10 bg-white/10 px-12 py-4 pr-14 text-white placeholder:text-emerald-100/50 focus:border-emerald-300 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((prev) => !prev)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-100/70 transition hover:text-white"
-                    >
-                      {showConfirmPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-2 text-xs text-red-200">{errors.confirmPassword}</p>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 px-6 py-4 text-lg font-semibold text-slate-950 transition duration-300 hover:from-emerald-300 hover:via-teal-300 hover:to-cyan-300 focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? (
-                    <>
-                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-900/60 border-t-transparent"></span>
-                      Creating account...
-                    </>
-                  ) : (
-                    "Create account"
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-6 space-y-4 text-center">
-                <p className="text-sm text-emerald-100/70">
-                  Already have an account?
-                  <Link to="/login" className="ml-2 font-semibold text-emerald-200 transition hover:text-white">
-                    Sign in
-                  </Link>
-                </p>
-
-                <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-emerald-100/60">
-                  <div className="h-px flex-1 bg-white/10"></div>
-                  or
-                  <div className="h-px flex-1 bg-white/10"></div>
-                </div>
-
-                <button
-                  onClick={handleGoogleSignUp}
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white px-6 py-4 text-sm font-semibold text-slate-900 transition duration-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 256 262" role="img" aria-label="Google logo">
-                    <path fill="#4285F4" d="M255.68 131.19c0-8.76-.72-17.82-2.28-26.4H130.56v50.1h70.2c-2.82 15.24-11.34 28.26-24.12 36.96v30.72h38.88c22.68-20.88 35.16-51.66 35.16-91.38z" />
-                    <path fill="#34A853" d="M130.56 261.1c32.4 0 59.58-10.74 79.44-29.13l-38.88-30.72c-10.8 7.2-24.66 11.31-40.56 11.31-31.14 0-57.48-20.79-66.84-48.9H23.64v30.6c19.74 39.42 60.84 66.84 106.92 66.84z" />
-                    <path fill="#FBBC05" d="M63.72 163.66c-4.86-15.24-4.86-31.86 0-47.1V85.96H23.64c-19.8 39.48-19.8 86.04 0 125.52l40.08-29.88z" />
-                    <path fill="#EA4335" d="M130.56 51.18c17.64-.3 34.32 6.12 47.1 18.12l35.19-35.19C190.08 11.13 161.01-.51 130.56.02 84.48.02 43.38 27.44 23.64 66.86l40.08 30.6c9.18-28.14 35.52-48.93 66.84-48.93z" />
-                  </svg>
-                  Continue with Google
-                </button>
-              </div>
+        <div className="bg-white rounded-[3rem] p-8 sm:p-14 shadow-[0_25px_50px_-12px_rgba(251,191,36,0.15)] border border-amber-50 relative overflow-hidden">
+          <div className="absolute top-4 right-8">
+            <LanguageToggle />
+          </div>
+          <div className="relative z-10">
+            <div className="mb-8 text-center">
+              <h2 className="text-2xl font-black text-[#0F172A] mb-2">{t('auth.create_account')}</h2>
+              <p className="text-slate-400 font-medium text-sm">{t('auth.join_revolution')}</p>
             </div>
+
+            {errors.general && (
+              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-xl text-red-700 text-xs font-bold animate-shake">
+                {errors.general}
+              </div>
+            )}
+            
+            {errors.success && (
+              <div className="mb-6 p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-xl text-emerald-700 text-xs font-bold">
+                {errors.success}
+              </div>
+            )}
+
+            <form onSubmit={handleRegister} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('auth.name_label')}</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <UserIcon className="h-5 w-5 text-slate-300 group-focus-within:text-[#FBBF24] transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[#0F172A] placeholder-slate-300 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/20 focus:border-[#FBBF24] focus:bg-white transition-all duration-300"
+                    placeholder="John Doe"
+                  />
+                </div>
+                {errors.name && <p className="text-red-500 text-[10px] font-bold mt-1 ml-4 uppercase tracking-tighter">{errors.name}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('auth.email_label')}</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <EnvelopeIcon className="h-5 w-5 text-slate-300 group-focus-within:text-[#FBBF24] transition-colors" />
+                  </div>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[#0F172A] placeholder-slate-300 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/20 focus:border-[#FBBF24] focus:bg-white transition-all duration-300"
+                    placeholder="name@email.com"
+                  />
+                </div>
+                {errors.email && <p className="text-red-500 text-[10px] font-bold mt-1 ml-4 uppercase tracking-tighter">{errors.email}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('auth.password_label')}</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <LockClosedIcon className="h-5 w-5 text-slate-300 group-focus-within:text-[#FBBF24] transition-colors" />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="block w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[#0F172A] placeholder-slate-300 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/20 focus:border-[#FBBF24] focus:bg-white transition-all duration-300"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-[#0F172A] transition-colors"
+                  >
+                    {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  </button>
+                </div>
+                {form.password && (
+                  <div className="mt-3 px-1">
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                      <span className="text-slate-400">{t('auth.strength_label')}</span>
+                      <span className={passwordStrength > 3 ? "text-emerald-500" : "text-amber-500"}>{getPasswordStrengthText()}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-700 ${getPasswordStrengthColor()}`}
+                        style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+                {errors.password && <p className="text-red-500 text-[10px] font-bold mt-1 ml-4 uppercase tracking-tighter">{errors.password}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('auth.confirm_password_label')}</label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <LockClosedIcon className="h-5 w-5 text-slate-300 group-focus-within:text-[#FBBF24] transition-colors" />
+                  </div>
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    className="block w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[#0F172A] placeholder-slate-300 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-[#FBBF24]/20 focus:border-[#FBBF24] focus:bg-white transition-all duration-300"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-300 hover:text-[#0F172A] transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                  </button>
+                </div>
+                {errors.confirmPassword && <p className="text-red-500 text-[10px] font-bold mt-1 ml-4 uppercase tracking-tighter">{errors.confirmPassword}</p>}
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-5 bg-[#0F172A] text-[#FBBF24] rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-[#1E293B] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="w-4 h-4 border-2 border-[#FBBF24] border-t-transparent rounded-full animate-spin"></div>
+                    <span>{t('common.processing')}</span>
+                  </div>
+                ) : (
+                  t('auth.create_account')
+                )}
+              </button>
+            </form>
+
+            <div className="my-8 flex items-center gap-4">
+              <div className="flex-1 h-px bg-slate-100"></div>
+              <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">{t('auth.or_signup_with')}</span>
+              <div className="flex-1 h-px bg-slate-100"></div>
+            </div>
+
+            <button
+              onClick={handleGoogleSignUp}
+              disabled={loading}
+              className="w-full py-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-center gap-3 text-slate-600 font-bold text-xs hover:bg-slate-50 transition-all active:scale-[0.98]"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-3.15.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              {t('auth.google_account')}
+            </button>
+
+            <p className="mt-10 text-center text-slate-400 text-sm font-medium">
+              {t('auth.already_have_account')}{" "}
+              <Link
+                to="/login"
+                className="text-[#FBBF24] font-black hover:text-amber-600 transition-all underline decoration-amber-200 underline-offset-8"
+              >
+                {t('auth.sign_in')}
+              </Link>
+            </p>
           </div>
         </div>
       </div>

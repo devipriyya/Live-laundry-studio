@@ -88,40 +88,52 @@ const DashboardCart = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="divide-y divide-gray-100">
                 {cart.map((item) => (
-                  <div key={item.id} className="p-6 flex items-center">
-                    <div className="text-4xl mr-4">{item.image}</div>
-                    <div className="flex-1">
-                      <div className="flex justify-between">
+                  <div key={item.id} className="p-6 flex items-center group hover:bg-gray-50/50 transition-colors">
+                    <div className="w-24 h-24 rounded-2xl bg-gray-50 flex items-center justify-center p-2 shrink-0 overflow-hidden shadow-inner group-hover:scale-105 transition-transform duration-300">
+                      {item.image && item.image.includes('.png') ? (
+                        <img 
+                          src={`/images/products/${item.image}`} 
+                          alt={item.name}
+                          className="w-full h-full object-contain"
+                        />
+                      ) : (
+                        <div className="text-4xl">{item.image || '🛍️'}</div>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 ml-6">
+                      <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-medium text-gray-900">{item.name}</h3>
-                          <p className="text-gray-600 text-sm">{item.description}</p>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-pink-500 mb-1 block">{item.category}</span>
+                          <h3 className="font-bold text-gray-900 text-lg mb-1">{item.name}</h3>
+                          <p className="text-gray-500 text-xs line-clamp-1">{item.description}</p>
                         </div>
                         <button 
                           onClick={() => removeFromCart(item.id)}
-                          className="text-gray-400 hover:text-red-500"
+                          className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
                         >
                           <XMarkIcon className="h-5 w-5" />
                         </button>
                       </div>
                       
-                      <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center">
+                      <div className="flex items-center justify-between mt-6">
+                        <div className="flex items-center bg-gray-100 rounded-xl p-1 shadow-inner">
                           <button
                             onClick={() => handleQuantityChange(item.id, -1)}
-                            className="p-1 text-gray-500 hover:text-gray-700"
+                            className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg transition-all"
                           >
-                            <MinusIcon className="h-4 w-4" />
+                            <MinusIcon className="h-4 w-4 text-gray-600" />
                           </button>
-                          <span className="mx-3 text-gray-900 font-medium">{item.quantity}</span>
+                          <span className="mx-4 text-gray-900 font-black text-sm">{item.quantity}</span>
                           <button
                             onClick={() => handleQuantityChange(item.id, 1)}
-                            className="p-1 text-gray-500 hover:text-gray-700"
+                            className="p-1.5 hover:bg-white hover:shadow-sm rounded-lg transition-all"
                           >
-                            <PlusIcon className="h-4 w-4" />
+                            <PlusIcon className="h-4 w-4 text-gray-600" />
                           </button>
                         </div>
                         
-                        <div className="text-lg font-bold text-gray-900">
+                        <div className="text-xl font-black text-gray-900 tracking-tight">
                           ₹{(item.price * item.quantity).toFixed(2)}
                         </div>
                       </div>

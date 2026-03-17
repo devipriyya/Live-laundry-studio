@@ -53,56 +53,60 @@ const DashboardWishlist = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {wishlist.map((product) => (
-            <div key={product.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300">
-              <div className="flex justify-between items-start mb-4">
-                <div className="text-4xl">{product.image}</div>
+            <div key={product.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 group hover:shadow-xl transition-all duration-500 hover:-translate-y-1">
+              {/* Product Image Wrapper */}
+              <div className="relative group/image overflow-hidden rounded-2xl mb-4 bg-gray-50 aspect-square flex items-center justify-center">
+                {product.image && product.image.includes('.png') ? (
+                  <img 
+                    src={`/images/products/${product.image}`} 
+                    alt={product.name}
+                    className="w-full h-full object-contain group-hover/image:scale-110 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="text-6xl group-hover/image:scale-110 transition-transform duration-500">{product.image || '🛍️'}</div>
+                )}
+                
                 <button 
                   onClick={() => toggleWishlist(product)}
-                  className="text-rose-500 hover:text-rose-700"
+                  className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full text-rose-500 hover:bg-rose-500 hover:text-white transition-all shadow-sm z-10"
                 >
-                  <HeartIcon className="h-6 w-6 fill-current" />
+                  <HeartIcon className="h-5 w-5 fill-current" />
+                </button>
+
+                <div className="absolute top-3 left-3 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[10px] font-black uppercase tracking-wider text-gray-700 shadow-sm">
+                  {product.category}
+                </div>
+              </div>
+
+              <div className="px-1">
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="font-bold text-gray-900 text-sm line-clamp-1">{product.name}</h3>
+                  <div className="flex items-center text-yellow-400">
+                    <StarIcon className="h-3 w-3 fill-current" />
+                    <span className="text-[10px] font-bold ml-1 text-gray-700">{product.rating}</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500 mb-4 line-clamp-2">{product.description}</p>
+                
+                <div className="flex items-center justify-between mb-5">
+                  <div className="text-xl font-black text-gray-900">₹{product.price}</div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    product.availability === 'In Stock' 
+                      ? 'bg-emerald-50 text-emerald-600' 
+                      : 'bg-amber-50 text-amber-600'
+                  }`}>
+                    {product.availability}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => handleAddToCart(product)}
+                  className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-bold py-3 rounded-xl transition-all shadow-md active:scale-95 text-xs"
+                >
+                  <ShoppingCartIcon className="h-4 w-4" />
+                  <span>Add to Cart</span>
                 </button>
               </div>
-              
-              <h3 className="font-bold text-gray-900 mb-2">{product.name}</h3>
-              <p className="text-sm text-gray-600 mb-3">{product.description}</p>
-              
-              <div className="flex items-center mb-4">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className={`h-4 w-4 ${i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-                <span className="text-sm text-gray-600 ml-2">({product.rating})</span>
-              </div>
-              
-              <div className="text-xl font-bold text-gray-900 mb-4">₹{product.price}</div>
-              
-              <div className="mb-4">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  product.availability === 'In Stock' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {product.availability}
-                </span>
-              </div>
-              
-              <button
-                onClick={() => handleAddToCart(product)}
-                className="w-full flex items-center justify-center space-x-2 bg-pink-600 hover:bg-pink-700 text-white py-2 px-4 rounded-lg transition-colors"
-              >
-                <ShoppingCartIcon className="h-5 w-5" />
-                <span>Add to Cart</span>
-              </button>
             </div>
           ))}
         </div>

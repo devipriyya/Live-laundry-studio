@@ -6,7 +6,7 @@ const User = require('../models/User');
 const Settings = require('../models/Settings');
 const Order = require('../models/Order');
 const { protect } = require('../middleware/auth');
-const { isAdmin } = require('../middleware/role');
+const { isAdmin, isAdminOrAssistant } = require('../middleware/role');
 
 router.post('/register', async (req, res) => {
   console.log('Registration request received:', req.body);
@@ -60,9 +60,60 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
     const isMatch = await user.matchPassword(password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+    // Auto-set status to Online for staff and delivery boys
+    if (['deliveryBoy', 'laundryStaff', 'staff'].includes(user.role)) {
+      if (user.role === 'deliveryBoy') {
+        user.deliveryBoyInfo.isAvailable = true;
+      } else if (user.role === 'laundryStaff') {
+        user.laundryStaffInfo.isAvailable = true;
+      }
+      await user.save();
+
+      // Emit real-time status update
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('status-updated', { 
+          userId: user._id, 
+          role: user.role, 
+          isAvailable: true 
+        });
+      }
+    }
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
-  } catch (err) { res.status(500).json({ message: 'Server error' }); }
+  } catch (err) { 
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Server error' }); 
+  }
+});
+
+// Logout route to set status to Offline
+router.post('/logout', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (user && ['deliveryBoy', 'laundryStaff', 'staff'].includes(user.role)) {
+      if (user.role === 'deliveryBoy') {
+        user.deliveryBoyInfo.isAvailable = false;
+      } else if (user.role === 'laundryStaff') {
+        user.laundryStaffInfo.isAvailable = false;
+      }
+      await user.save();
+
+      // Emit real-time status update
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('status-updated', { 
+          userId: user._id, 
+          role: user.role, 
+          isAvailable: false 
+        });
+      }
+    }
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error during logout' });
+  }
 });
 
 // New route for Firebase login
@@ -71,7 +122,7 @@ router.post('/firebase-login', async (req, res) => {
   try {
     // Check if user exists with Firebase UID
     let user = await User.findOne({ firebaseUid: uid });
-    
+
     if (!user) {
       // Check if user exists with email
       user = await User.findOne({ email });
@@ -95,19 +146,40 @@ router.post('/firebase-login', async (req, res) => {
         await user.save();
       }
     }
-    
+
     // Generate JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    
+    // Auto-set status to Online for staff and delivery boys
+    if (['deliveryBoy', 'laundryStaff', 'staff'].includes(user.role)) {
+      if (user.role === 'deliveryBoy') {
+        user.deliveryBoyInfo.isAvailable = true;
+      } else if (user.role === 'laundryStaff') {
+        user.laundryStaffInfo.isAvailable = true;
+      }
+      await user.save();
+
+      // Emit real-time status update
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('status-updated', { 
+          userId: user._id, 
+          role: user.role, 
+          isAvailable: true 
+        });
+      }
+    }
+
     console.log('Firebase login - Generated token:', token);
     console.log('Firebase login - User ID:', user._id);
-    res.json({ 
-      token, 
-      user: { 
-        id: user._id, 
-        name: user.name, 
-        email: user.email, 
-        role: user.role 
-      } 
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
     });
   } catch (err) {
     console.error('Firebase login error:', err);
@@ -116,14 +188,14 @@ router.post('/firebase-login', async (req, res) => {
 });
 
 // Get users by role (admin only)
-router.get('/users', protect, isAdmin, async (req, res) => {
+router.get('/users', protect, isAdminOrAssistant, async (req, res) => {
   try {
     const { role, search, status } = req.query;
     const query = {};
-    
+
     if (role) query.role = role;
     if (status) query.isBlocked = status === 'blocked';
-    
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -131,7 +203,7 @@ router.get('/users', protect, isAdmin, async (req, res) => {
         { phone: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     const users = await User.find(query).select('-password').sort({ createdAt: -1 });
     res.json({ users });
   } catch (err) {
@@ -140,7 +212,7 @@ router.get('/users', protect, isAdmin, async (req, res) => {
 });
 
 // Get single user by ID (admin only)
-router.get('/users/:id', protect, isAdmin, async (req, res) => {
+router.get('/users/:id', protect, isAdminOrAssistant, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) {
@@ -156,18 +228,18 @@ router.get('/users/:id', protect, isAdmin, async (req, res) => {
 router.put('/users/:id', protect, isAdmin, async (req, res) => {
   try {
     const { name, email, phone, role, addresses, preferences } = req.body;
-    
+
     // Check if email is already taken by another user
     if (email) {
-      const existingUser = await User.findOne({ 
-        email, 
-        _id: { $ne: req.params.id } 
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: req.params.id }
       });
       if (existingUser) {
         return res.status(400).json({ message: 'Email already in use' });
       }
     }
-    
+
     const updateData = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
@@ -175,17 +247,17 @@ router.put('/users/:id', protect, isAdmin, async (req, res) => {
     if (role) updateData.role = role;
     if (addresses) updateData.addresses = addresses;
     if (preferences) updateData.preferences = preferences;
-    
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     res.json({ message: 'User updated successfully', user });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -214,14 +286,14 @@ router.patch('/users/:id/block', protect, isAdmin, async (req, res) => {
       { isBlocked },
       { new: true }
     ).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    res.json({ 
-      message: isBlocked ? 'User blocked successfully' : 'User unblocked successfully', 
-      user 
+
+    res.json({
+      message: isBlocked ? 'User blocked successfully' : 'User unblocked successfully',
+      user
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -235,8 +307,8 @@ router.get('/users/:id/orders', protect, isAdmin, async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
-    const orders = await Order.find({ 
+
+    const orders = await Order.find({
       $or: [
         { userId: req.params.id },
         { 'customerInfo.email': user.email }
@@ -245,7 +317,7 @@ router.get('/users/:id/orders', protect, isAdmin, async (req, res) => {
       .populate('serviceId')
       .populate('deliveryBoyId', 'name email')
       .sort({ createdAt: -1 });
-    
+
     res.json({ orders });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -253,72 +325,73 @@ router.get('/users/:id/orders', protect, isAdmin, async (req, res) => {
 });
 
 // Admin: Get dashboard statistics
-router.get('/dashboard/stats', protect, isAdmin, async (req, res) => {
+router.get('/dashboard/stats', protect, isAdminOrAssistant, async (req, res) => {
   try {
     // Get total users count (excluding admin@gmail.com)
-    const totalCustomers = await User.countDocuments({ 
-      email: { $ne: 'admin@gmail.com' } 
+    const totalCustomers = await User.countDocuments({
+      email: { $ne: 'admin@gmail.com' }
     });
-    
+
     // Get total orders count
     const totalOrders = await Order.countDocuments();
-    
+
     // Get total revenue
     const revenueResult = await Order.aggregate([
       { $group: { _id: null, total: { $sum: '$totalAmount' } } }
     ]);
     const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
-    
+
     // Get new customers (registered this month)
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
-    
-    const newCustomers = await User.countDocuments({ 
+
+    const newCustomers = await User.countDocuments({
       email: { $ne: 'admin@gmail.com' },
       createdAt: { $gte: startOfMonth }
     });
-    
+
     // Get completed orders today
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    
+
     const completedToday = await Order.countDocuments({
       status: 'delivery-completed',
       updatedAt: { $gte: startOfDay }
     });
-    
+
     // Get today's revenue
     const todayRevenueResult = await Order.aggregate([
-      { $match: { 
+      {
+        $match: {
           status: 'delivery-completed',
           updatedAt: { $gte: startOfDay }
-        } 
+        }
       },
       { $group: { _id: null, total: { $sum: '$totalAmount' } } }
     ]);
     const todayRevenue = todayRevenueResult.length > 0 ? todayRevenueResult[0].total : 0;
-    
+
     // Get active orders (not completed or cancelled)
     const activeOrders = await Order.countDocuments({
       status: { $nin: ['delivery-completed', 'cancelled'] }
     });
-    
+
     // Get pending orders
     const pendingOrders = await Order.countDocuments({
       status: 'order-placed'
     });
-    
+
     // Get today's orders
     const todayOrders = await Order.countDocuments({
       createdAt: { $gte: startOfDay }
     });
-    
+
     // Calculate growth percentages (simplified for now)
     const orderGrowth = 12.5;
     const revenueGrowth = 18.3;
     const customerGrowth = 8.7;
-    
+
     res.json({
       totalCustomers,
       totalOrders,
@@ -344,7 +417,7 @@ router.get('/settings', protect, isAdmin, async (req, res) => {
   try {
     // Get the first settings document or create default settings
     let settings = await Settings.findOne();
-    
+
     if (!settings) {
       // Create default settings if none exist
       settings = new Settings({
@@ -358,7 +431,7 @@ router.get('/settings', protect, isAdmin, async (req, res) => {
       });
       await settings.save();
     }
-    
+
     res.json(settings);
   } catch (error) {
     console.error('Error fetching settings:', error);
@@ -370,33 +443,33 @@ router.get('/settings', protect, isAdmin, async (req, res) => {
 router.put('/settings', protect, isAdmin, async (req, res) => {
   try {
     const { general, notifications, security, payment } = req.body;
-    
+
     // Validate required fields
     if (!general.businessName || !general.businessEmail || !general.businessPhone || !general.businessAddress) {
-      return res.status(400).json({ 
-        message: 'Business name, email, phone, and address are required' 
+      return res.status(400).json({
+        message: 'Business name, email, phone, and address are required'
       });
     }
-    
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(general.businessEmail)) {
-      return res.status(400).json({ 
-        message: 'Invalid email format' 
+      return res.status(400).json({
+        message: 'Invalid email format'
       });
     }
-    
+
     // Validate phone format (simple validation)
     const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
     if (!phoneRegex.test(general.businessPhone.replace(/[\s\-\(\)]/g, ''))) {
-      return res.status(400).json({ 
-        message: 'Invalid phone number format' 
+      return res.status(400).json({
+        message: 'Invalid phone number format'
       });
     }
-    
+
     // Find and update settings
     let settings = await Settings.findOne();
-    
+
     if (!settings) {
       // Create new settings if none exist
       settings = new Settings({
@@ -414,7 +487,7 @@ router.put('/settings', protect, isAdmin, async (req, res) => {
         payment: { ...settings.payment, ...payment }
       });
     }
-    
+
     await settings.save();
     res.json({ message: 'Settings updated successfully', settings });
   } catch (error) {
@@ -432,14 +505,14 @@ router.get('/users/export/csv', protect, isAdmin, async (req, res) => {
 
     // Create CSV header
     const csvHeader = 'Name,Email,Phone,Role,Status,Total Orders,Total Spent,Member Since\n';
-    
+
     // Create CSV rows
     const csvRows = users.map(user => {
       const totalOrders = user.stats?.totalOrders || 0;
       const totalSpent = user.stats?.totalSpent || 0;
       const memberSince = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '';
       const status = user.isBlocked ? 'Blocked' : 'Active';
-      
+
       // Escape fields that might contain commas
       return [
         `"${user.name || ''}"`,
@@ -465,13 +538,26 @@ router.get('/users/export/csv', protect, isAdmin, async (req, res) => {
   }
 });
 
-// Get all delivery boys (admin only)
-router.get('/delivery-boys', protect, isAdmin, async (req, res) => {
+// Get all delivery boys (admin and assistants only)
+router.get('/delivery-boys', protect, isAdminOrAssistant, async (req, res) => {
   try {
-    const deliveryBoys = await User.find({ role: 'deliveryBoy' })
+    const { availableOnly } = req.query;
+    const query = { role: { $in: ['deliveryBoy', 'staff'] } };
+    
+    if (availableOnly === 'true') {
+      query.isBlocked = false;
+      // For specifically 'deliveryBoy' role, check availability field
+      // For general 'staff' role, we assume they are available if not blocked
+      query.$or = [
+        { role: 'staff' },
+        { role: 'deliveryBoy', 'deliveryBoyInfo.isAvailable': true }
+      ];
+    }
+
+    const deliveryBoys = await User.find(query)
       .select('-password')
       .sort({ createdAt: -1 });
-    
+
     // Get order count for each delivery boy
     const deliveryBoysWithStats = await Promise.all(
       deliveryBoys.map(async (boy) => {
@@ -479,15 +565,15 @@ router.get('/delivery-boys', protect, isAdmin, async (req, res) => {
           deliveryBoyId: boy._id,
           status: { $in: ['out-for-pickup', 'pickup-completed', 'out-for-delivery'] }
         });
-        
+
         const completedOrders = await Order.countDocuments({
           deliveryBoyId: boy._id,
           status: 'delivery-completed'
         });
-        
+
         // Determine status based on isBlocked field
         const status = boy.isBlocked ? 'Inactive' : 'Active';
-        
+
         return {
           ...boy.toObject(),
           status, // Add status field for frontend compatibility
@@ -496,8 +582,59 @@ router.get('/delivery-boys', protect, isAdmin, async (req, res) => {
         };
       })
     );
-    
+
     res.json({ deliveryBoys: deliveryBoysWithStats });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all laundry staff (admin and assistants only)
+router.get('/laundry-staff', protect, isAdminOrAssistant, async (req, res) => {
+  try {
+    const { availableOnly } = req.query;
+    const query = { role: { $in: ['laundryStaff', 'staff'] } };
+
+    if (availableOnly === 'true') {
+      query.isBlocked = false;
+      // For specifically 'laundryStaff' role, check availability field
+      // For general 'staff' role, we assume they are available if not blocked
+      query.$or = [
+        { role: 'staff' },
+        { role: 'laundryStaff', 'laundryStaffInfo.isAvailable': true }
+      ];
+    }
+
+    const laundryStaff = await User.find(query)
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    // Get order count for each laundry staff
+    const laundryStaffWithStats = await Promise.all(
+      laundryStaff.map(async (staff) => {
+        const activeOrders = await Order.countDocuments({
+          assignedLaundryStaff: staff._id,
+          status: { $in: ['washing', 'wash-in-progress', 'drying', 'cleaning', 'pressing', 'quality-check'] }
+        });
+
+        const completedOrders = await Order.countDocuments({
+          assignedLaundryStaff: staff._id,
+          status: 'wash-completed' // Or any relevant completion status
+        });
+
+        // Determine status based on isBlocked field
+        const status = staff.isBlocked ? 'Inactive' : 'Active';
+
+        return {
+          ...staff.toObject(),
+          status, // Add status field for frontend compatibility
+          activeOrders,
+          completedOrders
+        };
+      })
+    );
+
+    res.json({ laundryStaff: laundryStaffWithStats });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -507,25 +644,25 @@ router.get('/delivery-boys', protect, isAdmin, async (req, res) => {
 router.post('/delivery-boys', protect, isAdmin, async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
-    
+
     console.log('=== DELIVERY BOY CREATION ROUTE ===');
     console.log('Request body:', { name, email, phone, passwordLength: password?.length });
-    
+
     // Validate required fields
     if (!name || !email || !password) {
       console.log('❌ Missing required fields:', { name: !!name, email: !!email, password: !!password });
       return res.status(400).json({ message: 'Name, email, and password are required' });
     }
-    
+
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       console.log('❌ Invalid email format:', email);
       return res.status(400).json({ message: 'Please provide a valid email address' });
     }
-    
+
     console.log('✅ Basic validation passed');
-    
+
     // Check if user already exists
     console.log('Checking if user already exists...');
     const existingUser = await User.findOne({ email });
@@ -533,17 +670,17 @@ router.post('/delivery-boys', protect, isAdmin, async (req, res) => {
       console.log('❌ User already exists with email:', email);
       return res.status(400).json({ message: 'User with this email already exists' });
     }
-    
+
     console.log('✅ Email is unique');
-    
+
     // Validate password strength
     if (password.length < 6) {
       console.log('❌ Password too short:', password.length);
       return res.status(400).json({ message: 'Password must be at least 6 characters long' });
     }
-    
+
     console.log('✅ Password validation passed');
-    
+
     // Create delivery boy with plain password - let the pre-save hook handle hashing
     console.log('Creating delivery boy object with plain password...');
     const deliveryBoy = new User({
@@ -553,7 +690,7 @@ router.post('/delivery-boys', protect, isAdmin, async (req, res) => {
       password, // Plain password - will be hashed by pre-save hook
       role: 'deliveryBoy'
     });
-    
+
     console.log('Delivery boy object created:', {
       name: deliveryBoy.name,
       email: deliveryBoy.email,
@@ -561,45 +698,44 @@ router.post('/delivery-boys', protect, isAdmin, async (req, res) => {
       passwordLength: deliveryBoy.password?.length,
       role: deliveryBoy.role
     });
-    
+
     console.log('Saving delivery boy to database...');
     const saveResult = await deliveryBoy.save();
     console.log('✅ Delivery boy saved successfully:', saveResult._id);
-    
-    res.status(201).json({ 
-      message: 'Delivery boy created successfully', 
+
+    res.status(201).json({
+      message: 'Delivery boy created successfully',
       deliveryBoy: {
-        id: deliveryBoy._id,
-        name: deliveryBoy.name,
-        email: deliveryBoy.email,
-        phone: deliveryBoy.phone,
-        role: deliveryBoy.role
+        id: saveResult._id,
+        name: saveResult.name,
+        email: saveResult.email,
+        phone: saveResult.phone,
+        role: saveResult.role
       }
     });
   } catch (error) {
     console.log('=== DELIVERY BOY CREATION ERROR ===');
-    console.error('❌ Error creating delivery boy:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code
-    });
-    
+    console.error('❌ Error creating delivery boy:', error.message);
+
     // Handle specific MongoDB errors
     if (error.code === 11000) {
-      console.log('❌ Duplicate key error');
-      return res.status(400).json({ message: 'A user with this email already exists' });
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ 
+        message: `A user with this ${field} already exists` 
+      });
     }
-    
+
     if (error.name === 'ValidationError') {
-      console.log('❌ Validation error');
-      const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({ message: 'Validation error', errors });
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ 
+        message: 'Validation error', 
+        errors: messages 
+      });
     }
-    
-    console.log('❌ Unknown error, returning 500');
-    res.status(500).json({ message: 'Failed to save delivery boy. Please try again.' });
+
+    res.status(500).json({ 
+      message: error.message || 'Failed to save delivery boy. Please try again.' 
+    });
   }
 });
 
@@ -607,33 +743,33 @@ router.post('/delivery-boys', protect, isAdmin, async (req, res) => {
 router.put('/delivery-boys/:id', protect, isAdmin, async (req, res) => {
   try {
     const { name, email, phone } = req.body;
-    
+
     // Check if email is already taken by another user
     if (email) {
-      const existingUser = await User.findOne({ 
-        email, 
-        _id: { $ne: req.params.id } 
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: req.params.id }
       });
       if (existingUser) {
         return res.status(400).json({ message: 'Email already in use' });
       }
     }
-    
+
     const updateData = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (phone) updateData.phone = phone;
-    
+
     const deliveryBoy = await User.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password');
-    
+
     if (!deliveryBoy) {
       return res.status(404).json({ message: 'Delivery boy not found' });
     }
-    
+
     res.json({ message: 'Delivery boy updated successfully', deliveryBoy });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -662,19 +798,19 @@ router.patch('/delivery-boys/:id/block', protect, isAdmin, async (req, res) => {
       { isBlocked },
       { new: true }
     ).select('-password');
-    
+
     if (!deliveryBoy) {
       return res.status(404).json({ message: 'Delivery boy not found' });
     }
-    
+
     // Add status field for frontend compatibility
     const deliveryBoyWithStatus = {
       ...deliveryBoy.toObject(),
       status: isBlocked ? 'Inactive' : 'Active'
     };
-    
-    res.json({ 
-      message: isBlocked ? 'Delivery boy blocked successfully' : 'Delivery boy unblocked successfully', 
+
+    res.json({
+      message: isBlocked ? 'Delivery boy blocked successfully' : 'Delivery boy unblocked successfully',
       deliveryBoy: deliveryBoyWithStatus
     });
   } catch (error) {
@@ -689,12 +825,12 @@ router.get('/delivery-boys/:id/orders', protect, isAdmin, async (req, res) => {
     if (!deliveryBoy) {
       return res.status(404).json({ message: 'Delivery boy not found' });
     }
-    
+
     const orders = await Order.find({ deliveryBoyId: req.params.id })
       .populate('userId', 'name email')
       .populate('serviceId')
       .sort({ createdAt: -1 });
-    
+
     res.json({ orders });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -710,14 +846,14 @@ router.get('/users/export/pdf', protect, isAdmin, async (req, res) => {
 
     // Import PDFKit dynamically
     const PDFDocument = require('pdfkit');
-    
+
     // Create a document
     const doc = new PDFDocument({ margin: 50 });
-    
+
     // Set response headers
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=customers-export.pdf');
-    
+
     // Pipe the PDF into the response
     doc.pipe(res);
 
@@ -728,157 +864,157 @@ router.get('/users/export/pdf', protect, isAdmin, async (req, res) => {
       .text('Mumbai, Maharashtra 400001', { align: 'center' })
       .text('Phone: +91 98765 43210 | Email: info@fabrico.in', { align: 'center' })
       .text('GSTIN: 27AABCF1234L1Z5', { align: 'center' });
-    
+
     // Add a line separator
     doc.moveTo(50, doc.y + 20)
-       .lineTo(550, doc.y + 20)
-       .stroke();
+      .lineTo(550, doc.y + 20)
+      .stroke();
 
     // Report title
     doc.moveDown()
-       .fontSize(18).font('Helvetica-Bold')
-       .text('Customer Management Report', { align: 'center' });
-    
+      .fontSize(18).font('Helvetica-Bold')
+      .text('Customer Management Report', { align: 'center' });
+
     // Report date
     doc.fontSize(12).font('Helvetica')
-       .text(`Generated on: ${new Date().toLocaleDateString('en-IN', { 
-         day: '2-digit', 
-         month: 'long', 
-         year: 'numeric' 
-       })}`, { align: 'center' });
-    
+      .text(`Generated on: ${new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      })}`, { align: 'center' });
+
     // Add a line separator
     doc.moveTo(50, doc.y + 20)
-       .lineTo(550, doc.y + 20)
-       .stroke();
+      .lineTo(550, doc.y + 20)
+      .stroke();
 
     // Summary section with better formatting
     doc.moveDown()
-       .fontSize(12);
-    
+      .fontSize(12);
+
     const totalCustomers = users.length;
     const activeCustomers = users.filter(user => !user.isBlocked).length;
     const blockedCustomers = totalCustomers - activeCustomers;
     const totalOrders = users.reduce((sum, user) => sum + (user.stats?.totalOrders || 0), 0);
     const totalRevenue = users.reduce((sum, user) => sum + (user.stats?.totalSpent || 0), 0);
-    
+
     // Create a summary table-like structure
     doc.font('Helvetica-Bold').text('Summary Statistics:');
     doc.moveDown(0.5);
-    
+
     // Summary details in a structured format
     doc.font('Helvetica')
-       .text(`• Total Customers:     ${totalCustomers}`)
-       .text(`• Active Customers:    ${activeCustomers}`)
-       .text(`• Blocked Customers:   ${blockedCustomers}`)
-       .text(`• Total Orders:        ${totalOrders}`)
-       .text(`• Total Revenue:       ₹${totalRevenue.toFixed(2)}`);
-    
+      .text(`• Total Customers:     ${totalCustomers}`)
+      .text(`• Active Customers:    ${activeCustomers}`)
+      .text(`• Blocked Customers:   ${blockedCustomers}`)
+      .text(`• Total Orders:        ${totalOrders}`)
+      .text(`• Total Revenue:       ₹${totalRevenue.toFixed(2)}`);
+
     // Add a line separator before the customer table
     doc.moveTo(50, doc.y + 20)
-       .lineTo(550, doc.y + 20)
-       .stroke();
+      .lineTo(550, doc.y + 20)
+      .stroke();
 
     // Check if there are customers to display
     if (users.length === 0) {
       doc.moveDown()
-         .fontSize(12).text('No customers found.', { align: 'center' });
+        .fontSize(12).text('No customers found.', { align: 'center' });
       doc.end();
       return;
     }
 
     // Customer table with improved structure
     doc.moveDown()
-       .fontSize(14).font('Helvetica-Bold')
-       .text('Customer Details', { align: 'center' });
-    
+      .fontSize(14).font('Helvetica-Bold')
+      .text('Customer Details', { align: 'center' });
+
     doc.moveDown();
-    
+
     // Table headers with better styling
     const tableTop = doc.y;
     const rowHeight = 25;
     const startX = 50;
     const columnWidths = [90, 120, 80, 60, 60, 50, 60]; // Adjusted widths for better fit
-    
+
     // Header row with background
     doc.rect(startX, tableTop, 500, rowHeight).fill('#f0f0f0');
     doc.fillColor('black').fontSize(10).font('Helvetica-Bold');
-    
+
     const headers = ['Name', 'Email', 'Phone', 'Role', 'Status', 'Orders', 'Spent (₹)'];
     let currentX = startX + 5; // Add some padding
-    
+
     headers.forEach((header, i) => {
       doc.text(header, currentX, tableTop + 8);
       currentX += columnWidths[i];
     });
-    
+
     doc.font('Helvetica');
 
     // Draw table rows with alternating colors
     let y = tableTop + rowHeight;
     let isEvenRow = false;
-    
+
     for (const user of users) {
       if (y > 750) { // Create new page if needed
         doc.addPage({ margin: 50 });
         y = 50;
-        
+
         // Re-add headers on new page
         doc.rect(startX, y, 500, rowHeight).fill('#f0f0f0');
         doc.fillColor('black').fontSize(10).font('Helvetica-Bold');
-        
+
         currentX = startX + 5;
         headers.forEach((header, i) => {
           doc.text(header, currentX, y + 8);
           currentX += columnWidths[i];
         });
-        
+
         doc.font('Helvetica');
         y += rowHeight;
       }
-      
+
       // Alternate row colors
       if (isEvenRow) {
         doc.rect(startX, y, 500, rowHeight).fill('#f8f8f8');
         doc.fillColor('black');
       }
-      
+
       const totalOrders = user.stats?.totalOrders || 0;
       const totalSpent = user.stats?.totalSpent ? user.stats.totalSpent.toFixed(2) : '0.00';
       const status = user.isBlocked ? 'Blocked' : 'Active';
       const role = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'N/A';
-      
+
       // Add data to the row
       doc.fontSize(9);
       currentX = startX + 5;
-      
+
       doc.text(user.name || 'N/A', currentX, y + 8);
       currentX += columnWidths[0];
-      
+
       doc.text(user.email || 'N/A', currentX, y + 8);
       currentX += columnWidths[1];
-      
+
       doc.text(user.phone || 'N/A', currentX, y + 8);
       currentX += columnWidths[2];
-      
+
       doc.text(role, currentX, y + 8);
       currentX += columnWidths[3];
-      
+
       doc.text(status, currentX, y + 8);
       currentX += columnWidths[4];
-      
+
       doc.text(totalOrders.toString(), currentX, y + 8);
       currentX += columnWidths[5];
-      
+
       doc.text(`₹${totalSpent}`, currentX, y + 8);
-      
+
       y += rowHeight;
       isEvenRow = !isEvenRow;
     }
 
     // Add footer with page number
     doc.fontSize(10).font('Helvetica')
-       .text(`Page 1`, 500, 800, { align: 'right' });
+      .text(`Page 1`, 500, 800, { align: 'right' });
 
     // Finalize the PDF
     doc.end();
@@ -907,35 +1043,35 @@ router.get('/profile', protect, async (req, res) => {
 router.put('/profile', protect, async (req, res) => {
   try {
     const { name, email, phone, addresses, preferences } = req.body;
-    
+
     // Check if email is already taken by another user
     if (email) {
-      const existingUser = await User.findOne({ 
-        email, 
-        _id: { $ne: req.user._id } 
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: req.user._id }
       });
       if (existingUser) {
         return res.status(400).json({ message: 'Email already in use' });
       }
     }
-    
+
     const updateData = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (phone) updateData.phone = phone;
     if (addresses) updateData.addresses = addresses;
     if (preferences) updateData.preferences = preferences;
-    
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    
+
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
     console.error('Error updating user profile:', error);

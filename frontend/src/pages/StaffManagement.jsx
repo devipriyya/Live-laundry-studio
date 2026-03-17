@@ -228,6 +228,7 @@ const StaffManagement = () => {
       case 'Technician': return 'bg-blue-100 text-blue-800';
       case 'Driver': return 'bg-green-100 text-green-800';
       case 'Customer Service': return 'bg-orange-100 text-orange-800';
+      case 'Laundry Staff': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -372,6 +373,7 @@ const StaffManagement = () => {
                     <option value="Washer">Washer</option>
                     <option value="Quality Inspector">Quality Inspector</option>
                     <option value="Supervisor">Supervisor</option>
+                    <option value="Laundry Staff">Laundry Staff</option>
                   </select>
                 </div>
 

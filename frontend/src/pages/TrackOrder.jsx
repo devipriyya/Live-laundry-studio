@@ -19,7 +19,10 @@ import {
   ChatBubbleLeftRightIcon,
   SparklesIcon,
   InformationCircleIcon,
+  ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import ReviewForm from '../components/ReviewForm';
 
 const TrackOrder = () => {
   const navigate = useNavigate();
@@ -30,6 +33,12 @@ const TrackOrder = () => {
   const [error, setError] = useState('');
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancellingOrder, setCancellingOrder] = useState(null);
+  const [userEmail, setUserEmail] = useState('');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewingOrder, setReviewingOrder] = useState(null);
 
   // Mock order data for demonstration
   const mockOrders = {
@@ -140,6 +149,7 @@ const TrackOrder = () => {
       try {
         const email = user?.email || JSON.parse(localStorage.getItem('user') || '{}').email;
         if (email) {
+          setUserEmail(email);
           const response = await api.get(`/orders/my?email=${encodeURIComponent(email)}`);
           setRecentOrders(response.data.slice(0, 3)); // Get last 3 orders
         }
@@ -188,7 +198,9 @@ const TrackOrder = () => {
             name: foundOrder.customerInfo?.name || 'Customer',
             address: `${foundOrder.customerInfo?.address?.street || ''}, ${foundOrder.customerInfo?.address?.city || ''}, ${foundOrder.customerInfo?.address?.state || ''} ${foundOrder.customerInfo?.address?.zipCode || ''}`,
             phone: foundOrder.customerInfo?.phone || '',
-            email: foundOrder.customerInfo?.email || ''
+            email: foundOrder.customerInfo?.email || '',
+            deliveryNote: foundOrder.deliveryNote || null,
+            deliveryPhoto: foundOrder.deliveryPhoto || null
           },
           timeline: generateTimeline(foundOrder),
           trackingUpdates: foundOrder.statusHistory?.map(h => ({
@@ -222,68 +234,86 @@ const TrackOrder = () => {
   const getOrderStep = (status) => {
     const stepMap = {
       'order-placed': 1,
-      'order-accepted': 2,
-      'out-for-pickup': 3,
-      'pickup-completed': 4,
-      'wash-in-progress': 5,
-      'wash-completed': 6,
+      'order-accepted': 1,
+      'out-for-pickup': 2,
+      'pickup-completed': 2,
+      'received-at-facility': 3,
+      'washing': 3,
+      'wash-in-progress': 3,
+      'wash-completed': 6, // ready for delivery
+      'drying': 4,
+      'cleaning': 4,
+      'pressing': 5,
+      'quality-check': 5,
+      'ready-for-pickup': 6,
+      'ready-for-delivery': 6,
       'out-for-delivery': 7,
-      'delivery-completed': 8
+      'delivery-completed': 7,
+      'delivered': 7
     };
     return stepMap[status] || 1;
   };
 
   const generateTimeline = (order) => {
-    const timeline = [
-      { step: 'Order Placed', completed: false, time: '', description: 'Order confirmed and scheduled for pickup' },
-      { step: 'Picked Up', completed: false, time: '', description: 'Items collected from your location' },
-      { step: 'Processing', completed: false, time: '', description: 'Items being washed and processed' },
-      { step: 'In Transit', completed: false, time: '', description: 'Out for delivery' },
-      { step: 'Delivered', completed: false, time: '', description: 'Items delivered to your location' }
+    const steps = [
+      { step: 'Order Placed', icon: DocumentTextIcon, description: 'Order confirmed and scheduled' },
+      { step: 'Picked Up', icon: TruckIcon, description: 'Items collected from your door' },
+      { step: 'Washing', icon: SparklesIcon, description: 'Deep cleaning in progress' },
+      { step: 'Drying', icon: SparklesIcon, description: 'Nature-fresh drying process' },
+      { step: 'Ironing', icon: SparklesIcon, description: 'Professional steam pressing' },
+      { step: 'Ready for Delivery', icon: ShoppingBagIcon, description: 'Packed and waiting to arrive' },
+      { step: 'Delivered', icon: CheckCircleIcon, description: 'Delivered to your doorstep' }
     ];
 
-    const currentStepIndex = getOrderStep(order.status) - 1;
+    const currentStep = getOrderStep(order.status);
     
-    timeline.forEach((step, index) => {
-      if (index < currentStepIndex) {
-        step.completed = true;
-        if (order.statusHistory && order.statusHistory[index]) {
-          step.time = new Date(order.statusHistory[index].timestamp).toLocaleString();
-        }
-      } else if (index === currentStepIndex) {
-        step.completed = true;
-        step.current = true;
-        step.time = order.statusHistory && order.statusHistory[currentStepIndex] 
-          ? new Date(order.statusHistory[currentStepIndex].timestamp).toLocaleString() 
-          : new Date().toLocaleString();
-      }
+    return steps.map((s, index) => {
+      const stepNum = index + 1;
+      const stepHistory = order.statusHistory?.find(h => getOrderStep(h.status) === stepNum);
+      
+      return {
+        ...s,
+        completed: stepNum <= currentStep,
+        current: stepNum === currentStep,
+        time: stepHistory ? new Date(stepHistory.timestamp).toLocaleString() : ''
+      };
     });
+  };
 
-    return timeline;
+  const handleCancelOrder = async () => {
+    try {
+      await api.patch(`/orders/${cancellingOrder._id}/cancel`, {
+        reason: cancelReason || 'Customer request',
+        email: userEmail
+      });
+      alert('Order cancelled successfully. Refund will be processed.');
+      setShowCancelModal(false);
+      setCancelReason('');
+      setShowOrderDetails(false);
+      if (trackingId) handleTrackOrder(); // Refresh tracking info
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to cancel order');
+    }
   };
 
   const getStatusColor = (status) => {
-    const statusColors = {
-      'Order Placed': 'text-blue-600 bg-blue-100',
-      'Picked Up': 'text-purple-600 bg-purple-100',
-      'Processing': 'text-orange-600 bg-orange-100',
-      'In Transit': 'text-cyan-600 bg-cyan-100',
-      'Ready for Pickup': 'text-green-600 bg-green-100',
-      'Delivered': 'text-emerald-600 bg-emerald-100'
-    };
-    return statusColors[status] || 'text-gray-600 bg-gray-100';
+    const step = getOrderStep(status);
+    if (status === 'cancelled') return 'text-red-600 bg-red-100';
+    if (step === 7) return 'text-emerald-600 bg-emerald-100';
+    return 'text-blue-600 bg-blue-100';
   };
 
   const getStatusIcon = (status) => {
     const icons = {
-      'Order Placed': DocumentTextIcon,
-      'Picked Up': TruckIcon,
-      'Processing': ClockIcon,
-      'In Transit': TruckIcon,
-      'Ready for Pickup': CheckCircleIcon,
-      'Delivered': CheckCircleIcon
+      1: DocumentTextIcon,
+      2: TruckIcon,
+      3: SparklesIcon,
+      4: SparklesIcon,
+      5: SparklesIcon,
+      6: ShoppingBagIcon,
+      7: CheckCircleIcon
     };
-    return icons[status] || DocumentTextIcon;
+    return icons[getOrderStep(status)] || DocumentTextIcon;
   };
 
   return (
@@ -407,15 +437,39 @@ const TrackOrder = () => {
             <div className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-300"></div>
               <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
+                {order.status === 'cancelled' && (
+                  <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-6 flex flex-col md:flex-row items-center gap-4 animate-pulse">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <XMarkIcon className="h-10 w-10 text-red-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-bold text-red-900">Order Cancelled</h4>
+                      <p className="text-red-700">This order has been cancelled and a refund has been initiated if applicable.</p>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Status Card */}
                   <div className="lg:col-span-2">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-2xl font-bold text-gray-900">Order #{order.id}</h3>
-                      <div className={`px-4 py-2 rounded-xl font-semibold ${getStatusColor(order.status)}`}>
-                        {order.status}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex flex-col">
+                          <h3 className="text-2xl font-bold text-gray-900">Order #{order.id}</h3>
+                          {order.status === 'delivered' && order.isReviewed && order.rating && (
+                            <div className="flex items-center mt-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <StarIconSolid 
+                                  key={star} 
+                                  className={`h-5 w-5 ${star <= order.rating ? 'text-yellow-400' : 'text-gray-300'}`} 
+                                />
+                              ))}
+                              <span className="ml-2 text-sm font-medium text-gray-500">Service Rated</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className={`px-4 py-2 rounded-xl font-semibold ${getStatusColor(order.status)}`}>
+                          {order.status}
+                        </div>
                       </div>
-                    </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                       <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
@@ -479,35 +533,44 @@ const TrackOrder = () => {
                 
                 <div className="space-y-4">
                   {order.timeline.map((step, index) => {
-                    const IconComponent = getStatusIcon(step.step);
+                    const IconComponent = step.icon;
                     return (
                       <div key={index} className="flex items-start space-x-4">
-                        <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
-                          step.completed 
-                            ? step.current 
-                              ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg' 
-                              : 'bg-gradient-to-br from-green-500 to-emerald-500 text-white'
-                            : 'bg-gray-200 text-gray-400'
-                        }`}>
-                          <IconComponent className="h-6 w-6" />
+                        <div className="relative flex flex-col items-center">
+                          <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center z-10 ${
+                            step.completed 
+                              ? step.current 
+                                ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white shadow-lg ring-4 ring-purple-100' 
+                                : 'bg-gradient-to-br from-green-500 to-emerald-500 text-white'
+                              : 'bg-gray-200 text-gray-400'
+                          }`}>
+                            <IconComponent className="h-6 w-6" />
+                          </div>
+                          {index < order.timeline.length - 1 && (
+                            <div className={`w-1 h-full absolute top-12 -z-0 ${
+                              step.completed && order.timeline[index + 1].completed ? 'bg-green-500' : 'bg-gray-200'
+                            }`}></div>
+                          )}
                         </div>
                         
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pb-6">
                           <div className="flex items-center justify-between">
-                            <h4 className={`font-semibold ${
-                              step.completed ? step.current ? 'text-purple-900' : 'text-green-900' : 'text-gray-500'
+                            <h4 className={`text-lg font-bold ${
+                              step.completed ? step.current ? 'text-purple-900' : 'text-green-900' : 'text-gray-400'
                             }`}>
                               {step.step}
                             </h4>
                             {step.time && (
-                              <span className="text-sm text-gray-500">{step.time}</span>
+                              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">{step.time}</span>
                             )}
                           </div>
-                          <p className="text-gray-600 text-sm mt-1">{step.description}</p>
+                          <p className={`text-sm mt-1 ${step.completed ? 'text-gray-600' : 'text-gray-400'}`}>
+                            {step.description}
+                          </p>
                           {step.current && (
-                            <div className="mt-2 inline-flex items-center space-x-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                              <span>Current Status</span>
+                            <div className="mt-2 inline-flex items-center space-x-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">
+                              <div className="w-2 h-2 bg-purple-500 rounded-full animate-ping"></div>
+                              <span>Live Updates</span>
                             </div>
                           )}
                         </div>
@@ -594,6 +657,38 @@ const TrackOrder = () => {
                         <p className="text-green-900">{order.customer.phone}</p>
                       </div>
                     </div>
+
+                    {/* Delivery Proof for User */}
+                    {order.status === 'delivery-completed' && (order.customer.deliveryNote || order.customer.deliveryPhoto) && (
+                      <div className="mt-6 pt-6 border-t border-green-200">
+                        <h4 className="font-bold text-green-900 mb-4 flex items-center space-x-2">
+                          <CheckBadgeIcon className="h-5 w-5" />
+                          <span>Delivery Confirmation</span>
+                        </h4>
+                        
+                        {order.customer.deliveryNote && (
+                          <div className="bg-green-50 rounded-lg p-3 border border-green-100 mb-4">
+                            <p className="text-sm text-green-700 font-medium mb-1 flex items-center gap-1">
+                              <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                              Delivery Note
+                            </p>
+                            <p className="text-green-900 italic">"{order.customer.deliveryNote}"</p>
+                          </div>
+                        )}
+
+                        {order.customer.deliveryPhoto && (
+                          <div>
+                            <p className="text-sm text-green-700 font-medium mb-2 flex items-center gap-1">
+                              <PhotoIcon className="w-4 h-4" />
+                              Proof of Delivery
+                            </p>
+                            <div className="rounded-xl overflow-hidden border-2 border-green-100 shadow-sm">
+                              <img src={order.customer.deliveryPhoto} alt="Proof of Delivery" className="w-full h-auto max-h-48 object-cover" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -643,15 +738,119 @@ const TrackOrder = () => {
                   </div>
                 </div>
                 
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-green-700 font-medium">Total Amount</p>
-                      <p className="text-3xl font-bold text-green-900">${order.total}</p>
-                    </div>
-                    <CurrencyDollarIcon className="h-12 w-12 text-green-600" />
-                  </div>
+                <div className="flex gap-3 px-6 pb-6">
+                  {['order-placed', 'order-accepted'].includes(order.status) && (
+                    <button
+                      onClick={() => {
+                        setCancellingOrder(order);
+                        setShowCancelModal(true);
+                      }}
+                      className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-3 rounded-xl font-semibold transition-colors"
+                    >
+                      Cancel Order
+                    </button>
+                  )}
+                  {order.status === 'delivered' && !order.isReviewed && (
+                    <button
+                      onClick={() => {
+                        setReviewingOrder(order);
+                        setShowReviewModal(true);
+                      }}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-1"
+                    >
+                      <StarIconSolid className="h-4 w-4 text-yellow-200" />
+                      Rate Order
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowOrderDetails(false)}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold transition-colors"
+                  >
+                    Close
+                  </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Order Modal */}
+        {showCancelModal && cancellingOrder && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Cancel Order</h3>
+                <button
+                  onClick={() => {
+                    setShowCancelModal(false);
+                    setCancelReason('');
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="h-5 w-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <p className="text-gray-600 mb-4">Are you sure you want to cancel order <strong>{cancellingOrder.id || cancellingOrder.orderNumber}</strong>?</p>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Cancellation Reason
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Please tell us why you're cancelling..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowCancelModal(false);
+                    setCancelReason('');
+                  }}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-medium transition-colors"
+                >
+                  Keep Order
+                </button>
+                <button
+                  onClick={handleCancelOrder}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-medium transition-colors shadow-lg hover:shadow-xl"
+                >
+                  Cancel Order
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Review Modal */}
+        {showReviewModal && reviewingOrder && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[70] overflow-y-auto">
+            <div className="w-full max-w-2xl my-8">
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowReviewModal(false);
+                    setReviewingOrder(null);
+                  }}
+                  className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+                >
+                  <XMarkIcon className="h-6 w-6 text-gray-500" />
+                </button>
+                <ReviewForm 
+                  orderId={reviewingOrder._id}
+                  orderNumber={reviewingOrder.id || reviewingOrder.orderNumber}
+                  customerInfo={reviewingOrder.customerInfo}
+                  onSubmitSuccess={() => {
+                    alert('Thank you for your review!');
+                    setShowReviewModal(false);
+                    setReviewingOrder(null);
+                    setShowOrderDetails(false);
+                    if (trackingId) handleTrackOrder(); // Refresh tracking info
+                  }}
+                />
               </div>
             </div>
           </div>

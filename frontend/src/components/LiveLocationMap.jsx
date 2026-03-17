@@ -42,29 +42,10 @@ const LiveLocationMap = () => {
       }));
     };
 
-    const handleLocationTrackingStarted = (data) => {
-      console.log('Location tracking started:', data);
-      // Could show a notification or update UI to indicate new tracking session
-    };
-
-    const handleLocationTrackingEnded = (data) => {
-      console.log('Location tracking ended:', data);
-      // Remove the location from live locations when tracking ends
-      setLiveLocations(prev => {
-        const newLocations = { ...prev };
-        delete newLocations[data.orderId];
-        return newLocations;
-      });
-    };
-
     socket.on('location-updated', handleLocationUpdated);
-    socket.on('location-tracking-started', handleLocationTrackingStarted);
-    socket.on('location-tracking-ended', handleLocationTrackingEnded);
 
     return () => {
       socket.off('location-updated', handleLocationUpdated);
-      socket.off('location-tracking-started', handleLocationTrackingStarted);
-      socket.off('location-tracking-ended', handleLocationTrackingEnded);
     };
   }, [socket]);
 
