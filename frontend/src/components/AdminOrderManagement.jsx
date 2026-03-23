@@ -114,7 +114,7 @@ const AdminOrderManagement = () => {
     fetchLaundryStaff();
   }, [statusFilter, priorityFilter, paymentStatusFilter]);
 
-  // Fetch delivery boys for assignment
+  // Fetch delivery boys for assignment (only active deliveryBoy role users)
   const fetchDeliveryBoys = async () => {
     try {
       const response = await api.get('/auth/delivery-boys');
@@ -127,7 +127,7 @@ const AdminOrderManagement = () => {
     }
   };
 
-  // Fetch laundry staff for assignment
+  // Fetch laundry staff for assignment (only active laundryStaff role users)
   const fetchLaundryStaff = async () => {
     try {
       const response = await api.get('/auth/laundry-staff');
@@ -183,6 +183,28 @@ const AdminOrderManagement = () => {
     } catch (error) {
       console.error('Error assigning laundry staff:', error);
       alert('Failed to assign laundry staff');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // AI Auto-Assign staff to order
+  const aiAutoAssign = async (orderId) => {
+    try {
+      setLoading(true);
+      const response = await api.patch(`/orders/${orderId}/assign`, {
+        autoAssign: true
+      });
+      
+      if (response.data && response.data.assignedLaundryStaff) {
+        await fetchOrders();
+        alert(`AI Agent successfully assigned staff: ${response.data.assignedLaundryStaff.name}`);
+      } else {
+        alert('AI Agent could not find a suitable assignment at this time. Falling back to manual assignment.');
+      }
+    } catch (error) {
+      console.error('Error in AI auto-assignment:', error);
+      alert('AI Service is currently unavailable. Using standard assignment.');
     } finally {
       setLoading(false);
     }
@@ -384,8 +406,21 @@ const AdminOrderManagement = () => {
                   <div>
                     <p className="text-sm text-green-700">Pickup Date</p>
                     <p className="font-bold">{order.pickupDate ? formatDate(order.pickupDate) : 'Not scheduled'}</p>
+                    {order.timeSlot && <p className="text-xs text-green-600 mt-0.5">{order.timeSlot}</p>}
+                    {order.statusHistory?.some(h => h.note?.includes('rescheduled')) && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">Rescheduled</span>
+                    )}
                   </div>
                 </div>
+                {order.estimatedDelivery && !['delivery-completed', 'delivered', 'cancelled'].includes(order.status) && (
+                  <div className="flex items-center gap-3 text-green-800">
+                    <ClockIcon className="w-5 h-5 text-blue-500" />
+                    <div>
+                      <p className="text-sm text-green-700">Estimated Delivery</p>
+                      <p className="font-bold text-blue-700">{order.estimatedDelivery}</p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-3 text-green-800">
                   <CurrencyDollarIcon className="w-5 h-5" />
                   <div>
@@ -651,6 +686,14 @@ const AdminOrderManagement = () => {
                           >
                             <UsersIcon className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => aiAutoAssign(order._id)}
+                            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors animate-pulse"
+                            title="AI Auto-Assign"
+                            disabled={loading}
+                          >
+                            <SparklesIcon className="w-5 h-5" />
+                          </button>
                           <StatusUpdateDropdown order={order} />
                         </div>
                       </td>
@@ -735,13 +778,13 @@ const AdminOrderManagement = () => {
                 <option value="">Select a delivery boy...</option>
                 {deliveryBoys.map((db) => (
                   <option key={db._id} value={db._id}>
-                    {db.name} {db.phone ? `(${db.phone})` : ''} - {db.isBlocked ? '🔴 Blocked' : '🟢 Active'}
+                    {db.name} {db.phone ? `(${db.phone})` : ''}
                   </option>
                 ))}
               </select>
               {deliveryBoys.length === 0 && (
                 <p className="text-sm text-orange-600 mt-2">
-                  No delivery boys found. Please add delivery boys first.
+                  No active delivery boys found. Please add delivery boys first.
                 </p>
               )}
             </div>
@@ -822,7 +865,7 @@ const AdminOrderManagement = () => {
               </select>
               {laundryStaff.length === 0 && (
                 <p className="text-sm text-orange-600 mt-2">
-                  No laundry staff found. Please add laundry staff first.
+                  No active laundry staff found. Please add laundry staff first.
                 </p>
               )}
             </div>

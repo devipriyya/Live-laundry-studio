@@ -128,6 +128,11 @@ const OrderSchema = new mongoose.Schema({
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     note: String
   }],
+  rlAssignmentData: {
+    state: Object,
+    actionIndex: Number,
+    assignedAt: Date
+  },
   isReviewed: { type: Boolean, default: false },
   rating: { type: Number, min: 1, max: 5 }
 }, { timestamps: true });

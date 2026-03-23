@@ -428,8 +428,10 @@ const deliveryBoyService = {
    */
   getNextStatus: (currentStatus) => {
     const workflow = {
+      'order-placed': 'out-for-pickup',
       'order-accepted': 'out-for-pickup',
       'out-for-pickup': 'pickup-completed',
+      'pickup-completed': 'out-for-delivery',
       'ready-for-delivery': 'out-for-delivery',
       'wash-completed': 'out-for-delivery',
       'drying': 'out-for-delivery',

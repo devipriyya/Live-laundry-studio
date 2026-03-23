@@ -340,27 +340,22 @@ const OrderDetailsPageEnhanced = () => {
 
     const buttonConfig = {
       'out-for-pickup': {
-        text: 'Start Pickup',
+        text: 'Mark Out for Pickup',
         icon: ArrowUpTrayIcon,
         color: 'bg-amber-500 hover:bg-amber-600'
       },
       'pickup-completed': {
-        text: 'Mark Picked Up',
+        text: 'Confirm Pickup',
         icon: CheckCircleIcon,
         color: 'bg-indigo-500 hover:bg-indigo-600'
       },
-      'ready-for-delivery': {
-        text: 'Start Delivery',
+      'out-for-delivery': {
+        text: 'Out for Delivery',
         icon: TruckIcon,
         color: 'bg-purple-500 hover:bg-purple-600'
       },
-      'out-for-delivery': {
-        text: 'Confirm Delivery',
-        icon: CheckBadgeIcon,
-        color: 'bg-green-500 hover:bg-green-600'
-      },
       'delivery-completed': {
-        text: 'Completed',
+        text: 'Confirm Delivered',
         icon: CheckBadgeIcon,
         color: 'bg-green-500 hover:bg-green-600'
       }

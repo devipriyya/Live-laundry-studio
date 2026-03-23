@@ -2,10 +2,14 @@ const express = require('express');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
 const Order = require('../models/Order');
+const User = require('../models/User');
 const { protect, optionalAuth } = require('../middleware/auth');
 const { isAdmin, isDeliveryBoy, isAdminOrDeliveryBoy, isAdminOrAssistant } = require('../middleware/role');
 const { sendOrderStatusUpdateEmail } = require('../utils/emailService');
 const { notifyCustomerOrderUpdate } = require('../utils/notificationService');
+const rlClient = require('../utils/rlClient');
+const stateFormatter = require('../utils/stateFormatter');
+const { calculateEstimatedDelivery, recalculateFromStatus } = require('../utils/estimatedDelivery');
 
 // Admin: Get order trends (last 7 days)
 router.get('/analytics/orders', protect, isAdminOrAssistant, async (req, res) => {
@@ -223,10 +227,17 @@ router.post('/', optionalAuth, async (req, res) => {
 
     const orderNumber = req.body.orderNumber || `ORD-${Date.now()}`;
 
+    // Calculate estimated delivery based on service types and current workload
+    const activeOrders = await Order.countDocuments({
+      status: { $in: ['order-placed', 'order-accepted', 'out-for-pickup', 'pickup-completed', 'wash-in-progress', 'wash-completed'] }
+    });
+    const estimatedDelivery = calculateEstimatedDelivery(items, pickupDate, activeOrders);
+
     const orderData = {
       ...req.body,
       userId: authenticatedUserId || null,
       orderNumber,
+      estimatedDelivery,
       paymentStatus: req.body.paymentId ? 'paid' : 'pending', // Set payment status based on payment ID
       statusHistory: [{
         status: 'order-placed',
@@ -304,9 +315,14 @@ router.post('/dry-cleaning', optionalAuth, async (req, res) => {
       });
     }
 
+    const dcActiveOrders = await Order.countDocuments({
+      status: { $in: ['order-placed', 'order-accepted', 'out-for-pickup', 'pickup-completed', 'wash-in-progress', 'wash-completed'] }
+    });
+
     const orderData = {
       userId: authenticatedUserId || null,
       orderNumber: `ORD-${Date.now()}`,
+      estimatedDelivery: calculateEstimatedDelivery([{ name: shoeType, service: 'shoe-care', quantity: numberOfPairs }], pickupDate, dcActiveOrders),
       customerInfo: {
         name: contactInfo.name,
         email: contactInfo.email,
@@ -385,9 +401,14 @@ router.post('/dry-cleaning-clothes', optionalAuth, async (req, res) => {
       });
     }
 
+    const dcClothesActiveOrders = await Order.countDocuments({
+      status: { $in: ['order-placed', 'order-accepted', 'out-for-pickup', 'pickup-completed', 'wash-in-progress', 'wash-completed'] }
+    });
+
     const orderData = {
       userId: authenticatedUserId || null,
       orderNumber: `ORD-${Date.now()}`,
+      estimatedDelivery: calculateEstimatedDelivery(items, pickupDate, dcClothesActiveOrders),
       customerInfo: {
         name: contactInfo.name,
         email: contactInfo.email,
@@ -632,7 +653,7 @@ router.get('/:id', protect, isAdminOrAssistant, async (req, res) => {
 // admin: assign/reassign/unassign staff
 router.patch('/:id/assign', protect, isAdminOrAssistant, async (req, res) => {
   try {
-    const { deliveryBoyId, assignedLaundryStaff } = req.body;
+    let { deliveryBoyId, assignedLaundryStaff } = req.body;
     const orderId = req.params.id;
 
     let query = {};
@@ -645,6 +666,53 @@ router.patch('/:id/assign', protect, isAdminOrAssistant, async (req, res) => {
     const order = await Order.findOne(query);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // AI-Assisted Auto-Assignment Logic
+    if (req.body.autoAssign && !req.body.assignedLaundryStaff) {
+      const state = await stateFormatter.getSystemState(order);
+      let action = null;
+      
+      if (state) {
+        action = await rlClient.getAction(state);
+      }
+
+      if (action && action.staffId) {
+        req.body.assignedLaundryStaff = action.staffId;
+        assignedLaundryStaff = action.staffId;
+        order.rlAssignmentData = {
+          state: state,
+          actionIndex: action.actionIndex,
+          assignedAt: new Date(),
+          method: 'rl-agent'
+        };
+        console.log(`RL Agent assigned staff ${action.staffId} to order ${order.orderNumber}`);
+      } else {
+        // FALLBACK: Least Workload Assignment
+        console.log('RL Service unavailable or failed. Using Fallback: Least Workload.');
+        const staff = await User.find({ role: 'laundryStaff', isBlocked: false });
+        if (staff.length > 0) {
+          // Sort by workload (assuming we track it in DB now)
+          staff.sort((a, b) => (a.laundryStaffInfo?.workload || 0) - (b.laundryStaffInfo?.workload || 0));
+          const selectedStaff = staff[0];
+          req.body.assignedLaundryStaff = selectedStaff._id;
+          assignedLaundryStaff = selectedStaff._id;
+          
+          order.rlAssignmentData = {
+            state: state,
+            assignedAt: new Date(),
+            method: 'fallback-least-workload'
+          };
+        }
+      }
+      await order.save();
+    }
+
+    // Update Staff Workload after assignment
+    if (assignedLaundryStaff) {
+      await User.findByIdAndUpdate(assignedLaundryStaff, {
+        $inc: { 'laundryStaffInfo.workload': 1 }
+      });
     }
 
     const updateData = {};
@@ -748,6 +816,15 @@ router.patch('/:id/status', protect, async (req, res) => {
         updatedBy: req.user._id,
         note: note || `Status updated to ${status}`
       });
+
+      // Recalculate estimated delivery dynamically as order progresses
+      const activeOrders = await Order.countDocuments({
+        status: { $in: ['order-placed', 'order-accepted', 'out-for-pickup', 'pickup-completed', 'wash-in-progress', 'wash-completed'] }
+      });
+      const updatedEstimate = recalculateFromStatus(status, order.items, activeOrders);
+      if (updatedEstimate !== 'Delivered') {
+        order.estimatedDelivery = updatedEstimate;
+      }
     }
     
     // Update payment status if provided
@@ -755,7 +832,55 @@ router.patch('/:id/status', protect, async (req, res) => {
       order.paymentStatus = paymentStatus;
     }
     
-    await order.save();
+    await order.save();    // RL Reward Feedback Loop & Performance Tracking
+    if (status === 'delivered' && order.assignedLaundryStaff) {
+      const now = new Date();
+      const completionTime = (now - order.laundryStaffAssignedAt) / (1000 * 60 * 60); // in hours
+      
+      // 1. Update Staff Stats
+      const staffMember = await User.findById(order.assignedLaundryStaff);
+      if (staffMember && staffMember.laundryStaffInfo) {
+        const totalDone = (staffMember.laundryStaffInfo.totalOrdersCompleted || 0) + 1;
+        const currentAvg = staffMember.laundryStaffInfo.avgCompletionTime || 2.0;
+        // Moving average for completion time
+        const newAvg = (currentAvg * (totalDone - 1) + completionTime) / totalDone;
+        
+        await User.findByIdAndUpdate(order.assignedLaundryStaff, {
+          $set: { 
+            'laundryStaffInfo.avgCompletionTime': parseFloat(newAvg.toFixed(2)),
+            'laundryStaffInfo.totalOrdersCompleted': totalDone
+          },
+          $inc: { 'laundryStaffInfo.workload': -1 }
+        });
+      }
+
+      // 2. Calculate and Send RL Reward
+      if (order.rlAssignmentData && order.rlAssignmentData.state && order.rlAssignmentData.method === 'rl-agent') {
+        let reward = 0;
+        
+        // Reward for speed
+        if (completionTime < 2) reward += 10;
+        else if (completionTime > 5) reward -= 10;
+        else reward -= 5; // Slight penalty for moderate delay
+
+        // Reward for workload balancing (if staff had low workload initially)
+        const staffIdStr = order.assignedLaundryStaff.toString();
+        const initialStaffData = order.rlAssignmentData.state.availableStaff.find(s => s.staffId === staffIdStr);
+        if (initialStaffData && initialStaffData.workload <= 2) {
+          reward += 5;
+        }
+
+        const nextState = await stateFormatter.getSystemState(order);
+        await rlClient.updateReward(
+          order.rlAssignmentData.state,
+          order.rlAssignmentData.actionIndex,
+          reward,
+          nextState,
+          true
+        );
+        console.log(`RL Reward sent for order ${order.orderNumber}: ${reward} (Time: ${completionTime.toFixed(2)}h)`);
+      }
+    }
     
     // Send email notification if status changed
     if (status && status !== oldStatus) {
@@ -953,6 +1078,66 @@ router.patch('/:id/cancel', async (req, res) => {
       message: 'Order cancelled successfully', 
       order 
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Reschedule order (customer or admin) - only before pickup
+router.patch('/:id/reschedule', async (req, res) => {
+  try {
+    const { pickupDate, timeSlot, reason, email } = req.body;
+
+    if (!pickupDate || !timeSlot) {
+      return res.status(400).json({ message: 'New pickup date and time slot are required' });
+    }
+
+    let order;
+    if (req.params.id.length === 24 && /^[0-9a-fA-F]{24}$/.test(req.params.id)) {
+      order = await Order.findById(req.params.id);
+    } else {
+      order = await Order.findOne({ orderNumber: req.params.id });
+    }
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Only allow reschedule before pickup
+    const reschedulableStatuses = ['order-placed', 'order-accepted'];
+    if (!reschedulableStatuses.includes(order.status)) {
+      return res.status(400).json({
+        message: 'Order cannot be rescheduled after pickup has started'
+      });
+    }
+
+    // Verify ownership for customer reschedule
+    if (email && order.customerInfo.email !== email) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const oldPickupDate = order.pickupDate;
+    const oldTimeSlot = order.timeSlot;
+
+    order.pickupDate = new Date(pickupDate);
+    order.timeSlot = timeSlot;
+    order.statusHistory.push({
+      status: order.status,
+      timestamp: new Date(),
+      note: `Order rescheduled. New pickup: ${new Date(pickupDate).toLocaleDateString()} at ${timeSlot}. ${reason ? 'Reason: ' + reason : ''}`
+    });
+
+    await order.save();
+
+    // Send email notification
+    try {
+      const serviceName = order.items && order.items.length > 0 ? order.items[0].name : 'Laundry Service';
+      await sendOrderStatusUpdateEmail(order, order.status, serviceName);
+    } catch (emailError) {
+      console.error('Error sending reschedule email:', emailError);
+    }
+
+    res.json({ message: 'Order rescheduled successfully', order });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

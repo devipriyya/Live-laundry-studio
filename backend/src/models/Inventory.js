@@ -7,13 +7,8 @@ const InventorySchema = new mongoose.Schema({
     unique: true 
   },
   category: {
-    type: String,
-    enum: [
-      'detergent', 'softener', 'stain-remover', 
-      'laundry-bag', 'hanger', 'garment-cover',
-      'bedsheet', 'towel', 'curtain', 'uniform',
-      'packaging', 'equipment', 'other'
-    ],
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
     required: true
   },
   sku: {
@@ -36,7 +31,7 @@ const InventorySchema = new mongoose.Schema({
   },
   unit: {
     type: String,
-    enum: ['kg', 'liter', 'piece', 'box', 'bottle'],
+    enum: ['kg', 'liter', 'piece', 'box', 'bottle', 'bag', 'pkg'],
     default: 'piece'
   },
   pricePerUnit: {

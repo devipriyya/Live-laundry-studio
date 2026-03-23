@@ -541,18 +541,8 @@ router.get('/users/export/csv', protect, isAdmin, async (req, res) => {
 // Get all delivery boys (admin and assistants only)
 router.get('/delivery-boys', protect, isAdminOrAssistant, async (req, res) => {
   try {
-    const { availableOnly } = req.query;
-    const query = { role: { $in: ['deliveryBoy', 'staff'] } };
-    
-    if (availableOnly === 'true') {
-      query.isBlocked = false;
-      // For specifically 'deliveryBoy' role, check availability field
-      // For general 'staff' role, we assume they are available if not blocked
-      query.$or = [
-        { role: 'staff' },
-        { role: 'deliveryBoy', 'deliveryBoyInfo.isAvailable': true }
-      ];
-    }
+    // Only fetch users with the 'deliveryBoy' role, always exclude blocked users
+    const query = { role: 'deliveryBoy', isBlocked: false };
 
     const deliveryBoys = await User.find(query)
       .select('-password')
@@ -592,18 +582,8 @@ router.get('/delivery-boys', protect, isAdminOrAssistant, async (req, res) => {
 // Get all laundry staff (admin and assistants only)
 router.get('/laundry-staff', protect, isAdminOrAssistant, async (req, res) => {
   try {
-    const { availableOnly } = req.query;
-    const query = { role: { $in: ['laundryStaff', 'staff'] } };
-
-    if (availableOnly === 'true') {
-      query.isBlocked = false;
-      // For specifically 'laundryStaff' role, check availability field
-      // For general 'staff' role, we assume they are available if not blocked
-      query.$or = [
-        { role: 'staff' },
-        { role: 'laundryStaff', 'laundryStaffInfo.isAvailable': true }
-      ];
-    }
+    // Only fetch users with the 'laundryStaff' role, always exclude blocked users
+    const query = { role: 'laundryStaff', isBlocked: false };
 
     const laundryStaff = await User.find(query)
       .select('-password')

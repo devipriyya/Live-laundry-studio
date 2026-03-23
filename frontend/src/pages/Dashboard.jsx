@@ -387,45 +387,37 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
+    <div className="min-h-screen flex" style={{background: 'var(--surface-base)'}}>
       {/* Sidebar Navigation */}
-      <div className="w-64 bg-white shadow-sm border-r border-gray-200 flex flex-col">
+      <div className="w-64 flex flex-col" style={{background: 'var(--surface-sidebar)', borderRight: '1px solid var(--border-default)', boxShadow: 'var(--shadow-sidebar)'}}>
         {/* Logo */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6" style={{borderBottom: '1px solid var(--border-default)'}}>
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="ds-icon-box ds-icon-box-sm ds-gradient-primary rounded-lg">
               <SparklesIcon className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-blue-600">WashLab</h1>
+              <h1 className="text-xl font-bold" style={{color: 'var(--color-primary)'}}>WashLab</h1>
             </div>
           </div>
         </div>
 
         {/* Navigation Menu */}
-        <nav className="flex-1 py-6">
-          <ul className="space-y-1 px-3">
+        <nav className="flex-1 py-4 overflow-y-auto">
+          <ul className="space-y-0.5 px-3">
             {menuItems.map((item) => (
               <li key={item.id}>
                 <button
                   onClick={() => handleMenuClick(item.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 ${
-                    activeMenuItem === item.id
-                      ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`ds-sidebar-nav-item w-full ${activeMenuItem === item.id ? 'active' : ''}`}
                 >
-                  <item.icon className={`h-5 w-5 ${
-                    activeMenuItem === item.id ? 'text-blue-600' : 'text-gray-500'
-                  }`} />
+                  <item.icon className="h-5 w-5 flex-shrink-0" />
                   <span className="font-medium">{item.name}</span>
                   {item.badge && (
-                    <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                      {item.badge}
-                    </span>
+                    <span className="ml-auto ds-badge ds-badge-red text-xs">{item.badge}</span>
                   )}
                   {item.hasSubmenu && (
-                    <ChevronDownIcon className="h-4 w-4 ml-auto text-gray-400" />
+                    <ChevronDownIcon className="h-4 w-4 ml-auto" style={{color: 'var(--text-muted)'}} />
                   )}
                 </button>
               </li>
@@ -435,15 +427,15 @@ const Dashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
+        <header className="ds-header px-6">
+          <div className="flex items-center justify-between w-full">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {user?.name?.split(' ')[0] || 'User'}!</p>
+              <h1 className="text-xl font-bold" style={{color: 'var(--text-primary)'}}>Dashboard</h1>
+              <p className="text-sm" style={{color: 'var(--text-secondary)'}}>Welcome back, {user?.name?.split(' ')[0] || 'User'}</p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               {/* Notification Bell */}
               <div className="relative" ref={notificationRef}>
                 <button 
@@ -601,62 +593,62 @@ const Dashboard = () => {
 
           {/* Statistics Cards */}
           <div className="px-6 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 ds-stagger">
+              <div className="ds-stat-card ds-animate-fade-up">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
-                    <div className="w-full bg-blue-100 rounded-full h-2 mt-3">
-                      <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full" style={{width: '75%'}}></div>
+                    <p className="ds-label mb-1">Total Orders</p>
+                    <p className="text-3xl font-bold" style={{color: 'var(--text-primary)'}}>{stats.totalOrders}</p>
+                    <div className="ds-progress mt-3">
+                      <div className="ds-progress-bar" style={{width: '75%'}}></div>
                     </div>
                   </div>
-                  <div className="bg-blue-100 p-3 rounded-full">
+                  <div className="ds-icon-box ds-icon-box-lg rounded-full bg-blue-50">
                     <ShoppingBagIcon className="h-8 w-8 text-blue-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+              <div className="ds-stat-card ds-animate-fade-up">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Active Orders</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.activeOrders}</p>
-                    <div className="w-full bg-green-100 rounded-full h-2 mt-3">
-                      <div className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full" style={{width: '60%'}}></div>
+                    <p className="ds-label mb-1">Active Orders</p>
+                    <p className="text-3xl font-bold" style={{color: 'var(--text-primary)'}}>{stats.activeOrders}</p>
+                    <div className="ds-progress mt-3">
+                      <div className="ds-progress-bar" style={{width: '60%', background: 'linear-gradient(90deg, #059669, #0D9488)'}}></div>
                     </div>
                   </div>
-                  <div className="bg-green-100 p-3 rounded-full">
+                  <div className="ds-icon-box ds-icon-box-lg rounded-full bg-green-50">
                     <ClockIcon className="h-8 w-8 text-green-600" />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+              <div className="ds-stat-card ds-animate-fade-up">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Completed</p>
-                    <p className="text-3xl font-bold text-gray-900">{stats.completedOrders}</p>
-                    <div className="w-full bg-purple-100 rounded-full h-2 mt-3">
-                      <div className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full" style={{width: '90%'}}></div>
+                    <p className="ds-label mb-1">Completed</p>
+                    <p className="text-3xl font-bold" style={{color: 'var(--text-primary)'}}>{stats.completedOrders}</p>
+                    <div className="ds-progress mt-3">
+                      <div className="ds-progress-bar" style={{width: '90%', background: 'linear-gradient(90deg, #7C3AED, #4F46E5)'}}></div>
                     </div>
                   </div>
-                  <div className="bg-purple-100 p-3 rounded-full">
-                    <CheckCircleIcon className="h-8 w-8 text-purple-600" />
+                  <div className="ds-icon-box ds-icon-box-lg rounded-full" style={{background: 'var(--color-accent-light)'}}>
+                    <CheckCircleIcon className="h-8 w-8" style={{color: 'var(--color-accent)'}} />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+              <div className="ds-stat-card ds-animate-fade-up">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Spent</p>
-                    <p className="text-3xl font-bold text-gray-900">₹{stats.totalSpent.toLocaleString()}</p>
-                    <div className="w-full bg-orange-100 rounded-full h-2 mt-3">
-                      <div className="bg-gradient-to-r from-orange-500 to-orange-600 h-2 rounded-full" style={{width: '85%'}}></div>
+                    <p className="ds-label mb-1">Total Spent</p>
+                    <p className="text-3xl font-bold" style={{color: 'var(--text-primary)'}}>₹{stats.totalSpent.toLocaleString()}</p>
+                    <div className="ds-progress mt-3">
+                      <div className="ds-progress-bar" style={{width: '85%', background: 'linear-gradient(90deg, #D97706, #DC2626)'}}></div>
                     </div>
                   </div>
-                  <div className="bg-orange-100 p-3 rounded-full">
+                  <div className="ds-icon-box ds-icon-box-lg rounded-full bg-orange-50">
                     <CurrencyDollarIcon className="h-8 w-8 text-orange-600" />
                   </div>
                 </div>
@@ -665,44 +657,44 @@ const Dashboard = () => {
 
             {/* Quick Actions */}
             <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+              <h2 className="ds-heading-lg mb-6">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button 
                   onClick={() => handleMenuClick('schedule')}
-                  className="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
+                  className="ds-card ds-card-lift p-6 text-left group"
                 >
                   <div className="text-center">
-                    <div className="bg-blue-100 group-hover:bg-blue-200 p-4 rounded-full w-16 h-16 mx-auto mb-4 transition-colors">
-                      <CalendarDaysIcon className="h-8 w-8 text-blue-600 mx-auto" />
+                    <div className="ds-icon-box ds-icon-box-xl rounded-full bg-blue-50 mx-auto mb-4 group-hover:bg-blue-100 transition-colors">
+                      <CalendarDaysIcon className="h-8 w-8 text-blue-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Schedule Pickup</h3>
-                    <p className="text-sm text-gray-600">Book a new laundry pickup</p>
+                    <h3 className="ds-heading-md mb-1">Schedule Pickup</h3>
+                    <p className="ds-body">Book a new laundry pickup</p>
                   </div>
                 </button>
 
                 <button 
                   onClick={() => handleMenuClick('orders')}
-                  className="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gradient-to-br hover:from-purple-50 hover:to-pink-50"
+                  className="ds-card ds-card-lift p-6 text-left group"
                 >
                   <div className="text-center">
-                    <div className="bg-purple-100 group-hover:bg-purple-200 p-4 rounded-full w-16 h-16 mx-auto mb-4 transition-colors">
-                      <ClipboardDocumentListIcon className="h-8 w-8 text-purple-600 mx-auto" />
+                    <div className="ds-icon-box ds-icon-box-xl rounded-full mx-auto mb-4 group-hover:opacity-80 transition-opacity" style={{background: 'var(--color-accent-light)'}}>
+                      <ClipboardDocumentListIcon className="h-8 w-8" style={{color: 'var(--color-accent)'}} />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Track Orders</h3>
-                    <p className="text-sm text-gray-600">Monitor your order status</p>
+                    <h3 className="ds-heading-md mb-1">Track Orders</h3>
+                    <p className="ds-body">Monitor your order status</p>
                   </div>
                 </button>
 
                 <button 
                   onClick={() => handleMenuClick('payment')}
-                  className="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-gradient-to-br hover:from-orange-50 hover:to-red-50"
+                  className="ds-card ds-card-lift p-6 text-left group"
                 >
                   <div className="text-center">
-                    <div className="bg-orange-100 group-hover:bg-orange-200 p-4 rounded-full w-16 h-16 mx-auto mb-4 transition-colors">
-                      <CreditCardIcon className="h-8 w-8 text-orange-600 mx-auto" />
+                    <div className="ds-icon-box ds-icon-box-xl rounded-full bg-orange-50 mx-auto mb-4 group-hover:bg-orange-100 transition-colors">
+                      <CreditCardIcon className="h-8 w-8 text-orange-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Make Payment</h3>
-                    <p className="text-sm text-gray-600">Pay for your orders online</p>
+                    <h3 className="ds-heading-md mb-1">Make Payment</h3>
+                    <p className="ds-body">Pay for your orders online</p>
                   </div>
                 </button>
               </div>

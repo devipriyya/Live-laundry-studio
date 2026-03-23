@@ -56,6 +56,23 @@ const AssignedOrdersListModern = ({ initialTab = 'all' }) => {
     inProgress: 0,
     completed: 0
   });
+  const [updatingOrderId, setUpdatingOrderId] = useState(null);
+
+  // Status flow for delivery boy actions
+  const STATUS_FLOW = {
+    'order-placed': 'out-for-pickup',
+    'order-accepted': 'out-for-pickup',
+    'out-for-pickup': 'pickup-completed',
+    'pickup-completed': 'out-for-delivery',
+    'out-for-delivery': 'delivery-completed'
+  };
+
+  const STATUS_BUTTON_CONFIG = {
+    'out-for-pickup':    { label: 'Mark Out for Pickup',  gradient: 'from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600' },
+    'pickup-completed':  { label: 'Confirm Pickup',        gradient: 'from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600' },
+    'out-for-delivery':  { label: 'Out for Delivery',      gradient: 'from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600' },
+    'delivery-completed':{ label: 'Confirm Delivered',     gradient: 'from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600' }
+  };
 
   // Fetch assigned orders from backend
   const fetchAssignedOrders = useCallback(async () => {
@@ -112,6 +129,26 @@ const AssignedOrdersListModern = ({ initialTab = 'all' }) => {
       setLoading(false);
     }
   }, [API_URL, activeTab, pagination.currentPage, sortBy, sortOrder, searchTerm, filters]);
+
+  // Update order status
+  const updateOrderStatus = useCallback(async (orderId, newStatus, e) => {
+    e?.stopPropagation();
+    setUpdatingOrderId(orderId);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `${API_URL}/orders/${orderId}/delivery-status`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await fetchAssignedOrders();
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      alert(err.response?.data?.message || 'Failed to update status. Please try again.');
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  }, [API_URL, fetchAssignedOrders]);
 
   useEffect(() => {
     fetchAssignedOrders();
@@ -250,9 +287,9 @@ const AssignedOrdersListModern = ({ initialTab = 'all' }) => {
   const OrderCard = ({ order }) => {
     const config = getStatusConfig(order.status);
     const StatusIcon = config.icon;
-    const isPending = ['order-placed', 'order-accepted'].includes(order.status);
-    const isPickup = order.status === 'out-for-pickup';
-    const isDelivery = order.status === 'out-for-delivery';
+    const nextStatus = STATUS_FLOW[order.status];
+    const btnConfig = nextStatus ? STATUS_BUTTON_CONFIG[nextStatus] : null;
+    const isUpdating = updatingOrderId === order._id;
     
     return (
       <div 
@@ -350,24 +387,42 @@ const AssignedOrdersListModern = ({ initialTab = 'all' }) => {
         </div>
         
         {/* Card Footer - Action Buttons */}
-        <div className="px-4 py-3 bg-white/60 border-t border-white/30 flex items-center justify-between backdrop-blur-sm">
-          <button
-            onClick={(e) => handleNavigate(order.fullAddress, e)}
-            className="flex items-center gap-2 px-3 py-2 bg-white/80 hover:bg-white text-gray-700 font-medium rounded-lg shadow-sm hover:shadow transition-all text-sm"
-          >
-            <MapPinIcon className="w-4 h-4 text-purple-500" />
-            Navigate
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/delivery-dashboard/order/${order._id}`);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
-          >
-            View Details
-            <ArrowRightIcon className="w-4 h-4" />
-          </button>
+        <div className="px-4 py-3 bg-white/60 border-t border-white/30 backdrop-blur-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={(e) => handleNavigate(order.fullAddress, e)}
+              className="flex items-center gap-2 px-3 py-2 bg-white/80 hover:bg-white text-gray-700 font-medium rounded-lg shadow-sm hover:shadow transition-all text-sm"
+            >
+              <MapPinIcon className="w-4 h-4 text-purple-500" />
+              Navigate
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/delivery-dashboard/order/${order._id}`);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+            >
+              View Details
+              <ArrowRightIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Quick Status Update Button */}
+          {btnConfig && (
+            <button
+              onClick={(e) => updateOrderStatus(order._id, nextStatus, e)}
+              disabled={isUpdating}
+              className={`w-full py-2.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 bg-gradient-to-r ${btnConfig.gradient} shadow-md hover:shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {isUpdating ? (
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+              ) : (
+                <CheckCircleIcon className="w-4 h-4" />
+              )}
+              {isUpdating ? 'Updating...' : btnConfig.label}
+            </button>
+          )}
         </div>
       </div>
     );

@@ -13,11 +13,30 @@ import {
   CheckCircleIcon,
   TruckIcon,
   ChatBubbleLeftIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import '../styles/delivery-dashboard.css';
 
-const MyOrders = ({ orders, loading, filteredOrders, searchTerm, setSearchTerm, showFilters, setShowFilters, filters, setFilters, activeTab, setActiveTab, setSelectedOrder, setShowDetailModal }) => {
+const STATUS_FLOW = {
+  'out-for-pickup': 'pickup-completed',
+  'pickup-completed': 'out-for-delivery',
+  'out-for-delivery': 'delivery-completed'
+};
+
+const STATUS_BUTTON_LABELS = {
+  'pickup-completed': 'Confirm Pickup',
+  'out-for-delivery': 'Out for Delivery',
+  'delivery-completed': 'Confirm Delivered'
+};
+
+const STATUS_BUTTON_COLORS = {
+  'pickup-completed': 'bg-blue-600 hover:bg-blue-700',
+  'out-for-delivery': 'bg-purple-600 hover:bg-purple-700',
+  'delivery-completed': 'bg-green-600 hover:bg-green-700'
+};
+
+const MyOrders = ({ orders, loading, filteredOrders, searchTerm, setSearchTerm, showFilters, setShowFilters, filters, setFilters, activeTab, setActiveTab, setSelectedOrder, setShowDetailModal, updateOrderStatus }) => {
   const { t } = useTranslation();
 
   const getStatusColor = (status) => {
@@ -315,6 +334,22 @@ const MyOrders = ({ orders, loading, filteredOrders, searchTerm, setSearchTerm, 
                     </button>
                   </div>
                 </div>
+
+                {/* Status Update Button */}
+                {STATUS_FLOW[order.status] && updateOrderStatus && (
+                  <div className="px-4 pb-4 pt-0">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateOrderStatus(order._id, STATUS_FLOW[order.status]);
+                      }}
+                      className={`w-full py-2.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${STATUS_BUTTON_COLORS[STATUS_FLOW[order.status]]}`}
+                    >
+                      <CheckCircleIcon className="w-4 h-4" />
+                      {STATUS_BUTTON_LABELS[STATUS_FLOW[order.status]]}
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

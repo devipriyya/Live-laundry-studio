@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Inventory = require('../models/Inventory');
+const Category = require('../models/Category');
 const { protect } = require('../middleware/auth');
 const { isAdmin } = require('../middleware/role');
 
@@ -27,6 +28,7 @@ router.get('/', protect, isAdmin, async (req, res) => {
     }
 
     const items = await Inventory.find(query)
+      .populate('category', 'name')
       .sort({ itemName: 1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -94,7 +96,7 @@ router.get('/low-stock', protect, isAdmin, async (req, res) => {
 // Get single inventory item
 router.get('/:id', protect, isAdmin, async (req, res) => {
   try {
-    const item = await Inventory.findById(req.params.id);
+    const item = await Inventory.findById(req.params.id).populate('category', 'name');
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
     }

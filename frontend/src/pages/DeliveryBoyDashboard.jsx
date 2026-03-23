@@ -2065,6 +2065,7 @@ const DeliveryBoyDashboard = () => {
               setActiveTab,
               setSelectedOrder,
               setShowDetailModal,
+              updateOrderStatus,
               
               // Shift status for ShiftManagement
               shiftStatus,

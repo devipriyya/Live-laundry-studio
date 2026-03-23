@@ -385,13 +385,13 @@ const AdminDashboard = () => {
   }, [realTimeUpdates]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex" style={{background: 'var(--surface-base)'}}>
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transition-transform duration-300 ease-in-out`}>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white transition-transform duration-300 ease-in-out`} style={{boxShadow: 'var(--shadow-sidebar)', borderRight: '1px solid var(--border-default)'}}>
         {/* Logo */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+        <div className="flex items-center justify-between h-16 px-6" style={{borderBottom: '1px solid var(--border-default)'}}>
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="ds-icon-box ds-icon-box-sm ds-gradient-primary rounded-lg">
               <SparklesIcon className="h-5 w-5 text-white" />
             </div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -407,28 +407,20 @@ const AdminDashboard = () => {
         </div>
 
         {/* Enhanced Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={() => handleMenuClick(item.id)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all duration-200 group ${
-                activeSection === item.id
-                  ? item.activeClasses
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:shadow-sm'
-              }`}
+              className={`ds-sidebar-nav-item w-full text-left ${activeSection === item.id ? 'active' : ''}`}
             >
-              <div className="flex items-center space-x-3">
-                <item.icon className={`h-5 w-5 transition-colors ${
-                  activeSection === item.id ? item.iconActiveClass : 'text-gray-400 group-hover:text-gray-600'
-                }`} />
-                <div className="flex flex-col">
-                  <span className="font-medium text-sm">{item.name}</span>
-                  <span className="text-xs opacity-75">{item.description}</span>
-                </div>
+              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="font-medium text-sm truncate">{item.name}</span>
+                <span className="text-xs opacity-60 truncate">{item.description}</span>
               </div>
               {item.badge && (
-                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] h-5 flex items-center justify-center">
+                <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] h-5 flex items-center justify-center flex-shrink-0">
                   {item.badge}
                 </span>
               )}
@@ -437,93 +429,76 @@ const AdminDashboard = () => {
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4" style={{borderTop: '1px solid var(--border-default)'}}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold">
-                {(user?.name || 'Admin').charAt(0).toUpperCase()}
-              </span>
+            <div className="ds-avatar ds-avatar-md">
+              <span>{(user?.name || 'Admin').charAt(0).toUpperCase()}</span>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin User'}</p>
-              <p className="text-xs text-gray-500">Administrator</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate" style={{color: 'var(--text-primary)'}}>{user?.name || 'Admin User'}</p>
+              <p className="text-xs" style={{color: 'var(--text-muted)'}}>Administrator</p>
             </div>
             <button
-              onClick={() => {
-                logout();
-                navigate('/');
-              }}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              onClick={() => { logout(); navigate('/'); }}
+              className="ds-btn ds-btn-icon ds-btn-ghost"
+              title="Logout"
             >
-              <ArrowRightOnRectangleIcon className="h-5 w-5" />
+              <ArrowRightOnRectangleIcon className="h-5 w-5 text-red-500" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col lg:ml-0 min-w-0">
         {/* Top Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-          <div className="flex items-center justify-between px-6 py-4">
+        <header className="ds-header" style={{paddingLeft: '1.5rem', paddingRight: '1.5rem'}}>
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                className="lg:hidden ds-btn ds-btn-icon ds-btn-ghost"
               >
                 <Bars3Icon className="h-6 w-6" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl font-bold" style={{color: 'var(--text-primary)'}}>
                   {menuItems.find(item => item.id === activeSection)?.name || 'Dashboard'}
                 </h1>
-                <p className="text-gray-600">Welcome back, {user?.name?.split(' ')[0] || 'Admin'}!</p>
+                <p className="text-sm" style={{color: 'var(--text-secondary)'}}>Welcome back, {user?.name?.split(' ')[0] || 'Admin'}</p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              {/* Real-time toggle */}
+            <div className="flex items-center space-x-2">
               <button
                 onClick={toggleRealTimeUpdates}
-                className={`p-2 rounded-lg transition-colors ${
-                  realTimeUpdates 
-                    ? 'text-green-600 bg-green-50 hover:bg-green-100' 
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                }`}
+                className={`ds-btn ds-btn-icon ${realTimeUpdates ? 'ds-btn-secondary' : 'ds-btn-ghost'}`}
                 title={realTimeUpdates ? 'Real-time updates ON' : 'Real-time updates OFF'}
               >
-                <BoltIcon className="h-5 w-5" />
+                <BoltIcon className={`h-5 w-5 ${realTimeUpdates ? 'text-green-600' : ''}`} />
               </button>
               
-              {/* Refresh button */}
-              <button
-                onClick={handleRefresh}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Refresh dashboard"
-              >
+              <button onClick={handleRefresh} className="ds-btn ds-btn-icon ds-btn-ghost" title="Refresh">
                 <ArrowPathIcon className="h-5 w-5" />
               </button>
               
-              {/* Notifications */}
-              <button className="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                <BellIcon className="h-6 w-6" />
-                {notifications.filter(n => !n.read).length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center animate-pulse">
-                    {notifications.filter(n => !n.read).length}
-                  </span>
-                )}
-              </button>
+              <div className="ds-tooltip-wrapper">
+                <button className="ds-btn ds-btn-icon ds-btn-ghost relative">
+                  <BellIcon className="h-5 w-5" />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="ds-notif-dot" />
+                  )}
+                </button>
+                <span className="ds-tooltip">Notifications</span>
+              </div>
               
-              {/* User profile */}
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center ring-2 ring-blue-100">
-                  <span className="text-white text-sm font-semibold">
-                    {(user?.name || 'Admin').charAt(0).toUpperCase()}
-                  </span>
+              <div className="flex items-center space-x-2 pl-2" style={{borderLeft: '1px solid var(--border-default)'}}>
+                <div className="ds-avatar ds-avatar-sm">
+                  <span>{(user?.name || 'Admin').charAt(0).toUpperCase()}</span>
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin User'}</p>
-                  <p className="text-xs text-gray-500">Administrator</p>
+                  <p className="text-sm font-semibold" style={{color: 'var(--text-primary)'}}>{user?.name || 'Admin User'}</p>
+                  <p className="text-xs" style={{color: 'var(--text-muted)'}}>Administrator</p>
                 </div>
               </div>
             </div>
@@ -553,123 +528,123 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Enhanced Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200 hover:shadow-lg transition-shadow">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 ds-stagger">
+                  <div className="ds-stat-card ds-animate-fade-up">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-blue-700 font-medium text-sm">Total Orders</p>
-                        <p className="text-3xl font-bold text-blue-900 mb-1">{stats.totalOrders.toLocaleString()}</p>
-                        <p className="text-blue-600 text-xs">+{stats.monthlyGrowth}% this month</p>
+                        <p className="ds-label mb-1">Total Orders</p>
+                        <p className="text-3xl font-bold mb-1" style={{color: 'var(--text-primary)'}}>{stats.totalOrders.toLocaleString()}</p>
+                        <p className="ds-caption text-green-600">+{stats.monthlyGrowth}% this month</p>
                       </div>
-                      <div className="bg-blue-200 p-3 rounded-xl">
-                        <ClipboardDocumentListIcon className="h-8 w-8 text-blue-600" />
+                      <div className="ds-icon-box ds-icon-box-lg rounded-xl" style={{background: 'var(--color-primary-light)'}}>
+                        <ClipboardDocumentListIcon className="h-7 w-7" style={{color: 'var(--color-primary)'}} />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border border-green-200 hover:shadow-lg transition-shadow">
+                  <div className="ds-stat-card ds-animate-fade-up">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-green-700 font-medium text-sm">Active Orders</p>
-                        <p className="text-3xl font-bold text-green-900 mb-1">{stats.activeOrders}</p>
-                        <p className="text-green-600 text-xs">Processing now</p>
+                        <p className="ds-label mb-1">Active Orders</p>
+                        <p className="text-3xl font-bold mb-1" style={{color: 'var(--text-primary)'}}>{stats.activeOrders}</p>
+                        <p className="ds-caption">Processing now</p>
                       </div>
-                      <div className="bg-green-200 p-3 rounded-xl">
-                        <ClockIcon className="h-8 w-8 text-green-600" />
+                      <div className="ds-icon-box ds-icon-box-lg rounded-xl bg-green-50">
+                        <ClockIcon className="h-7 w-7 text-green-600" />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200 hover:shadow-lg transition-shadow">
+                  <div className="ds-stat-card ds-animate-fade-up">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-purple-700 font-medium text-sm">Total Customers</p>
-                        <p className="text-3xl font-bold text-purple-900 mb-1">{stats.totalCustomers}</p>
-                        <p className="text-purple-600 text-xs">Satisfaction: {stats.customerSatisfaction}/5</p>
+                        <p className="ds-label mb-1">Total Customers</p>
+                        <p className="text-3xl font-bold mb-1" style={{color: 'var(--text-primary)'}}>{stats.totalCustomers}</p>
+                        <p className="ds-caption">Satisfaction: {stats.customerSatisfaction}/5</p>
                       </div>
-                      <div className="bg-purple-200 p-3 rounded-xl">
-                        <UsersIcon className="h-8 w-8 text-purple-600" />
+                      <div className="ds-icon-box ds-icon-box-lg rounded-xl" style={{background: 'var(--color-accent-light)'}}>
+                        <UsersIcon className="h-7 w-7" style={{color: 'var(--color-accent)'}} />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 border border-orange-200 hover:shadow-lg transition-shadow">
+                  <div className="ds-stat-card ds-animate-fade-up">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-orange-700 font-medium text-sm">Today's Revenue</p>
-                        <p className="text-3xl font-bold text-orange-900 mb-1">₹{stats.todayRevenue.toFixed(2)}</p>
-                        <p className="text-orange-600 text-xs">Avg: ₹{stats.averageOrderValue}</p>
+                        <p className="ds-label mb-1">Today's Revenue</p>
+                        <p className="text-3xl font-bold mb-1" style={{color: 'var(--text-primary)'}}>₹{stats.todayRevenue.toFixed(2)}</p>
+                        <p className="ds-caption">Avg: ₹{stats.averageOrderValue}</p>
                       </div>
-                      <div className="bg-orange-200 p-3 rounded-xl">
-                        <CurrencyDollarIcon className="h-8 w-8 text-orange-600" />
+                      <div className="ds-icon-box ds-icon-box-lg rounded-xl bg-orange-50">
+                        <CurrencyDollarIcon className="h-7 w-7 text-orange-500" />
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Secondary Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                  <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                  <div className="ds-card p-4">
                     <div className="flex items-center space-x-3">
-                      <div className="bg-emerald-100 p-2 rounded-lg">
+                      <div className="ds-icon-box ds-icon-box-md rounded-lg bg-emerald-50">
                         <ShieldCheckIcon className="h-5 w-5 text-emerald-600" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Delivery Success</p>
-                        <p className="text-xl font-bold text-gray-900">{stats.deliverySuccess}%</p>
+                        <p className="ds-caption">Delivery Success</p>
+                        <p className="text-xl font-bold" style={{color: 'var(--text-primary)'}}>{stats.deliverySuccess}%</p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-white rounded-xl p-4 border border-gray-200">
+                  <div className="ds-card p-4">
                     <div className="flex items-center space-x-3">
-                      <div className="bg-red-100 p-2 rounded-lg">
-                        <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
+                      <div className="ds-icon-box ds-icon-box-md rounded-lg bg-red-50">
+                        <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Pending Payments</p>
-                        <p className="text-xl font-bold text-gray-900">{stats.pendingPayments}</p>
+                        <p className="ds-caption">Pending Payments</p>
+                        <p className="text-xl font-bold" style={{color: 'var(--text-primary)'}}>{stats.pendingPayments}</p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-white rounded-xl p-4 border border-gray-200">
+                  <div className="ds-card p-4">
                     <div className="flex items-center space-x-3">
-                      <div className="bg-blue-100 p-2 rounded-lg">
-                        <UserGroupIcon className="h-5 w-5 text-blue-600" />
+                      <div className="ds-icon-box ds-icon-box-md rounded-lg" style={{background: 'var(--color-primary-light)'}}>
+                        <UserGroupIcon className="h-5 w-5" style={{color: 'var(--color-primary)'}} />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Active Staff</p>
-                        <p className="text-xl font-bold text-gray-900">{stats.activeStaff}</p>
+                        <p className="ds-caption">Active Staff</p>
+                        <p className="text-xl font-bold" style={{color: 'var(--text-primary)'}}>{stats.activeStaff}</p>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="bg-white rounded-xl p-4 border border-gray-200">
+                  <div className="ds-card p-4">
                     <div className="flex items-center space-x-3">
-                      <div className="bg-yellow-100 p-2 rounded-lg">
-                        <StarIcon className="h-5 w-5 text-yellow-600" />
+                      <div className="ds-icon-box ds-icon-box-md rounded-lg bg-yellow-50">
+                        <StarIcon className="h-5 w-5 text-yellow-500" />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Total Revenue</p>
-                        <p className="text-xl font-bold text-gray-900">${stats.totalRevenue.toLocaleString()}</p>
+                        <p className="ds-caption">Total Revenue</p>
+                        <p className="text-xl font-bold" style={{color: 'var(--text-primary)'}}>₹{stats.totalRevenue.toLocaleString()}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Quick Actions */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div className="ds-card p-6 mb-8">
+                  <h3 className="ds-heading-md mb-4">Quick Actions</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {quickActions.map((action) => (
                       <button
                         key={action.id}
                         onClick={action.action}
-                        className={`p-4 rounded-xl border-2 border-dashed border-${action.color}-200 hover:border-${action.color}-300 hover:bg-${action.color}-50 transition-all duration-200 group`}
+                        className="ds-btn ds-btn-secondary flex-col h-auto py-4 gap-2 rounded-xl hover:shadow-md transition-all"
                       >
-                        <action.icon className={`h-8 w-8 text-${action.color}-600 mx-auto mb-2 group-hover:scale-110 transition-transform`} />
-                        <p className={`text-sm font-medium text-${action.color}-700`}>{action.title}</p>
+                        <action.icon className="h-7 w-7" style={{color: 'var(--color-primary)'}} />
+                        <p className="text-sm font-semibold" style={{color: 'var(--color-primary)'}}>{action.title}</p>
                       </button>
                     ))}
                   </div>
@@ -680,9 +655,9 @@ const AdminDashboard = () => {
                   {/* Recent Orders */}
                   <div className="lg:col-span-2">
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                      <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">Recent Orders</h3>
+                    <div className="ds-card overflow-hidden">
+                      <div className="px-6 py-4 flex items-center justify-between" style={{borderBottom: '1px solid var(--border-default)'}}>
+                        <h3 className="ds-heading-md">Recent Orders</h3>
                         <button 
                           onClick={() => setActiveSection('orders')}
                           className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -691,48 +666,48 @@ const AdminDashboard = () => {
                         </button>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="bg-gray-50">
+                        <table className="ds-table">
+                          <thead>
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                              <th>Order ID</th>
+                              <th>Customer</th>
+                              <th>Service</th>
+                              <th>Status</th>
+                              <th>Amount</th>
+                              <th>Actions</th>
                             </tr>
                           </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
+                          <tbody>
                             {recentOrders.map((order) => (
-                              <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.id}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                              <tr key={order.id}>
+                                <td className="font-medium" style={{color: 'var(--text-primary)'}}>{order.id}</td>
+                                <td>
                                   <div>
-                                    <div className="text-sm font-medium text-gray-900">{order.customerName}</div>
-                                    <div className="text-sm text-gray-500">{order.customerEmail}</div>
+                                    <div className="font-medium" style={{color: 'var(--text-primary)'}}>{order.customerName}</div>
+                                    <div className="ds-caption">{order.customerEmail}</div>
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.service}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                    order.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                                    order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                                    order.status === 'Ready for Pickup' ? 'bg-purple-100 text-purple-800' :
-                                    'bg-gray-100 text-gray-800'
+                                <td>{order.service}</td>
+                                <td>
+                                  <span className={`ds-badge ${
+                                    order.status === 'Completed' ? 'ds-badge-green' :
+                                    order.status === 'In Progress' ? 'ds-badge-blue' :
+                                    order.status === 'Ready for Pickup' ? 'ds-badge-purple' :
+                                    'ds-badge-gray'
                                   }`}>
                                     {order.status}
                                   </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${order.amount}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                  <div className="flex items-center space-x-2">
-                                    <button className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded">
-                                      <EyeIcon className="h-4 w-4" />
+                                <td className="font-semibold" style={{color: 'var(--text-primary)'}}>₹{order.amount}</td>
+                                <td>
+                                  <div className="flex items-center space-x-1">
+                                    <button className="ds-btn ds-btn-icon ds-btn-ghost" title="View">
+                                      <EyeIcon className="h-4 w-4 text-blue-500" />
                                     </button>
-                                    <button className="text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded">
-                                      <PencilIcon className="h-4 w-4" />
+                                    <button className="ds-btn ds-btn-icon ds-btn-ghost" title="Edit">
+                                      <PencilIcon className="h-4 w-4 text-green-500" />
                                     </button>
-                                    <button className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded">
+                                    <button className="ds-btn ds-btn-icon ds-btn-danger" title="Delete">
                                       <TrashIcon className="h-4 w-4" />
                                     </button>
                                   </div>
@@ -748,16 +723,16 @@ const AdminDashboard = () => {
                   {/* Sidebar */}
                   <div className="space-y-6">
                     {/* Recent Activities */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h3>
+                    <div className="ds-card p-6">
+                      <h3 className="ds-heading-md mb-4">Recent Activities</h3>
                       <div className="space-y-4">
                         {recentActivities.map((activity) => (
                           <div key={activity.id} className="flex items-start space-x-3">
-                            <div className={`p-2 rounded-lg ${
-                              activity.type === 'order' ? 'bg-blue-100' :
-                              activity.type === 'payment' ? 'bg-green-100' :
-                              activity.type === 'staff' ? 'bg-purple-100' :
-                              'bg-orange-100'
+                            <div className={`ds-icon-box ds-icon-box-sm rounded-lg ${
+                              activity.type === 'order' ? 'bg-blue-50' :
+                              activity.type === 'payment' ? 'bg-green-50' :
+                              activity.type === 'staff' ? 'bg-purple-50' :
+                              'bg-orange-50'
                             }`}>
                               {activity.type === 'order' && <ClipboardDocumentListIcon className="h-4 w-4 text-blue-600" />}
                               {activity.type === 'payment' && <CreditCardIcon className="h-4 w-4 text-green-600" />}
@@ -765,9 +740,9 @@ const AdminDashboard = () => {
                               {activity.type === 'delivery' && <TruckIcon className="h-4 w-4 text-orange-600" />}
                             </div>
                             <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                              <p className="text-sm text-gray-500">{activity.details}</p>
-                              <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
+                              <p className="ds-heading-sm">{activity.action}</p>
+                              <p className="ds-body">{activity.details}</p>
+                              <p className="ds-caption mt-0.5">{activity.time}</p>
                             </div>
                           </div>
                         ))}
@@ -775,19 +750,19 @@ const AdminDashboard = () => {
                     </div>
 
                     {/* System Alerts */}
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">System Alerts</h3>
+                    <div className="ds-card p-6">
+                      <h3 className="ds-heading-md mb-4">System Alerts</h3>
                       <div className="space-y-3">
                         {systemAlerts.map((alert) => (
-                          <div key={alert.id} className={`p-3 rounded-lg border ${
+                          <div key={alert.id} className={`p-3 rounded-xl border ${
                             alert.severity === 'warning' ? 'bg-yellow-50 border-yellow-200' :
                             alert.severity === 'success' ? 'bg-green-50 border-green-200' :
                             'bg-blue-50 border-blue-200'
                           }`}>
                             <div className="flex items-start space-x-2">
-                              {alert.severity === 'warning' && <ExclamationTriangleIcon className="h-4 w-4 text-yellow-600 mt-0.5" />}
-                              {alert.severity === 'success' && <CheckCircleIcon className="h-4 w-4 text-green-600 mt-0.5" />}
-                              {alert.severity === 'info' && <InformationCircleIcon className="h-4 w-4 text-blue-600 mt-0.5" />}
+                              {alert.severity === 'warning' && <ExclamationTriangleIcon className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />}
+                              {alert.severity === 'success' && <CheckCircleIcon className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />}
+                              {alert.severity === 'info' && <InformationCircleIcon className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />}
                               <p className={`text-sm ${
                                 alert.severity === 'warning' ? 'text-yellow-800' :
                                 alert.severity === 'success' ? 'text-green-800' :

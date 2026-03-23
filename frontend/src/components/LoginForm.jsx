@@ -40,15 +40,15 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
     const newErrors = { ...initialErrors };
 
     if (!form.email.trim()) {
-      newErrors.email = t('auth.errors.email_required');
+      newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = t('auth.errors.email_invalid');
+      newErrors.email = "Please enter a valid email";
     }
 
     if (!form.password) {
-      newErrors.password = t('auth.errors.password_required');
+      newErrors.password = "Password is required";
     } else if (form.password.length < 6) {
-      newErrors.password = t('auth.errors.password_min_length');
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     setErrors(newErrors);
@@ -102,10 +102,10 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
         if (onClose) onClose();
         return;
       } else {
-        setErrors((prev) => ({ ...prev, general: result.error || t('auth.errors.login_failed'), success: "" }));
+        setErrors((prev) => ({ ...prev, general: result.error || "Login failed. Please try again.", success: "" }));
       }
     } catch (error) {
-      setErrors((prev) => ({ ...prev, general: t('auth.errors.login_failed'), success: "" }));
+      setErrors((prev) => ({ ...prev, general: "Login failed. Please try again.", success: "" }));
     } finally {
       setLoading(false);
     }
@@ -158,7 +158,7 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       navigateBasedOnRole(role);
       if (onClose) onClose();
     } catch (error) {
-      setErrors((prev) => ({ ...prev, general: t('auth.errors.google_failure') }));
+      setErrors((prev) => ({ ...prev, general: "Google sign-in failed. Please try again." }));
     } finally {
       setLoading(false);
     }
@@ -169,12 +169,12 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
     setErrors((prev) => ({ ...prev, reset: "", success: "", general: "" }));
 
     if (!resetEmail.trim()) {
-      setErrors((prev) => ({ ...prev, reset: t('auth.errors.reset_email_required') }));
+      setErrors((prev) => ({ ...prev, reset: "Email is required" }));
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resetEmail)) {
-      setErrors((prev) => ({ ...prev, reset: t('auth.errors.reset_email_invalid') }));
+      setErrors((prev) => ({ ...prev, reset: "Please enter a valid email" }));
       return;
     }
 
@@ -182,11 +182,11 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       await sendPasswordResetEmail(auth, resetEmail);
       setForgotPasswordModal(false);
       setResetEmail("");
-      setErrors({ ...initialErrors, success: t('auth.errors.reset_email_sent') });
+      setErrors({ ...initialErrors, success: "Password reset email sent! Check your inbox." });
     } catch (error) {
-      let errorMessage = t('auth.errors.generic_failure');
+      let errorMessage = "Failed to send reset email";
       if (error.code === "auth/user-not-found") {
-        errorMessage = t('auth.errors.user_not_found');
+        errorMessage = "No account found with this email";
       }
       setErrors((prev) => ({ ...prev, reset: errorMessage }));
     }
@@ -207,79 +207,74 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
 
   return (
     <>
-      <div className="space-y-8 bg-transparent p-2 text-white">
-        <div className="space-y-3 text-center mb-10">
-          <div className="mx-auto h-14 w-14 flex items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 shadow-xl mb-6 group cursor-default">
-            <SparklesIcon className="h-8 w-8 text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]" />
+      <div className="space-y-6 bg-white p-6 rounded-2xl">
+        <div className="space-y-3 text-center mb-8">
+          <div className="mx-auto h-14 w-14 flex items-center justify-center rounded-2xl bg-indigo-100 border border-indigo-200 shadow-lg mb-4">
+            <SparklesIcon className="h-8 w-8 text-indigo-600" />
           </div>
-          <h2 className="text-3xl font-bold text-white tracking-tight">{t('auth.welcome_back')}</h2>
-          <p className="text-blue-100/60 font-medium">
-            {t('auth.sign_in_subtitle')}
-          </p>
+          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Welcome Back</h2>
+          <p className="text-gray-600 font-medium">Sign in to continue to your account</p>
         </div>
 
         {errors.general && (
-          <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded-2xl text-red-100 text-sm animate-shake">
+          <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-xl text-red-700 text-sm font-medium">
             {errors.general}
           </div>
         )}
+
         {errors.success && (
-          <div className="mb-6 p-4 bg-teal-500/20 backdrop-blur-md border border-teal-500/30 rounded-2xl text-teal-100 text-sm">
+          <div className="p-4 bg-green-50 border-l-4 border-green-500 rounded-xl text-green-700 text-sm font-medium">
             {errors.success}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-blue-100/90 ml-1">{t('auth.email_label')}</label>
+            <label className="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
             <div className="relative group/input">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <EnvelopeIcon className="h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" />
-              </div>
+              <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within/input:text-indigo-600 transition-colors" />
               <input
                 type="email"
                 name="email"
+                placeholder="name@email.com"
                 value={form.email}
                 onChange={handleChange}
-                className="block w-full pl-12 pr-4 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
-                placeholder={t('auth.email_placeholder')}
+                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all duration-300"
               />
             </div>
-            {errors.email && <p className="text-red-300 text-xs mt-1 ml-4 font-medium">{errors.email}</p>}
+            {errors.email && <p className="text-red-600 text-xs mt-1 ml-4 font-medium">{errors.email}</p>}
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between px-1">
-              <label className="text-sm font-semibold text-blue-100/90">{t('auth.password_label')}</label>
+              <label className="text-sm font-semibold text-gray-700">Password</label>
               <button
                 type="button"
                 onClick={() => setForgotPasswordModal(true)}
-                className="text-xs font-bold text-white/60 hover:text-white transition-colors"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
               >
-                {t('auth.forgot_password')}
+                Forgot Password?
               </button>
             </div>
             <div className="relative group/input">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <LockClosedIcon className="h-5 w-5 text-white/40 group-focus-within/input:text-white transition-colors" />
-              </div>
+              <LockClosedIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within/input:text-indigo-600 transition-colors" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
+                placeholder="••••••••"
                 value={form.password}
                 onChange={handleChange}
-                className="block w-full pl-12 pr-12 py-4 bg-white/10 border border-white/10 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-4 focus:ring-blue-500/30 focus:border-blue-400 focus:bg-white/15 transition-all duration-300"
-                placeholder={t('auth.password_placeholder')}
+                className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all duration-300"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/40 hover:text-white transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
               >
-                {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
               </button>
             </div>
-            {errors.password && <p className="text-red-300 text-xs mt-1 ml-4 font-medium">{errors.password}</p>}
+            {errors.password && <p className="text-red-600 text-xs mt-1 ml-4 font-medium">{errors.password}</p>}
           </div>
 
           <div className="flex items-center px-1">
@@ -288,39 +283,39 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
               type="checkbox"
               checked={rememberMe}
               onChange={(event) => setRememberMe(event.target.checked)}
-              className="h-4 w-4 rounded bg-white/10 border-white/20 text-blue-500 focus:ring-blue-500 transition-colors"
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-colors"
             />
-            <label htmlFor="modal-remember-me" className="ml-2 block text-sm text-white/60 font-medium">
-              {t('auth.remember_me')}
+            <label htmlFor="modal-remember-me" className="ml-2 block text-sm text-gray-600 font-medium">
+              Remember me
             </label>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-white text-indigo-700 rounded-2xl font-black text-lg shadow-[0_20px_40px_-15px_rgba(255,255,255,0.3)] hover:shadow-[0_25px_50px_-10px_rgba(255,255,255,0.4)] hover:-translate-y-1 active:translate-y-0 active:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+            className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-6 uppercase tracking-wide"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-3">
-                <div className="w-6 h-6 border-[3px] border-indigo-700 border-t-transparent rounded-full animate-spin"></div>
-                <span>{t('common.authentication')}</span>
+                <div className="w-6 h-6 border-[3px] border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Signing In...</span>
               </div>
             ) : (
-              t('auth.sign_in')
+              "SIGN IN"
             )}
           </button>
         </form>
 
-        <div className="mt-8 mb-6 flex items-center gap-4">
-          <div className="flex-1 h-px bg-white/10"></div>
-          <span className="text-white/40 text-xs font-bold uppercase tracking-widest">{t('auth.or_sign_in_with')}</span>
-          <div className="flex-1 h-px bg-white/10"></div>
+        <div className="mt-6 mb-6 flex items-center gap-4">
+          <div className="flex-1 h-px bg-gray-200"></div>
+          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Or sign in with</span>
+          <div className="flex-1 h-px bg-gray-200"></div>
         </div>
 
         <button
           onClick={handleGoogleSignIn}
           disabled={loading}
-          className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center gap-3 text-white font-semibold hover:bg-white/10 transition-all duration-300 active:scale-[0.98]"
+          className="w-full py-3.5 bg-white border-2 border-gray-200 rounded-xl flex items-center justify-center gap-3 text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 active:scale-[0.98]"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -328,17 +323,17 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-3.15.81-.62z" />
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
-          {t('auth.google_account')}
+          Continue with Google
         </button>
 
-        <p className="mt-8 text-center text-white/50 text-sm font-medium">
-          {t('auth.new_to_washlab')}{" "}
+        <p className="text-center text-gray-600 text-sm font-medium mt-8">
+          New to WashLab?{" "}
           <button
             type="button"
             onClick={onSwitchToRegister}
-            className="text-white font-black hover:underline transition-colors decoration-blue-400 underline-offset-4"
+            className="text-indigo-600 font-bold hover:text-indigo-700 hover:underline transition-colors underline-offset-4"
           >
-            {t('auth.create_account_link')}
+            Create Account
           </button>
         </p>
       </div>
@@ -346,27 +341,25 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
       {/* Forgot Password Modal */}
       {forgotPasswordModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 backdrop-blur-3xl border border-white/20 rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-scaleIn">
-            <h3 className="text-2xl font-bold text-white mb-2">{t('auth.reset_password')}</h3>
-            <p className="text-white/60 mb-6">{t('auth.reset_password_subtitle')}</p>
+          <div className="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl animate-scaleIn">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Reset Password</h3>
+            <p className="text-gray-600 mb-6">Enter your email to receive a password reset link</p>
             
             {errors.reset && (
-              <div className="mb-6 p-4 bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded-2xl text-red-100 text-sm">
+              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-xl text-red-700 text-sm font-medium">
                 {errors.reset}
               </div>
             )}
 
             <form onSubmit={handleForgotPassword} className="space-y-6">
               <div className="relative group/input">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <EnvelopeIcon className="h-5 w-5 text-white/40 group-focus-within/input:text-white" />
-                </div>
+                <EnvelopeIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within/input:text-indigo-600 transition-colors" />
                 <input
                   type="email"
                   value={resetEmail}
                   onChange={handleResetEmailChange}
-                  className="block w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
-                  placeholder={t('auth.reset_email_placeholder')}
+                  className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all duration-300"
+                  placeholder="name@email.com"
                   required
                 />
               </div>
@@ -375,15 +368,15 @@ export default function LoginForm({ onSwitchToRegister, onClose }) {
                 <button
                   type="button"
                   onClick={closeForgotPassword}
-                  className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-semibold hover:bg-white/10 transition-colors"
+                  className="flex-1 py-3.5 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
                 >
-                  {t('auth.cancel')}
+                  Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-4 bg-white text-indigo-600 rounded-2xl font-bold hover:shadow-lg transition-all"
+                  className="flex-1 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg"
                 >
-                  {t('auth.send_link')}
+                  Send Link
                 </button>
               </div>
             </form>

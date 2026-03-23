@@ -40,6 +40,7 @@ const DashboardProductsEnhanced = () => {
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [categories, setCategories] = useState([]);
 
   // Initialize quantities for all products
   useEffect(() => {
@@ -50,15 +51,23 @@ const DashboardProductsEnhanced = () => {
     setQuantities(initialQuantities);
   }, [products]);
 
-  const fetchProducts = async () => {
+  const fetchProductsAndCategories = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await api.get('/products');
-      const productList = Array.isArray(response.data) ? response.data : [];
+      const [productsRes, categoriesRes] = await Promise.all([
+        api.get('/products'),
+        api.get('/categories')
+      ]);
+
+      const productList = Array.isArray(productsRes.data) ? productsRes.data : [];
       setProducts(productList);
       setFilteredProducts(productList);
+
+      if (Array.isArray(categoriesRes.data)) {
+        setCategories(categoriesRes.data);
+      }
     } catch (err) {
       if (err.response?.status === 404) {
         setError('Products service not found. Please contact support.');
@@ -76,7 +85,7 @@ const DashboardProductsEnhanced = () => {
 
   // Fetch products
   useEffect(() => {
-    fetchProducts();
+    fetchProductsAndCategories();
   }, []);
 
   // Filter and sort products
@@ -88,13 +97,13 @@ const DashboardProductsEnhanced = () => {
       result = result.filter(product => 
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchTerm.toLowerCase())
+        (product.category && product.category.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     
     // Apply category filter
     if (categoryFilter !== 'all') {
-      result = result.filter(product => product.category === categoryFilter);
+      result = result.filter(product => product.categoryId === categoryFilter || product.category === categoryFilter);
     }
     
     // Apply sorting
@@ -128,26 +137,21 @@ const DashboardProductsEnhanced = () => {
   }, [products, searchTerm, categoryFilter, sortBy, sortOrder]);
 
   // Define main groups
-  const mainCategories = {
-    'Laundry Care': ['detergent', 'softener', 'stain-remover'],
-    'Laundry Accessories': ['laundry-bag', 'hanger', 'garment-cover'],
-    'Fabric & Clothing': ['bedsheet', 'towel', 'curtain', 'uniform']
-  };
-
   const getCategoryGroup = (category) => {
-    for (const [group, cats] of Object.entries(mainCategories)) {
-      if (cats.includes(category)) return group;
-    }
-    return 'Other';
+    const cat = categories.find(c => c._id === category || c.name === category);
+    return cat ? cat.name : 'Other';
   };
 
   const getCategoryColor = (group) => {
-    switch (group) {
-      case 'Laundry Care': return 'from-blue-500 to-indigo-600';
-      case 'Laundry Accessories': return 'from-amber-400 to-orange-500';
-      case 'Fabric & Clothing': return 'from-teal-400 to-emerald-600';
-      default: return 'from-gray-400 to-gray-600';
-    }
+    const colors = [
+      'from-blue-500 to-indigo-600',
+      'from-amber-400 to-orange-500',
+      'from-teal-400 to-emerald-600',
+      'from-pink-500 to-rose-600',
+      'from-purple-500 to-violet-600'
+    ];
+    const index = categories.findIndex(c => c.name === group);
+    return index !== -1 ? colors[index % colors.length] : 'from-gray-400 to-gray-600';
   };
 
   const getProductFallback = (category) => {
@@ -301,7 +305,7 @@ const DashboardProductsEnhanced = () => {
             <p className="text-red-700 mb-4">{error}</p>
             <div className="flex justify-center space-x-4">
               <button 
-                onClick={fetchProducts}
+                onClick={fetchProductsAndCategories}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
               >
                 Retry
@@ -390,15 +394,15 @@ const DashboardProductsEnhanced = () => {
             >
               All Items
             </button>
-            {Object.keys(mainCategories).map((group) => (
+            {categories.map((cat) => (
               <button 
-                key={group}
-                onClick={() => setCategoryFilter(mainCategories[group][0])} // Just a placeholder for filter behavior
+                key={cat._id}
+                onClick={() => setCategoryFilter(cat._id)}
                 className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
-                  getCategoryGroup(categoryFilter) === group ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'
+                  categoryFilter === cat._id ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-50'
                 }`}
               >
-                {group}
+                {cat.name}
               </button>
             ))}
           </div>
@@ -419,23 +423,21 @@ const DashboardProductsEnhanced = () => {
           </div>
         </div>
 
-        {/* Categories Pills (Expanded) */}
         <div className="flex flex-wrap gap-2">
-          {Object.entries(mainCategories).map(([group, cats]) => (
-            cats.map(cat => (
+          {categories.map(cat => (
               <button
-                key={cat}
-                onClick={() => setCategoryFilter(cat)}
+                key={cat._id}
+                onClick={() => setCategoryFilter(cat._id)}
                 className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                  categoryFilter === cat 
+                  categoryFilter === cat._id 
                     ? 'bg-pink-500 border-pink-500 text-white shadow-md' 
                     : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'
                 }`}
               >
-                {cat.replace('-', ' ')}
+                {cat.name}
               </button>
             ))
-          ))}
+          }
         </div>
 
         {/* Products Grid */}
@@ -451,9 +453,9 @@ const DashboardProductsEnhanced = () => {
                   className="relative aspect-square p-6 flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50/50"
                   onClick={() => viewProductDetails(product)}
                 >
-                  {product.image && product.image.includes('.png') ? (
+                  {product.image ? (
                     <img 
-                      src={`/images/products/${product.image}`} 
+                      src={product.image.startsWith('http') ? product.image : `${api.defaults.baseURL.replace('/api', '')}${product.image}`} 
                       alt={product.name}
                       className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700 drop-shadow-lg"
                     />
@@ -507,7 +509,10 @@ const DashboardProductsEnhanced = () => {
                   <div className="pt-4 border-t border-gray-50 flex items-center justify-between mt-auto">
                     <div className="flex flex-col">
                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Price</span>
-                      <span className="text-xl font-black text-gray-900 tracking-tighter">₹{product.price}</span>
+                      <div className="flex items-baseline space-x-1">
+                        <span className="text-xl font-black text-gray-900 tracking-tighter">₹{product.price}</span>
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">/ {product.unit}</span>
+                      </div>
                     </div>
 
                     <div className="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-100">
@@ -587,9 +592,9 @@ const DashboardProductsEnhanced = () => {
               </button>
               
               <div className="relative group/modal-img max-w-md w-full aspect-square flex items-center justify-center">
-                {selectedProduct.image && selectedProduct.image.includes('.png') ? (
+                {selectedProduct.image ? (
                   <img
-                    src={`/images/products/${selectedProduct.image}`}
+                    src={selectedProduct.image.startsWith('http') ? selectedProduct.image : `${api.defaults.baseURL.replace('/api', '')}${selectedProduct.image}`}
                     alt={selectedProduct.name}
                     className="w-full h-full object-contain drop-shadow-2xl group-hover/modal-img:scale-110 transition-transform duration-700"
                   />
@@ -625,7 +630,10 @@ const DashboardProductsEnhanced = () => {
                   <span className="text-xs font-bold text-gray-400">{productReviews.length} Verified Reviews</span>
                 </div>
 
-                <div className="text-5xl font-black text-gray-900 mb-8 tracking-tighter">₹{selectedProduct.price}</div>
+                <div className="flex items-baseline space-x-2 mb-8">
+                  <span className="text-5xl font-black text-gray-900 tracking-tighter">₹{selectedProduct.price}</span>
+                  <span className="text-sm font-black text-gray-400 uppercase tracking-widest">/ {selectedProduct.unit}</span>
+                </div>
 
                 <div className="space-y-8 mb-12">
                   <div>

@@ -573,94 +573,144 @@ const DashboardSteamIroning = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Back Button */}
-        <div className="mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Modern Hero Header */}
+      <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-6 py-12">
+          {/* Back Button */}
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center text-gray-700 hover:text-gray-900 transition-colors duration-200 bg-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg"
+            className="mb-6 flex items-center gap-2 text-white/90 hover:text-white transition-colors bg-white/10 hover:bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl"
           >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            <span className="font-semibold">Back</span>
+            <ArrowLeftIcon className="h-5 w-5" />
+            <span className="font-medium">Back</span>
           </button>
-        </div>
 
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-4 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-full shadow-lg">
-              <SparklesIcon className="h-12 w-12 text-white" />
+          <div className="flex items-center gap-6">
+            {/* Icon */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-white/20 rounded-3xl blur-xl"></div>
+              <div className="relative bg-white/10 backdrop-blur-md p-6 rounded-3xl border border-white/20">
+                <SparklesIcon className="h-16 w-16 text-white" />
+              </div>
+            </div>
+
+            {/* Title & Description */}
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold text-white mb-2">
+                Steam Ironing Service
+              </h1>
+              <p className="text-white/90 text-lg">
+                Professional steam ironing for crisp, wrinkle-free clothes
+              </p>
+              
+              {/* Stats Pills */}
+              <div className="flex gap-3 mt-4">
+                <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
+                  <span className="text-white/90 text-sm font-medium">
+                    {getTotalItems()} items selected
+                  </span>
+                </div>
+                {getTotalItems() > 0 && (
+                  <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
+                    <span className="text-white font-semibold text-sm">
+                      ₹{calculateTotal()} total
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-2">
-            Steam Ironing Service
-          </h1>
-          <p className="text-gray-600 text-lg">
-            Professional steam ironing for crisp, wrinkle-free clothes
-          </p>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
 
         {!showSummary ? (
           /* Booking Form */
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-gray-100">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
               {/* Item Selection */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                  <ShoppingBagIcon className="h-5 w-5 text-cyan-600" />
-                  Select Items for Steam Ironing *
-                </label>
-                <div className="space-y-6">
+                <div className="flex items-center gap-2 mb-6">
+                  <ShoppingBagIcon className="h-6 w-6 text-indigo-600" />
+                  <h2 className="text-xl font-bold text-gray-900">Select Items for Steam Ironing</h2>
+                </div>
+                
+                <div className="space-y-8">
                   {Object.entries(steamIroningPricing).map(([category, items]) => (
                     <div key={category}>
-                      <h3 className="text-md font-bold text-gray-800 mb-3 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-cyan-500 rounded-full"></span>
-                        {category}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {items.map((item) => (
-                          <div
-                            key={item.name}
-                            className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl p-4 border-2 border-cyan-200 hover:border-cyan-400 transition-all"
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <div>
-                                <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
-                                <p className="text-cyan-600 font-bold text-lg">₹{item.price}</p>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-full"></div>
+                        <h3 className="text-lg font-bold text-gray-900">{category}</h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {items.map((item) => {
+                          const isSelected = selectedItems[item.name] > 0;
+                          return (
+                            <div
+                              key={item.name}
+                              className={`group relative bg-white rounded-xl p-4 border-2 transition-all duration-200 hover:shadow-md ${
+                                isSelected 
+                                  ? 'border-indigo-500 shadow-sm' 
+                                  : 'border-gray-200 hover:border-indigo-300'
+                              }`}
+                            >
+                              {isSelected && (
+                                <div className="absolute -top-2 -right-2 bg-indigo-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                  Selected
+                                </div>
+                              )}
+                              
+                              <div className="mb-3">
+                                <h4 className="font-semibold text-gray-900 mb-1">{item.name}</h4>
+                                <div className="flex items-center gap-1">
+                                  <CurrencyRupeeIcon className="h-5 w-5 text-indigo-600" />
+                                  <span className="text-xl font-bold text-indigo-600">{item.price}</span>
+                                </div>
                               </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-600 font-medium">Quantity</span>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateItemQuantity(item.name, -1)}
+                                    disabled={!selectedItems[item.name]}
+                                    className="p-1.5 bg-gray-100 hover:bg-indigo-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <MinusIcon className="h-4 w-4 text-gray-700" />
+                                  </button>
+                                  <span className="w-8 text-center font-bold text-gray-900">
+                                    {selectedItems[item.name] || 0}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateItemQuantity(item.name, 1)}
+                                    className="p-1.5 bg-indigo-100 hover:bg-indigo-200 rounded-lg transition-colors"
+                                  >
+                                    <PlusIcon className="h-4 w-4 text-indigo-700" />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              {isSelected && (
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600">Subtotal</span>
+                                    <span className="text-sm font-bold text-indigo-600">
+                                      ₹{item.price * selectedItems[item.name]}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex items-center justify-between mt-3">
-                              <span className="text-xs text-gray-600 font-medium">Quantity:</span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => updateItemQuantity(item.name, -1)}
-                                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                                >
-                                  <MinusIcon className="h-4 w-4 text-gray-700" />
-                                </button>
-                                <span className="w-10 text-center font-bold text-gray-900 text-lg">
-                                  {selectedItems[item.name] || 0}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => updateItemQuantity(item.name, 1)}
-                                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                                >
-                                  <PlusIcon className="h-4 w-4 text-gray-700" />
-                                </button>
-                              </div>
-                            </div>
-                            {selectedItems[item.name] > 0 && (
-                              <div className="mt-3 pt-3 border-t-2 border-cyan-300">
-                                <p className="text-sm font-bold text-cyan-700">
-                                  Subtotal: ₹{item.price * selectedItems[item.name]}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -668,65 +718,82 @@ const DashboardSteamIroning = () => {
               </div>
 
               {/* Pickup Date & Time */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-3" htmlFor="pickup-date">
-                    <CalendarDaysIcon className="h-5 w-5 inline mr-2" />
-                    Pickup Date *
-                  </label>
-                  <input
-                    id="pickup-date"
-                    type="date"
-                    value={pickupDate}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                    onBlur={() => validatePickupDate(pickupDate)}
-                    min={minPickupDate}
-                    max={maxPickupDate}
-                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 text-gray-900 font-medium focus:ring-4 ${dateError ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-cyan-500 focus:ring-cyan-100'}`}
-                    aria-invalid={Boolean(dateError)}
-                    aria-describedby={dateError ? 'pickup-date-error' : undefined}
-                    required
-                  />
-                  {dateError && (
-                    <p className="mt-2 text-sm text-red-600" id="pickup-date-error">
-                      {dateError}
-                    </p>
-                  )}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <CalendarDaysIcon className="h-6 w-6 text-indigo-600" />
+                  <h2 className="text-xl font-bold text-gray-900">Pickup Schedule</h2>
                 </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pickup Date
+                    </label>
+                    <input
+                      id="pickup-date"
+                      type="date"
+                      value={pickupDate}
+                      onChange={(e) => handleDateChange(e.target.value)}
+                      onBlur={() => validatePickupDate(pickupDate)}
+                      min={minPickupDate}
+                      max={maxPickupDate}
+                      className={`w-full px-4 py-3 border-2 rounded-xl transition-all text-gray-900 font-medium focus:ring-2 focus:ring-offset-2 ${
+                        dateError 
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                          : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-500'
+                      }`}
+                      aria-invalid={Boolean(dateError)}
+                      aria-describedby={dateError ? 'pickup-date-error' : undefined}
+                      required
+                    />
+                    {dateError && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center gap-1" id="pickup-date-error">
+                        <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                        {dateError}
+                      </p>
+                    )}
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-3">
-                    <ClockIcon className="h-5 w-5 inline mr-2" />
-                    Pickup Time *
-                  </label>
-                  <select
-                    value={pickupTime}
-                    onChange={(e) => setPickupTime(e.target.value)}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 transition-all duration-300 text-gray-900 font-medium"
-                    required
-                  >
-                    <option value="">Select time slot...</option>
-                    {timeSlots.map((slot) => (
-                      <option key={slot} value={slot}>
-                        {slot}
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Pickup Time
+                    </label>
+                    <select
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all text-gray-900 font-medium"
+                      required
+                    >
+                      <option value="">Select time slot...</option>
+                      {timeSlots.map((slot) => (
+                        <option key={slot} value={slot}>
+                          {slot}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
               {/* Address Information */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-3">
-                  Pickup Address *
-                </label>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 bg-indigo-100 rounded-lg">
+                    <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Pickup Address</h2>
+                </div>
+                
                 <div className="space-y-4">
                   <input
                     type="text"
                     placeholder="Street Address"
                     value={address.street}
                     onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 transition-all duration-300 text-gray-900 font-medium"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all text-gray-900 font-medium placeholder:text-gray-400"
                     required
                   />
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -735,13 +802,13 @@ const DashboardSteamIroning = () => {
                       placeholder="City"
                       value={address.city}
                       onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 transition-all duration-300 text-gray-900 font-medium"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all text-gray-900 font-medium placeholder:text-gray-400"
                       required
                     />
                     <select
                       value={address.state}
                       onChange={(e) => setAddress({ ...address, state: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 transition-all duration-300 text-gray-900 font-medium"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all text-gray-900 font-medium"
                       required
                     >
                       <option value="">Select State</option>
@@ -756,7 +823,7 @@ const DashboardSteamIroning = () => {
                       placeholder="ZIP Code"
                       value={address.zipCode}
                       onChange={(e) => setAddress({ ...address, zipCode: e.target.value })}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 transition-all duration-300 text-gray-900 font-medium"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all text-gray-900 font-medium placeholder:text-gray-400"
                       required
                     />
                   </div>
@@ -764,72 +831,95 @@ const DashboardSteamIroning = () => {
                     placeholder="Special Instructions (optional)"
                     value={address.instructions}
                     onChange={(e) => setAddress({ ...address, instructions: e.target.value })}
-                    rows={2}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 transition-all duration-300 text-gray-900 font-medium"
+                    rows={3}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all text-gray-900 font-medium placeholder:text-gray-400 resize-none"
                   />
                 </div>
               </div>
 
               {/* Contact Information */}
               <div>
-                <label className="block text-sm font-bold text-gray-900 mb-3">
-                  Contact Information *
-                </label>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-1.5 bg-indigo-100 rounded-lg">
+                    <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Contact Information</h2>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <input
                     type="text"
                     placeholder="Full Name"
                     value={contactInfo.name}
                     onChange={(e) => setContactInfo({ ...contactInfo, name: e.target.value })}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 transition-all duration-300 text-gray-900 font-medium"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all text-gray-900 font-medium placeholder:text-gray-400"
                     required
                   />
-                  <input
-                    type="tel"
-                    placeholder="Phone Number"
-                    value={contactInfo.phone}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    onBlur={() => validatePhone(contactInfo.phone)}
-                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 text-gray-900 font-medium focus:ring-4 ${phoneError ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-cyan-500 focus:ring-cyan-100'}`}
-                    aria-invalid={Boolean(phoneError)}
-                    aria-describedby={phoneError ? 'contact-phone-error' : undefined}
-                    required
-                  />
-                  {phoneError && (
-                    <p className="text-sm text-red-600" id="contact-phone-error">
-                      {phoneError}
-                    </p>
-                  )}
-                  <input
-                    type="email"
-                    placeholder="Email Address"
-                    value={contactInfo.email}
-                    onChange={(e) => handleEmailChange(e.target.value)}
-                    onBlur={() => validateEmail(contactInfo.email)}
-                    className={`w-full px-4 py-3 border-2 rounded-xl transition-all duration-300 text-gray-900 font-medium focus:ring-4 ${emailError ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-cyan-500 focus:ring-cyan-100'}`}
-                    aria-invalid={Boolean(emailError)}
-                    aria-describedby={emailError ? 'contact-email-error' : undefined}
-                    required
-                  />
-                  {emailError && (
-                    <p className="text-sm text-red-600" id="contact-email-error">
-                      {emailError}
-                    </p>
-                  )}
+                  <div>
+                    <input
+                      type="tel"
+                      placeholder="Phone Number"
+                      value={contactInfo.phone}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
+                      onBlur={() => validatePhone(contactInfo.phone)}
+                      className={`w-full px-4 py-3 border-2 rounded-xl transition-all text-gray-900 font-medium placeholder:text-gray-400 focus:ring-2 focus:ring-offset-2 ${
+                        phoneError 
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                          : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-500'
+                      }`}
+                      aria-invalid={Boolean(phoneError)}
+                      aria-describedby={phoneError ? 'contact-phone-error' : undefined}
+                      required
+                    />
+                    {phoneError && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center gap-1" id="contact-phone-error">
+                        <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                        {phoneError}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <input
+                      type="email"
+                      placeholder="Email Address"
+                      value={contactInfo.email}
+                      onChange={(e) => handleEmailChange(e.target.value)}
+                      onBlur={() => validateEmail(contactInfo.email)}
+                      className={`w-full px-4 py-3 border-2 rounded-xl transition-all text-gray-900 font-medium placeholder:text-gray-400 focus:ring-2 focus:ring-offset-2 ${
+                        emailError 
+                          ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
+                          : 'border-gray-200 focus:border-indigo-500 focus:ring-indigo-500'
+                      }`}
+                      aria-invalid={Boolean(emailError)}
+                      aria-describedby={emailError ? 'contact-email-error' : undefined}
+                      required
+                    />
+                    {emailError && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center gap-1" id="contact-email-error">
+                        <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                        {emailError}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Price Summary */}
               {getTotalItems() > 0 && (
-                <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl p-6 border-2 border-cyan-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-gray-700 font-medium">Total Items:</span>
-                    <span className="text-gray-900 font-bold">{getTotalItems()} items</span>
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border-2 border-indigo-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-gray-700 font-medium">Total Items</span>
+                    <span className="text-gray-900 font-bold text-lg">{getTotalItems()}</span>
                   </div>
-                  <div className="border-t-2 border-cyan-300 pt-4">
+                  <div className="border-t-2 border-indigo-200 pt-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-xl font-bold text-gray-900">Total Amount:</span>
-                      <span className="text-3xl font-extrabold text-cyan-600">₹{calculateTotal()}</span>
+                      <span className="text-xl font-bold text-gray-900">Total Amount</span>
+                      <div className="flex items-center gap-1">
+                        <CurrencyRupeeIcon className="h-7 w-7 text-indigo-600" />
+                        <span className="text-3xl font-bold text-indigo-600">{calculateTotal()}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -839,82 +929,128 @@ const DashboardSteamIroning = () => {
               <button
                 type="submit"
                 disabled={getTotalItems() === 0}
-                className="w-full bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:transform-none"
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center gap-2"
               >
-                Proceed to Payment
+                <CheckCircleIcon className="h-6 w-6" />
+                <span>Proceed to Payment</span>
               </button>
             </form>
           </div>
         ) : (
-          /* Booking Summary */
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border-2 border-gray-100">
-            <div className="text-center mb-6">
-              <div className="flex justify-center mb-4">
-                <CheckCircleIcon className="h-16 w-16 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Booking Summary</h2>
-              <p className="text-gray-600">Review your details before payment</p>
-            </div>
+          /* Booking Summary Modal */
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-8">
+                <div className="text-center mb-6">
+                  <div className="flex justify-center mb-4">
+                    <div className="p-4 bg-green-100 rounded-full">
+                      <CheckCircleIcon className="h-16 w-16 text-green-600" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">Booking Summary</h2>
+                  <p className="text-gray-600">Review your details before payment</p>
+                </div>
 
-            <div className="space-y-4 mb-6">
-              {/* Selected Items */}
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium block mb-2">Selected Items:</span>
-                <div className="space-y-1">
-                  {Object.entries(selectedItems).map(([itemName, quantity]) => {
-                    let itemPrice = 0;
-                    Object.values(steamIroningPricing).forEach(category => {
-                      const item = category.find(i => i.name === itemName);
-                      if (item) itemPrice = item.price;
-                    });
-                    return (
-                      <div key={itemName} className="flex justify-between text-sm">
-                        <span className="text-gray-700">{itemName} x {quantity}</span>
-                        <span className="text-gray-900 font-bold">₹{itemPrice * quantity}</span>
+                <div className="space-y-4 mb-6">
+                  {/* Selected Items */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <ShoppingBagIcon className="h-5 w-5 text-indigo-600" />
+                      Selected Items
+                    </h3>
+                    <div className="space-y-2">
+                      {Object.entries(selectedItems).map(([itemName, quantity]) => {
+                        let itemPrice = 0;
+                        Object.values(steamIroningPricing).forEach(category => {
+                          const item = category.find(i => i.name === itemName);
+                          if (item) itemPrice = item.price;
+                        });
+                        return (
+                          <div key={itemName} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                            <div>
+                              <span className="text-gray-900 font-medium">{itemName}</span>
+                              <span className="text-gray-500 text-sm ml-2">× {quantity}</span>
+                            </div>
+                            <span className="text-gray-900 font-bold">₹{itemPrice * quantity}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Pickup Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <CalendarDaysIcon className="h-5 w-5 text-indigo-600" />
+                        <span className="text-sm font-medium text-gray-600">Pickup Date</span>
                       </div>
-                    );
-                  })}
+                      <p className="text-gray-900 font-bold">{new Date(pickupDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ClockIcon className="h-5 w-5 text-indigo-600" />
+                        <span className="text-sm font-medium text-gray-600">Pickup Time</span>
+                      </div>
+                      <p className="text-gray-900 font-bold">{pickupTime}</p>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-600">Pickup Address</span>
+                    </div>
+                    <p className="text-gray-900 font-bold">
+                      {address.street}, {address.city}, {address.state} {address.zipCode}
+                    </p>
+                  </div>
+
+                  {/* Contact */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-600">Contact Person</span>
+                    </div>
+                    <p className="text-gray-900 font-bold">{contactInfo.name}</p>
+                    <p className="text-gray-600 text-sm mt-1">{contactInfo.phone} • {contactInfo.email}</p>
+                  </div>
+
+                  {/* Total */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 border-2 border-indigo-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xl font-bold text-gray-900">Total Amount</span>
+                      <div className="flex items-center gap-1">
+                        <CurrencyRupeeIcon className="h-8 w-8 text-indigo-600" />
+                        <span className="text-4xl font-bold text-indigo-600">{calculateTotal()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setShowSummary(false)}
+                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-xl transition-all duration-200"
+                  >
+                    Edit Details
+                  </button>
+                  <button
+                    onClick={handlePayment}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                  >
+                    <CurrencyRupeeIcon className="h-5 w-5" />
+                    Pay with Razorpay
+                  </button>
                 </div>
               </div>
-
-              <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Pickup Date:</span>
-                <span className="text-gray-900 font-bold">{new Date(pickupDate).toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Pickup Time:</span>
-                <span className="text-gray-900 font-bold">{pickupTime}</span>
-              </div>
-              <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Address:</span>
-                <span className="text-gray-900 font-bold text-right">
-                  {address.street}, {address.city}, {address.state} {address.zipCode}
-                </span>
-              </div>
-              <div className="flex justify-between p-4 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Contact:</span>
-                <span className="text-gray-900 font-bold">{contactInfo.name}</span>
-              </div>
-              <div className="flex justify-between p-6 bg-gradient-to-br from-cyan-50 to-teal-50 rounded-xl border-2 border-cyan-300">
-                <span className="text-xl font-bold text-gray-900">Total Amount:</span>
-                <span className="text-3xl font-extrabold text-cyan-600">₹{calculateTotal()}</span>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowSummary(false)}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-xl transition-all duration-300"
-              >
-                Edit Details
-              </button>
-              <button
-                onClick={handlePayment}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center"
-              >
-                <CurrencyRupeeIcon className="h-5 w-5 mr-2" />
-                Pay with Razorpay
-              </button>
             </div>
           </div>
         )}

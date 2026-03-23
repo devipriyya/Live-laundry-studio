@@ -24,30 +24,35 @@ const InventoryManagement = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   // Fetch inventory data from API
   const fetchInventory = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.get('/inventory');
-      console.log('Inventory API Response:', response.data);
-      // The API returns an object with an items property
-      if (response.data && Array.isArray(response.data.items)) {
-        setInventory(response.data.items);
-        setFilteredInventory(response.data.items);
+      const [inventoryRes, categoriesRes] = await Promise.all([
+        api.get('/inventory'),
+        api.get('/categories')
+      ]);
+
+      console.log('Inventory API Response:', inventoryRes.data);
+      console.log('Categories API Response:', categoriesRes.data);
+
+      if (inventoryRes.data && Array.isArray(inventoryRes.data.items)) {
+        setInventory(inventoryRes.data.items);
+        setFilteredInventory(inventoryRes.data.items);
       } else {
-        // If response format is unexpected, use mock data
-        console.warn('Unexpected API response format, using mock data');
-        setInventory(mockInventory);
-        setFilteredInventory(mockInventory);
+        console.warn('Unexpected API response format for inventory');
+      }
+
+      if (Array.isArray(categoriesRes.data)) {
+        setCategories(categoriesRes.data);
       }
     } catch (err) {
-      console.error('Error fetching inventory:', err);
-      setError('Failed to load inventory data. Please try again.');
-      // Fallback to mock data if API fails
-      setInventory(mockInventory);
-      setFilteredInventory(mockInventory);
+      console.error('Error fetching inventory or categories:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to load inventory data.';
+      setError(`${errorMessage} (Status: ${err.response?.status || 'Unknown'})`);
     } finally {
       setLoading(false);
     }
@@ -123,15 +128,21 @@ const InventoryManagement = () => {
     console.log('Filtering inventory:', inventory, 'searchTerm:', searchTerm, 'categoryFilter:', categoryFilter);
 
     if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.supplier && item.supplier.name && item.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+      filtered = filtered.filter(item => {
+        const catName = typeof item.category === 'object' ? item.category?.name : getCategoryDisplayName(item.category);
+        return (
+          item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (catName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (item.supplier && item.supplier.name && item.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+      });
     }
 
     if (categoryFilter !== 'all') {
-      filtered = filtered.filter(item => item.category === categoryFilter);
+      filtered = filtered.filter(item => {
+        const itemCatId = typeof item.category === 'object' ? item.category._id : item.category;
+        return itemCatId === categoryFilter;
+      });
     }
 
     console.log('Filtered inventory:', filtered);
@@ -159,31 +170,45 @@ const InventoryManagement = () => {
   };
 
   const getCategoryDisplayName = (category) => {
-    const categoryNames = {
-      'detergent': 'Detergent',
-      'softener': 'Softener',
-      'stain-remover': 'Stain Remover',
-      'packaging': 'Packaging',
-      'equipment': 'Equipment',
-      'other': 'Other'
-    };
-    return categoryNames[category] || category;
+    if (typeof category === 'object' && category !== null) {
+      return category.name;
+    }
+    const found = categories.find(c => c._id === category || c.name.toLowerCase() === (category || '').toString().toLowerCase());
+    return found ? found.name : category;
   };
 
-  const categories = ['detergent', 'softener', 'stain-remover', 'packaging', 'equipment', 'other'];
+  // Removed hardcoded categories array - using state instead
 
   // Add/Edit Item Modal
   const AddItemModal = ({ item, onClose, onSave }) => {
     const [formData, setFormData] = useState(
-      item || {
+      item ? {
+        itemName: item.itemName || '',
+        category: typeof item.category === 'object' ? item.category._id : item.category,
+        sku: item.sku || '',
+        currentStock: (item.currentStock || 0).toString(),
+        minStockLevel: (item.minStockLevel || 0).toString(),
+        maxStockLevel: (item.maxStockLevel || 0).toString(),
+        unit: item.unit || 'piece',
+        pricePerUnit: (item.pricePerUnit || 0).toString(),
+        supplier: {
+          name: item.supplier?.name || '',
+          contact: item.supplier?.contact || '',
+          email: item.supplier?.email || ''
+        },
+        expiryDate: item.expiryDate ? new Date(item.expiryDate).toISOString().split('T')[0] : '',
+        location: item.location || 'Main Storage',
+        notes: item.notes || '',
+        image: item.image || ''
+      } : {
         itemName: '',
-        category: 'other',
+        category: categories.length > 0 ? categories[0]._id : '',
         sku: '',
-        currentStock: 0,
-        minStockLevel: 10,
-        maxStockLevel: 100,
+        currentStock: '0',
+        minStockLevel: '10',
+        maxStockLevel: '100',
         unit: 'piece',
-        pricePerUnit: 0,
+        pricePerUnit: '0',
         supplier: {
           name: '',
           contact: '',
@@ -191,21 +216,68 @@ const InventoryManagement = () => {
         },
         expiryDate: '',
         location: 'Main Storage',
-        notes: ''
+        notes: '',
+        image: ''
       }
     );
 
+    const [uploading, setUploading] = useState(false);
+
+    const handleImageUpload = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const uploadData = new FormData();
+      uploadData.append('photo', file);
+
+      try {
+        setUploading(true);
+        const response = await api.post('/upload', uploadData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        if (response.data.success) {
+          setFormData({ ...formData, image: response.data.url });
+        }
+      } catch (err) {
+        console.error('Error uploading image:', err);
+        alert('Failed to upload image.');
+      } finally {
+        setUploading(false);
+      }
+    };
+
     const handleSubmit = async (e) => {
       e.preventDefault();
+      
+      if (!formData.category) {
+        alert('Please select a category.');
+        return;
+      }
+
       try {
+        // Clean up data before sending
         const itemData = {
           ...formData,
+          // Convert string values back to numbers
+          currentStock: parseInt(formData.currentStock) || 0,
+          minStockLevel: parseInt(formData.minStockLevel) || 0,
+          maxStockLevel: parseInt(formData.maxStockLevel) || 0,
+          pricePerUnit: parseFloat(formData.pricePerUnit) || 0,
+          // Convert empty strings to undefined for sparse unique indexes
+          sku: formData.sku?.trim() || undefined,
+          expiryDate: formData.expiryDate || undefined,
           supplier: {
-            name: formData.supplier.name,
-            contact: formData.supplier.contact,
-            email: formData.supplier.email
+            name: formData.supplier.name?.trim() || '',
+            contact: formData.supplier.contact?.trim() || '',
+            email: formData.supplier.email?.trim() || ''
           }
         };
+
+        // If it's a new item and sku is empty, remove it
+        if (!itemData.sku) delete itemData.sku;
+        if (!itemData.expiryDate) delete itemData.expiryDate;
 
         let response;
         if (item) {
@@ -221,7 +293,8 @@ const InventoryManagement = () => {
         onClose();
       } catch (err) {
         console.error('Error saving item:', err);
-        alert('Failed to save item. Please try again.');
+        const errorMsg = err.response?.data?.message || err.message || 'Failed to save item.';
+        alert(`Error: ${errorMsg}`);
       }
     };
 
@@ -262,13 +335,33 @@ const InventoryManagement = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 >
-                  <option value="detergent">Detergent</option>
-                  <option value="softener">Softener</option>
-                  <option value="stain-remover">Stain Remover</option>
-                  <option value="packaging">Packaging</option>
-                  <option value="equipment">Equipment</option>
-                  <option value="other">Other</option>
+                  <option value="" disabled>Select a category</option>
+                  {categories.map(cat => (
+                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                  ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Product Image
+                </label>
+                <div className="flex items-center space-x-4">
+                  {formData.image && (
+                    <img 
+                      src={`${api.defaults.baseURL.replace('/api', '')}${formData.image}`} 
+                      alt="Preview" 
+                      className="h-12 w-12 object-cover rounded-lg border"
+                    />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                </div>
+                {uploading && <p className="text-xs text-blue-600 mt-1">Uploading...</p>}
               </div>
 
               <div>
@@ -291,7 +384,7 @@ const InventoryManagement = () => {
                   <input
                     type="number"
                     value={formData.currentStock}
-                    onChange={(e) => setFormData({...formData, currentStock: parseInt(e.target.value) || 0})}
+                    onChange={(e) => setFormData({...formData, currentStock: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -306,11 +399,13 @@ const InventoryManagement = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   >
-                    <option value="kg">Kilograms (kg)</option>
-                    <option value="liter">Liters (L)</option>
                     <option value="piece">Pieces</option>
+                    <option value="kg">Kilogram (kg)</option>
+                    <option value="bag">Bag</option>
+                    <option value="liter">Liters (L)</option>
                     <option value="box">Boxes</option>
                     <option value="bottle">Bottles</option>
+                    <option value="pkg">Package (Pkg)</option>
                   </select>
                 </div>
               </div>
@@ -323,7 +418,7 @@ const InventoryManagement = () => {
                   <input
                     type="number"
                     value={formData.minStockLevel}
-                    onChange={(e) => setFormData({...formData, minStockLevel: parseInt(e.target.value) || 0})}
+                    onChange={(e) => setFormData({...formData, minStockLevel: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -335,7 +430,7 @@ const InventoryManagement = () => {
                   <input
                     type="number"
                     value={formData.maxStockLevel}
-                    onChange={(e) => setFormData({...formData, maxStockLevel: parseInt(e.target.value) || 0})}
+                    onChange={(e) => setFormData({...formData, maxStockLevel: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -350,7 +445,7 @@ const InventoryManagement = () => {
                   type="number"
                   step="0.01"
                   value={formData.pricePerUnit}
-                  onChange={(e) => setFormData({...formData, pricePerUnit: parseFloat(e.target.value) || 0})}
+                  onChange={(e) => setFormData({...formData, pricePerUnit: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -684,7 +779,7 @@ const InventoryManagement = () => {
           >
             <option value="all">All Categories</option>
             {categories.map(category => (
-              <option key={category} value={category}>{getCategoryDisplayName(category)}</option>
+              <option key={category._id} value={category._id}>{category.name}</option>
             ))}
           </select>
           <button

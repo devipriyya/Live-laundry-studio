@@ -1,0 +1,249 @@
+[
+  {
+    "_id": "69b977522b2b46ffbfb009de",
+    "name": "detergent",
+    "displayName": "Detergent",
+    "icon": "🧼",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.005Z",
+    "updatedAt": "2026-03-17T15:46:27.005Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009df",
+    "name": "softener",
+    "displayName": "Softener",
+    "icon": "🧴",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e0",
+    "name": "stain-remover",
+    "displayName": "Stain Remover",
+    "icon": "🧽",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e1",
+    "name": "laundry-bag",
+    "displayName": "Laundry Bag",
+    "icon": "🧺",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e2",
+    "name": "hanger",
+    "displayName": "Hanger",
+    "icon": "🧥",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e3",
+    "name": "garment-cover",
+    "displayName": "Garment Cover",
+    "icon": "🛡️",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e4",
+    "name": "bedsheet",
+    "displayName": "Bedsheet",
+    "icon": "🛏️",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e5",
+    "name": "towel",
+    "displayName": "Towel",
+    "icon": "🧣",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e6",
+    "name": "curtain",
+    "displayName": "Curtain",
+    "icon": "🖼️",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e7",
+    "name": "uniform",
+    "displayName": "Uniform",
+    "icon": "👔",
+    "isPublic": true,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e8",
+    "name": "packaging",
+    "displayName": "Packaging",
+    "icon": "📦",
+    "isPublic": false,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009e9",
+    "name": "equipment",
+    "displayName": "Equipment",
+    "icon": "⚙️",
+    "isPublic": false,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b977532b2b46ffbfb009ea",
+    "name": "other",
+    "displayName": "Other",
+    "icon": "🛍️",
+    "isPublic": false,
+    "__v": 0,
+    "createdAt": "2026-03-17T15:46:27.006Z",
+    "updatedAt": "2026-03-17T15:46:27.006Z"
+  },
+  {
+    "_id": "69b987ed585bffc359e7c143",
+    "name": "Detergent",
+    "description": "Washing powders and liquids",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:17.486Z",
+    "updatedAt": "2026-03-17T16:57:17.486Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ed585bffc359e7c147",
+    "name": "Softener",
+    "description": "Fabric softeners and conditioners",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:17.582Z",
+    "updatedAt": "2026-03-17T16:57:17.582Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ed585bffc359e7c14c",
+    "name": "Stain Remover",
+    "description": "Specialized stain removal products",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:17.676Z",
+    "updatedAt": "2026-03-17T16:57:17.676Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ed585bffc359e7c150",
+    "name": "Laundry Bag",
+    "description": "Bags for carrying laundry",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:17.775Z",
+    "updatedAt": "2026-03-17T16:57:17.775Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ed585bffc359e7c153",
+    "name": "Hanger",
+    "description": "Cloths hangers",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:17.867Z",
+    "updatedAt": "2026-03-17T16:57:17.867Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ed585bffc359e7c156",
+    "name": "Garment Cover",
+    "description": "Covers for protected storage",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:17.965Z",
+    "updatedAt": "2026-03-17T16:57:17.965Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ee585bffc359e7c159",
+    "name": "Bedsheet",
+    "description": "Various bedsheets",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:18.062Z",
+    "updatedAt": "2026-03-17T16:57:18.062Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ee585bffc359e7c15c",
+    "name": "Towel",
+    "description": "Bath and face towels",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:18.159Z",
+    "updatedAt": "2026-03-17T16:57:18.159Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ee585bffc359e7c15f",
+    "name": "Curtain",
+    "description": "Window and door curtains",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:18.254Z",
+    "updatedAt": "2026-03-17T16:57:18.254Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ee585bffc359e7c162",
+    "name": "Uniform",
+    "description": "Work and school uniforms",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:18.357Z",
+    "updatedAt": "2026-03-17T16:57:18.357Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ee585bffc359e7c165",
+    "name": "Packaging",
+    "description": "Materials for packaging finished laundry",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:18.486Z",
+    "updatedAt": "2026-03-17T16:57:18.486Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ee585bffc359e7c168",
+    "name": "Equipment",
+    "description": "Laundry machines and tools",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:18.588Z",
+    "updatedAt": "2026-03-17T16:57:18.588Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b987ee585bffc359e7c16b",
+    "name": "Other",
+    "description": "Miscellaneous items",
+    "isActive": true,
+    "createdAt": "2026-03-17T16:57:18.689Z",
+    "updatedAt": "2026-03-17T16:57:18.689Z",
+    "__v": 0
+  }
+]

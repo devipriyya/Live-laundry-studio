@@ -35,6 +35,8 @@ const advertisementRoutes = require('./routes/advertisement');
 const lostItemRoutes = require('./routes/lostItem');
 const upload = require('./middleware/upload');
 const path = require('path');
+const categoryRoutes = require('./routes/category');
+
 // Connect to MongoDB
 connectDB();
 const app = express();
@@ -339,6 +341,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/ml', mlRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/incidents', incidentRoutes);

@@ -491,7 +491,10 @@ const TrackOrder = () => {
                         <ClockIcon className="h-5 w-5 text-purple-600" />
                         <span className="font-semibold text-purple-900">Estimated Delivery</span>
                       </div>
-                      <p className="text-lg font-bold text-purple-900">{order.estimatedDelivery}</p>
+                      <p className="text-lg font-bold text-purple-900">{order.estimatedDelivery || 'Calculating...'}</p>
+                      {order.estimatedDelivery && order.estimatedDelivery !== 'TBD' && order.estimatedDelivery !== 'Delivered' && (
+                        <p className="text-xs text-purple-600 mt-1">Based on service type and current workload</p>
+                      )}
                     </div>
                   </div>
 

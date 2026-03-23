@@ -135,21 +135,21 @@ const StaffOrders = () => {
       {/* Filters and Search */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="relative md:col-span-2">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{color: 'var(--text-muted)'}} />
           <input
             type="text"
             placeholder={t('search_orders_hint', 'Search by order number or customer...')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            className="ds-input pl-9"
           />
         </div>
         <div className="relative">
-          <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{color: 'var(--text-muted)'}} />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none appearance-none transition-all"
+            className="ds-input ds-select pl-9"
           >
             <option value="all">{t('all_statuses', 'All Statuses')}</option>
             <option value="order-accepted">Order Accepted</option>

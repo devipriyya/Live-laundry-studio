@@ -75,7 +75,9 @@ const UserSchema = new mongoose.Schema({
     },
     isAvailable: { type: Boolean, default: true },
     rating: { type: Number, default: 5.0, min: 0, max: 5 },
-    totalOrdersCompleted: { type: Number, default: 0 }
+    totalOrdersCompleted: { type: Number, default: 0 },
+    workload: { type: Number, default: 0 },
+    avgCompletionTime: { type: Number, default: 2.0 } // in hours
   },
   
   addresses: [{
